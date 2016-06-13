@@ -1,7 +1,7 @@
 #include "TopoNamingHelper.h"
 
-void TopoNamingHelper::TopoNamingHelper(){
+TopoNamingHelper::TopoNamingHelper(){
 }
 
-void ~TopoNamingHelper::TopoNamingHelper(){
-}
+//void ~TopoNamingHelper::TopoNamingHelper(){
+//}
