@@ -29,6 +29,7 @@
 #include <TopoDS_Wire.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <App/ComplexGeoData.h>
+#include "TopoNamingHelper.h"
 
 class gp_Ax1;
 class gp_Ax2;
@@ -233,6 +234,7 @@ public:
     //@}
 
     TopoDS_Shape _Shape;
+    TopoNamingHelper _TopoNamer;
 };
 
 } //namespace Part
