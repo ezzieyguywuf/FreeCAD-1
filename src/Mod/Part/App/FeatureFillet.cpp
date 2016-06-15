@@ -34,6 +34,7 @@
 
 #include "FeatureFillet.h"
 #include <Base/Exception.h>
+#include <Base/Console.h>
 
 
 using namespace Part;
@@ -62,6 +63,9 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         TopTools_IndexedMapOfShape mapOfShape;
         TopExp::MapShapes(base->Shape.getValue(), TopAbs_EDGE, mapOfShape);
 
+        TopoShape myTopoShape = base->Shape.getShape();
+        TopTools_ListOfShape listOfEdges;
+
         std::vector<FilletElement> values = Edges.getValues();
         for (std::vector<FilletElement>::iterator it = values.begin(); it != values.end(); ++it) {
             int id = it->edgeid;
@@ -69,9 +73,16 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
             double radius2 = it->radius2;
             const TopoDS_Edge& edge = TopoDS::Edge(mapOfShape.FindKey(id));
             mkFillet.Add(radius1, radius2, edge);
+            listOfEdges.Append(edge);
         }
 
+        TopoDS_Shape BaseShape = base->Shape.getValue();
+        TopoShape MyTopoShape = base->Shape.getShape();
+        MyTopoShape._TopoNamer.TrackFilletOperation(listOfEdges, BaseShape, mkFillet);
+        Base::Console().Message("-----Done Tracking Fillet\n");
+
         TopoDS_Shape shape = mkFillet.Shape();
+        Base::Console().Message("-----Done grabbing shape Fillet\n");
         if (shape.IsNull())
             return new App::DocumentObjectExecReturn("Resulting shape is null");
         ShapeHistory history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
@@ -83,6 +94,7 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         prop.setContainer(this);
         prop.touch();
 
+        Base::Console().Message("-----Exitting fillet thing \n");
         return App::DocumentObject::StdReturn;
     }
     catch (Standard_Failure) {

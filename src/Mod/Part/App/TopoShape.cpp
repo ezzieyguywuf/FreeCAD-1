@@ -218,6 +218,7 @@ TYPESYSTEM_SOURCE(Part::TopoShape , Data::ComplexGeoData);
 
 TopoShape::TopoShape()
 {
+    Base::Console().Message("-----Instantiated blank TopoShape\n");
 }
 
 TopoShape::~TopoShape()
@@ -227,11 +228,15 @@ TopoShape::~TopoShape()
 TopoShape::TopoShape(const TopoDS_Shape& shape)
   : _Shape(shape)
 {
+    Base::Console().Message("-----Instantiated TopoShape with TopoDS_Shape\n");
+    _TopoNamer.TrackGeneratedShape(shape);
 }
 
 TopoShape::TopoShape(const TopoShape& shape)
   : _Shape(shape._Shape)
 {
+    Base::Console().Message("-----Instantiated TopoShape with TopoShape\n");
+    _TopoNamer = shape._TopoNamer;
 }
 
 std::vector<const char*> TopoShape::getElementTypes(void) const
@@ -1407,11 +1412,13 @@ TopoDS_Shape TopoShape::common(TopoDS_Shape shape) const
 
 TopoDS_Shape TopoShape::fuse(TopoDS_Shape shape) const
 {
+    Base::Console().Message("-----TopoShape::fuse called\n");
     if (this->_Shape.IsNull())
         Standard_Failure::Raise("Base shape is null");
     if (shape.IsNull())
         Standard_Failure::Raise("Tool shape is null");
     BRepAlgoAPI_Fuse mkFuse(this->_Shape, shape);
+    _TopoNamer.TrackFuseOperation(mkFuse);
     return mkFuse.Shape();
 }
 
