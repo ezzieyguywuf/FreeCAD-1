@@ -26,6 +26,11 @@ TopoNamingHelper::TopoNamingHelper(){
     Base::Console().Message("-----Instantiated TopoNamingHelper\n");
 }
 
+TopoNamingHelper::TopoNamingHelper(const TopoNamingHelper& existing){
+    this->myDataFramework = existing.myDataFramework;
+    this->myRootNode      = existing.myRootNode;
+}
+
 TopoNamingHelper::~TopoNamingHelper(){
     Base::Console().Message("-----UnInstantiated TopoNamingHelper\n");
 }

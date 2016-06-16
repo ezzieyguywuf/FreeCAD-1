@@ -78,13 +78,11 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
 
         TopoDS_Shape BaseShape = base->Shape.getValue();
         TopoShape MyTopoShape = base->Shape.getShape();
-        MyTopoShape._TopoNamer.TrackFilletOperation(listOfEdges, BaseShape, mkFillet);
-        Base::Console().Message("-----Done Tracking Fillet\n");
 
+        mkFillet.Build();
+        if (!mkFillet.IsDone())
+            return new App::DocumentObjectExecReturn("Fillet operation appears to have failed");
         TopoDS_Shape shape = mkFillet.Shape();
-        Base::Console().Message("-----Done grabbing shape Fillet\n");
-        if (shape.IsNull())
-            return new App::DocumentObjectExecReturn("Resulting shape is null");
         ShapeHistory history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
         this->Shape.setValue(shape);
 
@@ -93,6 +91,9 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         prop.setValue(history);
         prop.setContainer(this);
         prop.touch();
+
+        Base::Console().Message("-----Tracking Fillet\n");
+        MyTopoShape._TopoNamer.TrackFilletOperation(listOfEdges, BaseShape, mkFillet);
 
         Base::Console().Message("-----Exitting fillet thing \n");
         return App::DocumentObject::StdReturn;

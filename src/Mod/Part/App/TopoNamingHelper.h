@@ -13,6 +13,7 @@
 class TopoNamingHelper{
     public:
         TopoNamingHelper();
+        TopoNamingHelper(const TopoNamingHelper& existing);
         ~TopoNamingHelper();
 
         void TrackGeneratedShape(TopoDS_Shape GeneratedShape) const;
@@ -21,5 +22,5 @@ class TopoNamingHelper{
 
     private:
         Handle(TDF_Data) myDataFramework = new TDF_Data();
-        const TDF_Label myRootNode = myDataFramework->Root();
+        TDF_Label myRootNode = myDataFramework->Root();
 };
