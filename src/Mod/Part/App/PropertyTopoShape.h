@@ -52,7 +52,7 @@ public:
     void setValue(const TopoShape&);
     /// set the part shape
     void setValue(const TopoDS_Shape&);
-    void setValue(const BRepAlgoAPI_Fuse&);
+    void setValue(BRepAlgoAPI_Fuse&);
     /// get the part shape
     const TopoDS_Shape& getValue(void) const;
     const TopoShape& getShape() const;

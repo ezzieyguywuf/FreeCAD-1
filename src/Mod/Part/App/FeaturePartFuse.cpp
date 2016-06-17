@@ -165,8 +165,10 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
                 this->Shape.setValue(TopoShapes.front());
                 this->Shape.getShape().DumpTopoHistory();
             }
-            this->Shape.setValue(resShape);
+            //this->Shape.setValue(resShape);
+            Base::Console().Message("----calling setValue from FeaturePartFuse\n");
             this->Shape.setValue(mkFuse);
+            Base::Console().Message("----done calling setValue from FeaturePartFuse\n");
             this->History.setValues(history);
         }
         catch (Standard_Failure) {

@@ -64,10 +64,10 @@ public:
     TopoShape(const TopoShape&);
     ~TopoShape();
 
-    void operator = (TopoShape sh);
-    void setShape(TopoDS_Shape sh);
-    void setShape(TopoShape sh);
-    void setShape(BRepAlgoAPI_Fuse mkFuse);
+    void operator = (const TopoShape& sh);
+    void setShape(const TopoDS_Shape& sh);
+    void setShape(const TopoShape& sh);
+    void setShape(BRepAlgoAPI_Fuse& mkFuse);
     void DumpTopoHistory() const;
 
     /** @name Placement control */
