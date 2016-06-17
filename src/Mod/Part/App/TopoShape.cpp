@@ -461,8 +461,43 @@ PyObject * TopoShape::getPySubShape(const char* Type) const
 void TopoShape::operator = (const TopoShape& sh)
 {
     if (this != &sh) {
-        this->_Shape = sh._Shape;
+        this->_Shape     = sh._Shape;
+        this->_TopoNamer = sh._TopoNamer;
     }
+}
+
+void TopoShape::setShape(const TopoDS_Shape& sh) const{
+    if (!this->_Shape.IsEqual(sh)){
+        this->_Shape = sh;
+        Base::Console().Message("-----NOTE! EVOLUTION = BRAND NEW?!\n");
+        TopoNamingHelper newTopoNamer;
+        this->_TopoNamer = newTopoNamer;
+        this->_TopoNamer.TrackGeneratedShape(sh);
+    }
+}
+
+void TopoShape::setShape(const TopoShape& sh) const{
+    if (!this->_Shape.IsEqual(sh._Shape)){
+        this->_Shape = sh._Shape;
+        Base::Console().Message("-----Copying topological evolution...\n");
+        this->_TopoNamer = sh._TopoNamer;
+        std::ostringstream output;
+        this->_TopoNamer.DeepDump(output);
+        Base::Console().Message(output.str().c_str());
+    }
+}
+
+void TopoShape::setShape(BRepAlgoAPI_Fuse mkFuse) const{
+    TopoDS_Shape resShape = mkFuse.Shape();
+    if (!this->_Shape.IsEqual(resShape)){
+        this->_Shape = resShape;
+        Base::Console().Message("-----Adding Fuse to topological evolution\n");
+        this->_TopoNamer.TrackFuseOperation(mkFuse);
+    }
+}
+
+void TopoShape::DumpTopoHistory() const{
+    this->_TopoNamer.DeepDump();
 }
 
 void TopoShape::convertTogpTrsf(const Base::Matrix4D& mtrx, gp_Trsf& trsf)
@@ -1424,6 +1459,7 @@ TopoDS_Shape TopoShape::fuse(TopoDS_Shape shape) const
 
 TopoDS_Shape TopoShape::multiFuse(const std::vector<TopoDS_Shape>& shapes, Standard_Real tolerance) const
 {
+    Base::Console().Message("-----TopoShape::multiFuse called\n");
     if (this->_Shape.IsNull())
         Standard_Failure::Raise("Base shape is null");
 #if OCC_VERSION_HEX <= 0x060800

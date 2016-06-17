@@ -5,8 +5,11 @@
 #include <Base/Console.h>
 #endif
 
+#include <TDataStd_AsciiString.hxx>
+#include <TDF_IDFilter.hxx>
 #include <TDF_TagSource.hxx>
 #include <TDF_Tool.hxx>
+#include <TDF_ChildIterator.hxx>
 
 #include "TopoNamingHelper.h"
 
@@ -21,6 +24,7 @@
 
 #include <TNaming_Builder.hxx>
 #include <TNaming_Selector.hxx>
+#include <TNaming_NamedShape.hxx>
 
 TopoNamingHelper::TopoNamingHelper(){
     Base::Console().Message("-----Instantiated TopoNamingHelper\n");
@@ -38,6 +42,9 @@ TopoNamingHelper::~TopoNamingHelper(){
 
 void TopoNamingHelper::TrackGeneratedShape(TopoDS_Shape GeneratedShape) const{
     Base::Console().Message("-----Tracking Generated Shape\n");
+    std::ostringstream outputStream;
+    DeepDump(outputStream);
+    Base::Console().Message(outputStream.str().c_str());
     // Declare variables
     TNaming_Builder* MyBuilderPtr;
     TDF_Label curLabel;
@@ -47,6 +54,8 @@ void TopoNamingHelper::TrackGeneratedShape(TopoDS_Shape GeneratedShape) const{
 
     // create a new node under Root
     TDF_Label LabelRoot = TDF_TagSource::NewChild(myRootNode);
+
+    AddTextToLabel(LabelRoot, "Generated Shape node");
 
     // add the generated shape to the LabelRoot
     MyBuilderPtr = new TNaming_Builder(LabelRoot);
@@ -63,10 +72,10 @@ void TopoNamingHelper::TrackGeneratedShape(TopoDS_Shape GeneratedShape) const{
         MyBuilderPtr = new TNaming_Builder(curLabel);
         MyBuilderPtr->Generated(curFace);
     }
-    std::ostringstream outputStream;
-    TDF_Tool::DeepDump(outputStream, myDataFramework);
+    std::ostringstream outputStream2;
+    DeepDump(outputStream2);
     Base::Console().Message("Data Framework Dump Below\n");
-    Base::Console().Message(outputStream.str().c_str());
+    Base::Console().Message(outputStream2.str().c_str());
 }
 
 void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse Fuser) const{
@@ -84,6 +93,11 @@ void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse Fuser) const{
     TDF_Label LabelRoot    = TDF_TagSource::NewChild(myRootNode);
     TDF_Label BaseModified = TDF_TagSource::NewChild(LabelRoot);
     TDF_Label FuseModified = TDF_TagSource::NewChild(LabelRoot);
+
+    // Add some descriptive text for debugging
+    AddTextToLabel(LabelRoot, "Fusion Node");
+    AddTextToLabel(BaseModified, "Modified Faces on Base Shape");
+    AddTextToLabel(FuseModified, "Modified Faces on Add Shape");
 
     // Add the fused shape as a modification of BaseShape
     TNaming_Builder ResultBuilder(LabelRoot);
@@ -122,13 +136,17 @@ void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse Fuser) const{
         }
     }
     std::ostringstream outputStream;
-    TDF_Tool::DeepDump(outputStream, myDataFramework);
+    DeepDump(outputStream);
     Base::Console().Message("Data Framework Dump Below\n");
     Base::Console().Message(outputStream.str().c_str());
 }
 
 void TopoNamingHelper::TrackFilletOperation(TopTools_ListOfShape Edges, TopoDS_Shape BaseShape, BRepFilletAPI_MakeFillet Filleter) const{
     Base::Console().Message("-----Tracking Fillet Operation\n");
+    std::ostringstream output;
+    DeepDump(output);
+    Base::Console().Message(output.str().c_str());
+
     TopoDS_Shape ResultShape = Filleter.Shape();
 
     // create two new nodes under Root. The first is for the Selection of the Edges. The
@@ -140,6 +158,19 @@ void TopoNamingHelper::TrackFilletOperation(TopTools_ListOfShape Edges, TopoDS_S
     TDF_Label FacesFromEdges    = TDF_TagSource::NewChild(FilletRoot);
     TDF_Label FacesFromVertices = TDF_TagSource::NewChild(FilletRoot);
 
+    // Add some descriptive text for debugging
+    AddTextToLabel(SelectionRoot, "Selection Node (fillet follows)");
+    AddTextToLabel(FilletRoot, "Fillet Node");
+    AddTextToLabel(Modified, "Modified faces");
+    AddTextToLabel(Deleted, "Deleted faces");
+    AddTextToLabel(FacesFromEdges, "Faces from edges");
+    AddTextToLabel(FacesFromVertices, "Faces from vertices");
+
+    // Start by adding the result shape. This will also create the TNaming_UsedShapes
+    // under the Root node if it doesn't exist
+    TNaming_Builder FilletBuilder(FilletRoot);
+    FilletBuilder.Modify(BaseShape, ResultShape);
+
     // Add all the edges that we're filleting to the Selection
     TopTools_ListIteratorOfListOfShape edgeIterator(Edges);
     for (;edgeIterator.More(); edgeIterator.Next()){
@@ -147,12 +178,8 @@ void TopoNamingHelper::TrackFilletOperation(TopTools_ListOfShape Edges, TopoDS_S
         TDF_Label curSubLabel = TDF_TagSource::NewChild(SelectionRoot);
         TNaming_Selector EdgeSelector(curSubLabel);
         EdgeSelector.Select(curEdge, BaseShape);
+        AddTextToLabel(curSubLabel, "Selection sub-label, I made this");
     }
-
-    // Now add the appropriate information from the filleted shape
-    // First, the result shape on our base node
-    TNaming_Builder FilletBuilder(FilletRoot);
-    FilletBuilder.Modify(BaseShape, ResultShape);
 
     // Next, the Faces generated from Edges
     TNaming_Builder FacesFromEdgeBuilder(FacesFromEdges);
@@ -210,7 +237,59 @@ void TopoNamingHelper::TrackFilletOperation(TopTools_ListOfShape Edges, TopoDS_S
         }
     }
     std::ostringstream outputStream;
-    TDF_Tool::DeepDump(outputStream, myDataFramework);
+    DeepDump(outputStream);
     Base::Console().Message("Data Framework Dump Below\n");
     Base::Console().Message(outputStream.str().c_str());
+}
+
+void TopoNamingHelper::AddTextToLabel(TDF_Label& Label, char const *str) const{
+    Handle(TDataStd_AsciiString) nameAttribute;
+    TCollection_AsciiString myName;
+    myName = str;
+    nameAttribute = new TDataStd_AsciiString();
+    nameAttribute->Set(myName);
+    Label.AddAttribute(nameAttribute);
+}
+
+void TopoNamingHelper::Dump() const{
+    TDF_Tool::DeepDump(std::cout, myDataFramework);
+    std::cout << "\n";
+}
+
+void TopoNamingHelper::Dump(std::ostream& stream) const{
+    TDF_Tool::DeepDump(stream, myDataFramework);
+    stream << "\n";
+}
+
+void TopoNamingHelper::DeepDump(std::ostream& stream) const{
+    TDF_IDFilter myFilter;
+    myFilter.Keep(TDataStd_AsciiString::GetID());
+    myFilter.Keep(TNaming_NamedShape::GetID());
+    //TDF_Tool::ExtendedDeepDump(stream, myDataFramework, myFilter);
+    //stream << "\n";
+    TDF_ChildIterator TreeIterator(myRootNode, Standard_True);
+    for(;TreeIterator.More(); TreeIterator.Next()){
+        TDF_Label curLabel = TreeIterator.Value();
+        // add the Tag info
+        curLabel.EntryDump(stream);
+        // If a AsciiString is present, add the data
+        if (curLabel.IsAttribute(TDataStd_AsciiString::GetID())){
+            Handle(TDataStd_AsciiString) date;
+            curLabel.FindAttribute(TDataStd_AsciiString::GetID(), date);
+            stream << " ";
+            date->Get().Print(stream);
+        }
+        stream << "\n";
+    }
+}
+
+void TopoNamingHelper::DeepDump() const{
+    std::ostringstream output;
+    DeepDump(output);
+    Base::Console().Message(output.str().c_str());
+}
+
+void TopoNamingHelper::operator = (const TopoNamingHelper& helper){
+    this->myDataFramework = helper.myDataFramework;
+    this->myRootNode      = helper.myRootNode;
 }

@@ -34,6 +34,7 @@
 #include <App/Application.h>
 #include <Base/Parameter.h>
 #include <Base/Exception.h>
+#include <Base/Console.h>
 
 using namespace Part;
 
@@ -47,6 +48,7 @@ Fuse::Fuse(void)
 BRepAlgoAPI_BooleanOperation* Fuse::makeOperation(const TopoDS_Shape& base, const TopoDS_Shape& tool) const
 {
     // Let's call algorithm computing a fuse operation:
+    Base::Console().Message("-----Calling Fuse from FeaturePartFuse\n");
     return new BRepAlgoAPI_Fuse(base, tool);
 }
 
@@ -74,12 +76,15 @@ short MultiFuse::mustExecute() const
 App::DocumentObjectExecReturn *MultiFuse::execute(void)
 {
     std::vector<TopoDS_Shape> s;
+    // Also need the TopoShape's in order to save the history
+    std::vector<TopoShape> TopoShapes;
     std::vector<App::DocumentObject*> obj = Shapes.getValues();
 
     std::vector<App::DocumentObject*>::iterator it;
     for (it = obj.begin(); it != obj.end(); ++it) {
         if ((*it)->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) {
             s.push_back(static_cast<Part::Feature*>(*it)->Shape.getValue());
+            TopoShapes.push_back(static_cast<Part::Feature*>(*it)->Shape.getShape());
         }
     }
 
@@ -95,6 +100,7 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
                     throw Base::Exception("Input shape is null");
 
                 // Let's call algorithm computing a fuse operation:
+                Base::Console().Message("-----Calling Fuse from FeaturePartFuse 2\n");
                 BRepAlgoAPI_Fuse mkFuse(resShape, *it);
                 // Let's check if the fusion has been successful
                 if (!mkFuse.IsDone()) 
@@ -114,6 +120,7 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
                 }
             }
 #else
+            Base::Console().Message("-----Calling Fuse from FeaturePartFuse 3\n");
             BRepAlgoAPI_Fuse mkFuse;
             TopTools_ListOfShape shapeArguments,shapeTools;
             shapeArguments.Append(s.front());
@@ -152,7 +159,13 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
                     *jt = joinHistory(*jt, hist);
             }
 
+            if (!TopoShapes.empty()){
+                TopoShape firstTopoShape = TopoShapes.front();
+                this->Shape.getShape().setShape(firstTopoShape);
+                this->Shape.getShape().DumpTopoHistory();
+            }
             this->Shape.setValue(resShape);
+            this->Shape.getShape().setShape(mkFuse);
             this->History.setValues(history);
         }
         catch (Standard_Failure) {

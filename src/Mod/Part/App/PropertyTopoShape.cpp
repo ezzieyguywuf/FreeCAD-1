@@ -81,14 +81,16 @@ PropertyPartShape::~PropertyPartShape()
 void PropertyPartShape::setValue(const TopoShape& sh)
 {
     aboutToSetValue();
-    _Shape = sh;
+    //_Shape = sh;
+    _Shape.setShape(sh);
     hasSetValue();
 }
 
 void PropertyPartShape::setValue(const TopoDS_Shape& sh)
 {
     aboutToSetValue();
-    _Shape._Shape = sh;
+    _Shape.setShape(sh);
+    //_Shape._Shape = sh;
     hasSetValue();
 }
 

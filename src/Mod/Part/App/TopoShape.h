@@ -65,6 +65,10 @@ public:
     ~TopoShape();
 
     void operator = (const TopoShape&);
+    void setShape(const TopoDS_Shape& sh) const;
+    void setShape(const TopoShape& sh) const;
+    void setShape(BRepAlgoAPI_Fuse mkFuse) const;
+    void DumpTopoHistory() const;
 
     /** @name Placement control */
     //@{
@@ -234,7 +238,7 @@ public:
     //@}
 
     TopoDS_Shape _Shape;
-    TopoNamingHelper _TopoNamer;
+    mutable TopoNamingHelper _TopoNamer;
 };
 
 } //namespace Part
