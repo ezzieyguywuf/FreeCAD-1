@@ -78,12 +78,14 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
     std::vector<TopoDS_Shape> s;
     // Also need the TopoShape's in order to save the history
     std::vector<TopoShape> TopoShapes;
+    //TopoShape firstTopoShape;
     std::vector<App::DocumentObject*> obj = Shapes.getValues();
 
     std::vector<App::DocumentObject*>::iterator it;
     for (it = obj.begin(); it != obj.end(); ++it) {
         if ((*it)->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) {
             s.push_back(static_cast<Part::Feature*>(*it)->Shape.getValue());
+            //if it.
             TopoShapes.push_back(static_cast<Part::Feature*>(*it)->Shape.getShape());
         }
     }
@@ -160,12 +162,11 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
             }
 
             if (!TopoShapes.empty()){
-                TopoShape firstTopoShape = TopoShapes.front();
-                this->Shape.getShape().setShape(firstTopoShape);
+                this->Shape.setValue(TopoShapes.front());
                 this->Shape.getShape().DumpTopoHistory();
             }
             this->Shape.setValue(resShape);
-            this->Shape.getShape().setShape(mkFuse);
+            this->Shape.setValue(mkFuse);
             this->History.setValues(history);
         }
         catch (Standard_Failure) {

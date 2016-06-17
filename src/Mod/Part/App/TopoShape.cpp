@@ -458,7 +458,7 @@ PyObject * TopoShape::getPySubShape(const char* Type) const
 
 }
 
-void TopoShape::operator = (const TopoShape& sh)
+void TopoShape::operator = (TopoShape sh)
 {
     if (this != &sh) {
         this->_Shape     = sh._Shape;
@@ -466,7 +466,7 @@ void TopoShape::operator = (const TopoShape& sh)
     }
 }
 
-void TopoShape::setShape(const TopoDS_Shape& sh) const{
+void TopoShape::setShape(TopoDS_Shape sh){
     if (!this->_Shape.IsEqual(sh)){
         this->_Shape = sh;
         Base::Console().Message("-----NOTE! EVOLUTION = BRAND NEW?!\n");
@@ -476,18 +476,18 @@ void TopoShape::setShape(const TopoDS_Shape& sh) const{
     }
 }
 
-void TopoShape::setShape(const TopoShape& sh) const{
-    if (!this->_Shape.IsEqual(sh._Shape)){
+void TopoShape::setShape(TopoShape sh){
+    //if (!this->_Shape.IsEqual(sh._Shape)){
         this->_Shape = sh._Shape;
         Base::Console().Message("-----Copying topological evolution...\n");
         this->_TopoNamer = sh._TopoNamer;
-        std::ostringstream output;
-        this->_TopoNamer.DeepDump(output);
-        Base::Console().Message(output.str().c_str());
-    }
+        //std::ostringstream output;
+        //this->_TopoNamer.DeepDump(output);
+        //Base::Console().Message(output.str().c_str());
+    //}
 }
 
-void TopoShape::setShape(BRepAlgoAPI_Fuse mkFuse) const{
+void TopoShape::setShape(BRepAlgoAPI_Fuse mkFuse){
     TopoDS_Shape resShape = mkFuse.Shape();
     if (!this->_Shape.IsEqual(resShape)){
         this->_Shape = resShape;

@@ -28,6 +28,7 @@
 #include <TopAbs_ShapeEnum.hxx>
 #include <App/DocumentObject.h>
 #include <App/PropertyGeo.h>
+#include <BRepAlgoAPI_Fuse.hxx>
 #include <map>
 #include <vector>
 
@@ -51,6 +52,7 @@ public:
     void setValue(const TopoShape&);
     /// set the part shape
     void setValue(const TopoDS_Shape&);
+    void setValue(const BRepAlgoAPI_Fuse&);
     /// get the part shape
     const TopoDS_Shape& getValue(void) const;
     const TopoShape& getShape() const;
