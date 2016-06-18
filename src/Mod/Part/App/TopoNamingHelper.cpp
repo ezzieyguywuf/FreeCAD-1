@@ -40,7 +40,7 @@ TopoNamingHelper::~TopoNamingHelper(){
 }
 
 
-void TopoNamingHelper::TrackGeneratedShape(TopoDS_Shape GeneratedShape) const{
+void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape){
     Base::Console().Message("-----Tracking Generated Shape\n");
     std::ostringstream outputStream;
     DeepDump(outputStream);
@@ -78,7 +78,7 @@ void TopoNamingHelper::TrackGeneratedShape(TopoDS_Shape GeneratedShape) const{
     Base::Console().Message(outputStream2.str().c_str());
 }
 
-void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse Fuser) const{
+void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
     Base::Console().Message("-----Tracking Fuse Operation\n");
     // In a Fuse operation, each face is either Modified from one of the two Shapes being
     // fused, or it is Deleted. There is not an instance where a Fuse operation results in
@@ -141,7 +141,8 @@ void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse Fuser) const{
     Base::Console().Message(outputStream.str().c_str());
 }
 
-void TopoNamingHelper::TrackFilletOperation(TopTools_ListOfShape Edges, TopoDS_Shape BaseShape, BRepFilletAPI_MakeFillet Filleter) const{
+void TopoNamingHelper::TrackFilletOperation(const TopTools_ListOfShape& Edges, const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet){
+    BRepFilletAPI_MakeFillet Filleter = mkFillet;
     Base::Console().Message("-----Tracking Fillet Operation\n");
     std::ostringstream output;
     DeepDump(output);
@@ -242,7 +243,7 @@ void TopoNamingHelper::TrackFilletOperation(TopTools_ListOfShape Edges, TopoDS_S
     Base::Console().Message(outputStream.str().c_str());
 }
 
-void TopoNamingHelper::AddTextToLabel(TDF_Label& Label, char const *str) const{
+void TopoNamingHelper::AddTextToLabel(const TDF_Label& Label, char const *str){
     Handle(TDataStd_AsciiString) nameAttribute;
     TCollection_AsciiString myName;
     myName = str;

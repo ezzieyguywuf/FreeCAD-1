@@ -19,10 +19,10 @@ class TopoNamingHelper{
 
         void operator = (const TopoNamingHelper&);
 
-        void TrackGeneratedShape(TopoDS_Shape GeneratedShape) const;
-        void TrackFuseOperation(BRepAlgoAPI_Fuse Fuser) const;
-        void TrackFilletOperation(TopTools_ListOfShape Edges, TopoDS_Shape BaseShape, BRepFilletAPI_MakeFillet Filleter) const;
-        void AddTextToLabel(TDF_Label& Label, char const *str) const;
+        void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape);
+        void TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser);
+        void TrackFilletOperation(const TopTools_ListOfShape& Edges, const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
+        void AddTextToLabel(const TDF_Label& Label, char const *str);
         void Dump() const;
         void Dump(std::ostream& stream) const;
         void DeepDump(std::ostream& stream) const;

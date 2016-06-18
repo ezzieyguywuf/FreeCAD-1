@@ -1454,7 +1454,7 @@ TopoDS_Shape TopoShape::fuse(TopoDS_Shape shape) const
     if (shape.IsNull())
         Standard_Failure::Raise("Tool shape is null");
     BRepAlgoAPI_Fuse mkFuse(this->_Shape, shape);
-    _TopoNamer.TrackFuseOperation(mkFuse);
+    //_TopoNamer.TrackFuseOperation(mkFuse);
     return mkFuse.Shape();
 }
 
