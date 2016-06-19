@@ -92,7 +92,10 @@ public:
     FilletBase();
 
     App::PropertyLink   Base;
-    PropertyFilletEdges Edges;
+    Part::PropertyFilletEdges Edges;
+
+    void setEdge(int id, double r1, double r2);
+    void setEdges(const std::vector<Part::FilletElement>& values);
 
     short mustExecute() const;
 };

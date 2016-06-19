@@ -487,19 +487,22 @@ PropertyFilletEdges::~PropertyFilletEdges()
 {
 }
 
-void PropertyFilletEdges::setValue(int id, double r1, double r2)
+void PropertyFilletEdges::setValue(int id, double r1, double r2, std::string id2)
 {
     aboutToSetValue();
+    Base::Console().Message("'setValue' in PropertyTopoShape.cpp called\n");
     _lValueList.resize(1);
-    _lValueList[0].edgeid = id;
+    _lValueList[0].edgeid  = id;
     _lValueList[0].radius1 = r1;
     _lValueList[0].radius2 = r2;
+    _lValueList[0].edgetag = id2;
     hasSetValue();
 }
 
 void PropertyFilletEdges::setValues(const std::vector<FilletElement>& values)
 {
     aboutToSetValue();
+    Base::Console().Message("'setValues' in PropertyTopoShape.cpp called\n");
     _lValueList = values;
     hasSetValue();
 }

@@ -28,11 +28,13 @@
 
 TopoNamingHelper::TopoNamingHelper(){
     Base::Console().Message("-----Instantiated TopoNamingHelper\n");
+    AddTextToLabel(mySelectionNode, "Selection Root Node");
 }
 
 TopoNamingHelper::TopoNamingHelper(const TopoNamingHelper& existing){
     this->myDataFramework = existing.myDataFramework;
     this->myRootNode      = existing.myRootNode;
+    this->mySelectionNode = existing.mySelectionNode;
 }
 
 TopoNamingHelper::~TopoNamingHelper(){
@@ -141,7 +143,7 @@ void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
     Base::Console().Message(outputStream.str().c_str());
 }
 
-void TopoNamingHelper::TrackFilletOperation(const TopTools_ListOfShape& Edges, const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet){
+void TopoNamingHelper::TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet){
     BRepFilletAPI_MakeFillet Filleter = mkFillet;
     Base::Console().Message("-----Tracking Fillet Operation\n");
     std::ostringstream output;
@@ -150,9 +152,8 @@ void TopoNamingHelper::TrackFilletOperation(const TopTools_ListOfShape& Edges, c
 
     TopoDS_Shape ResultShape = Filleter.Shape();
 
-    // create two new nodes under Root. The first is for the Selection of the Edges. The
-    // second is for the result filleted Shape and it's modified/deleted/generated Faces.
-    TDF_Label SelectionRoot     = TDF_TagSource::NewChild(myRootNode);
+    // Create a new node under the Root node for the result filleted Shape and it's
+    // modified/deleted/generated Faces.
     TDF_Label FilletRoot        = TDF_TagSource::NewChild(myRootNode);
     TDF_Label Modified          = TDF_TagSource::NewChild(FilletRoot);
     TDF_Label Deleted           = TDF_TagSource::NewChild(FilletRoot);
@@ -160,7 +161,6 @@ void TopoNamingHelper::TrackFilletOperation(const TopTools_ListOfShape& Edges, c
     TDF_Label FacesFromVertices = TDF_TagSource::NewChild(FilletRoot);
 
     // Add some descriptive text for debugging
-    AddTextToLabel(SelectionRoot, "Selection Node (fillet follows)");
     AddTextToLabel(FilletRoot, "Fillet Node");
     AddTextToLabel(Modified, "Modified faces");
     AddTextToLabel(Deleted, "Deleted faces");
@@ -171,16 +171,6 @@ void TopoNamingHelper::TrackFilletOperation(const TopTools_ListOfShape& Edges, c
     // under the Root node if it doesn't exist
     TNaming_Builder FilletBuilder(FilletRoot);
     FilletBuilder.Modify(BaseShape, ResultShape);
-
-    // Add all the edges that we're filleting to the Selection
-    TopTools_ListIteratorOfListOfShape edgeIterator(Edges);
-    for (;edgeIterator.More(); edgeIterator.Next()){
-        TopoDS_Edge curEdge = TopoDS::Edge(edgeIterator.Value());
-        TDF_Label curSubLabel = TDF_TagSource::NewChild(SelectionRoot);
-        TNaming_Selector EdgeSelector(curSubLabel);
-        EdgeSelector.Select(curEdge, BaseShape);
-        AddTextToLabel(curSubLabel, "Selection sub-label, I made this");
-    }
 
     // Next, the Faces generated from Edges
     TNaming_Builder FacesFromEdgeBuilder(FacesFromEdges);
@@ -241,6 +231,58 @@ void TopoNamingHelper::TrackFilletOperation(const TopTools_ListOfShape& Edges, c
     DeepDump(outputStream);
     Base::Console().Message("Data Framework Dump Below\n");
     Base::Console().Message(outputStream.str().c_str());
+}
+std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge anEdge, const TopoDS_Shape aShape){
+    // The label returned will be for the selected Edge
+    TDF_Label SelectedLabel;
+    std::string SelecedLabelEntryString;
+    // Whether or not the selected Edge is already in the tree
+    bool found = false;
+    // These will be used to check each existing Selection
+    Handle(TNaming_NamedShape) EdgeNS;
+    Handle(TNaming_NamedShape) ContextNS;
+    TopoDS_Edge checkEdge;
+    TopoDS_Shape checkShape;
+
+    for (TDF_ChildIterator it(mySelectionNode, Standard_False); it.More(); it.Next()){
+        TDF_Label EdgeNode    = it.Value();
+        TDF_Label ContextNode = EdgeNode.FindChild(1, Standard_False);
+
+        // Get the Edge and Contex Shape for this sub-node
+        EdgeNode.FindAttribute(TNaming_NamedShape::GetID(), EdgeNS);
+        ContextNode.FindAttribute(TNaming_NamedShape::GetID(), ContextNS);
+        checkEdge  = TopoDS::Edge(EdgeNS->Get());
+        checkShape = ContextNS->Get();
+
+        // Check if this sub-node is the same as what's been passed in
+        if (anEdge.IsEqual(checkEdge) && aShape.IsEqual(checkShape)){
+            SelectedLabel = EdgeNode;
+            found    = true;
+            break;
+        }
+    }
+
+    // If not found, create.
+    if (!found){
+        SelectedLabel = TDF_TagSource::NewChild(mySelectionNode);
+        TNaming_Builder SelectionBuilder(SelectedLabel);
+        SelectionBuilder.Select(anEdge, aShape);
+        this->AddTextToLabel(SelectedLabel, "A selected edge. Sub-node is the context Shape");
+    }
+    std::ostringstream dumpedEntry;
+    SelectedLabel.EntryDump(dumpedEntry);
+    return dumpedEntry.str();
+}
+
+std::vector<std::string> TopoNamingHelper::SelectEdges(const std::vector<TopoDS_Edge> Edges,
+                                                     const TopoDS_Shape aShape){
+    std::vector<std::string> outputLabels;
+    for (std::vector<TopoDS_Edge>::const_iterator it = Edges.begin(); it != Edges.end(); ++it){
+        TopoDS_Edge curEdge = *it;
+        std::string curLabelEntry = this->SelectEdge(curEdge, aShape);
+        outputLabels.push_back(curLabelEntry);
+    }
+    return outputLabels;
 }
 
 void TopoNamingHelper::AddTextToLabel(const TDF_Label& Label, char const *str){

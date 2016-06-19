@@ -931,8 +931,13 @@ bool DlgFilletEdges::accept()
     }
 
     Gui::WaitCursor wc;
+    // TODO: Implement te python stuff. See comment in code += below
+    // in the meantime, check the setValue method in FilletBase for the hard-coded stuff
     code += QString::fromLatin1(
         "FreeCAD.ActiveDocument.%1.Edges = __fillets__\n"
+        "#Note: I want to implement the following line. For now, I'll just"
+        "#run it in hard-coded C++ to make sure it works proper"
+        "#FreeCAD.ActiveDocument.%1.setEdge(__fillets__[0], __fillets__[1], __fillets__[2])"
         "del __fillets__\n"
         "FreeCADGui.ActiveDocument.%2.Visibility = False\n")
         .arg(name).arg(shape);

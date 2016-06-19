@@ -65,10 +65,14 @@ public:
     ~TopoShape();
 
     void operator = (const TopoShape& sh);
+
+    // Added for Topo Naming stuff
     void setShape(const TopoDS_Shape& sh);
     void setShape(const TopoShape& sh);
     void setShape(BRepAlgoAPI_Fuse& mkFuse);
     void DumpTopoHistory() const;
+    std::string selectEdge(const TopoDS_Edge anEdge, const TopoDS_Shape aContext);
+    std::vector<std::string> selectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape aContext);
 
     /** @name Placement control */
     //@{

@@ -156,6 +156,7 @@ private:
 struct PartExport FilletElement {
     int edgeid;
     double radius1, radius2;
+    std::string edgetag;
 };
 
 class PartExport PropertyFilletEdges : public App::PropertyLists
@@ -175,7 +176,7 @@ public:
 
     /** Sets the property
      */
-    void setValue(int id, double r1, double r2);
+    void setValue(int id, double r1, double r2, std::string id2);
 
     void setValues (const std::vector<FilletElement>& values);
 
