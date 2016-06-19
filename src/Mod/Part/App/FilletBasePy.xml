@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<GenerateModel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="generateMetaModel_Module.xsd">
+  <PythonExport 
+    Father="PartFeaturePy"  
+    Name="FilletBasePy" 
+    Twin="Feature" 
+    TwinPointer="Feature" 
+    Include="Mod/Part/App/PartFeature.h" 
+    Namespace="" 
+    FatherInclude="Mod/Part/App/PartFeature.h" 
+    FatherNamespace="Part">
+    <Documentation>
+      <Author Licence="LGPL" Name="Juergen Riegel" EMail="FreeCAD@juergen-riegel.net" />
+      <UserDocu>This is the Base for Fillets. Or something.</UserDocu>
+    </Documentation>
+  </PythonExport>
+</GenerateModel>
