@@ -25,7 +25,8 @@
 #define PART_FEATUREFILLET_H
 
 #include <App/PropertyStandard.h>
-#include "PartFeature.h"
+//#include "PartFeature.h"
+#include "FilletBase.h"
 
 namespace Part
 {

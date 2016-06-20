@@ -3,15 +3,15 @@
   <PythonExport 
     Father="PartFeaturePy"  
     Name="FilletBasePy" 
-    Twin="Feature" 
-    TwinPointer="Feature" 
-    Include="Mod/Part/App/PartFeature.h" 
-    Namespace="" 
+    Twin="Part" 
+    TwinPointer="Part" 
+    Include="Mod/Part/App/FilletBase.h" 
+    Namespace="Part" 
     FatherInclude="Mod/Part/App/PartFeature.h" 
     FatherNamespace="Part">
     <Documentation>
       <Author Licence="LGPL" Name="Juergen Riegel" EMail="FreeCAD@juergen-riegel.net" />
-      <UserDocu>This is the Base for Fillets. Or something.</UserDocu>
+      <UserDocu>This is the Base for Fillets Features. I think...</UserDocu>
     </Documentation>
   </PythonExport>
 </GenerateModel>

@@ -33,6 +33,7 @@
 
 
 #include "FeatureFillet.h"
+#include "FilletBase.h"
 #include <Base/Exception.h>
 #include <Base/Console.h>
 
