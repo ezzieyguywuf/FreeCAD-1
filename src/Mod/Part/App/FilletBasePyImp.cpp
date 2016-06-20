@@ -34,7 +34,7 @@ using namespace Part;
 // returns a string which represent the object e.g. when printed in python
 std::string FilletBasePy::representation(void) const
 {
-    return std::string("<Part::PartFeature>");
+    return std::string("<Part::PartFeature::FilletBase>");
 }
 
 PyObject *FilletBasePy::getCustomAttributes(const char* attr) const
@@ -48,3 +48,6 @@ int FilletBasePy::setCustomAttributes(const char* attr, PyObject *obj)
 }
 
 
+PyObject* FilletBasePy::setEdge(PyObject *args){
+    return Py::new_reference_to(Py::String("Not implemented yet"));
+}

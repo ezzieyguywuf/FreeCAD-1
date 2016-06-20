@@ -3,15 +3,20 @@
   <PythonExport 
     Father="PartFeaturePy"  
     Name="FilletBasePy" 
-    Twin="Part" 
-    TwinPointer="Part" 
+    Twin="FilletBase" 
+    TwinPointer="FilletBase" 
     Include="Mod/Part/App/FilletBase.h" 
     Namespace="Part" 
-    FatherInclude="Mod/Part/App/PartFeature.h" 
+    FatherInclude="Mod/Part/App/PartFeaturePy.h" 
     FatherNamespace="Part">
     <Documentation>
       <Author Licence="LGPL" Name="Juergen Riegel" EMail="FreeCAD@juergen-riegel.net" />
       <UserDocu>This is the Base for Fillets Features. I think...</UserDocu>
     </Documentation>
+    <Methode Name="setEdge">
+      <Documentation>
+        <UserDocu>Write a single Edge to the TNaming Data Framework</UserDocu>
+      </Documentation>
+    </Methode>
   </PythonExport>
 </GenerateModel>

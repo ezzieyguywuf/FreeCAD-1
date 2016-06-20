@@ -13,10 +13,5 @@
       <Author Licence="LGPL" Name="Juergen Riegel" EMail="FreeCAD@juergen-riegel.net" />
       <UserDocu>This is the father of all shape object classes</UserDocu>
     </Documentation>
-    <Methode Name="setEdge">
-      <Documentation>
-        <UserDocu>Write a single Edge to the TNaming Data Framework</UserDocu>
-      </Documentation>
-    </Methode>
   </PythonExport>
 </GenerateModel>

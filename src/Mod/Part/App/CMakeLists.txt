@@ -69,7 +69,7 @@ generate_from_xml(RectangularTrimmedSurfacePy)
 generate_from_xml(SurfaceOfExtrusionPy)
 generate_from_xml(SurfaceOfRevolutionPy)
 generate_from_xml(PartFeaturePy)
-#generate_from_xml(FilletBasePy)
+generate_from_xml(FilletBasePy)
 generate_from_xml(AttachableObjectPy)
 generate_from_xml(Part2DObjectPy)
 generate_from_xml(AttachEnginePy)
@@ -221,8 +221,8 @@ SET(Python_SRCS
     SurfaceOfRevolutionPyImp.cpp
     PartFeaturePy.xml
     PartFeaturePyImp.cpp
-    #FilletBasePy.xml
-    #FilletBasePyImp.cpp
+    FilletBasePy.xml
+    FilletBasePyImp.cpp
     AttachableObjectPy.xml
     AttachableObjectPyImp.cpp
     Part2DObjectPy.xml

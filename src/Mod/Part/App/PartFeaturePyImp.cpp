@@ -46,7 +46,3 @@ int PartFeaturePy::setCustomAttributes(const char* attr, PyObject *obj)
 {
     return 0; 
 }
-
-int PartFeaturePy::setEdge(){
-    return 0;
-}
