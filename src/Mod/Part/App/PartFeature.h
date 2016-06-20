@@ -84,21 +84,21 @@ protected:
     ShapeHistory joinHistory(const ShapeHistory&, const ShapeHistory&);
 };
 
-class FilletBase : public Part::Feature
-{
-    PROPERTY_HEADER(Part::FilletBase);
+//class FilletBase : public Part::Feature
+//{
+    //PROPERTY_HEADER(Part::FilletBase);
 
-public:
-    FilletBase();
+//public:
+    //FilletBase();
 
-    App::PropertyLink   Base;
-    Part::PropertyFilletEdges Edges;
+    //App::PropertyLink   Base;
+    //PropertyFilletEdges Edges;
 
-    void setEdge(int id, double r1, double r2);
-    void setEdges(const std::vector<Part::FilletElement>& values);
+    //void setEdge(int id, double r1, double r2);
+    //void setEdges(const std::vector<FilletElement>& values);
 
-    short mustExecute() const;
-};
+    //short mustExecute() const;
+//};
 
 typedef App::FeaturePythonT<Feature> FeaturePython;
 

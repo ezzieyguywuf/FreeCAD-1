@@ -128,6 +128,8 @@ SET(Features_SRCS
     PartFeatures.h
     PartFeature.cpp
     PartFeature.h
+    FilletBase.cpp
+    FilletBase.h
     PartFeatureReference.cpp
     PartFeatureReference.h
     Part2DObject.cpp
