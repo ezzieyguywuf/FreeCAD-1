@@ -497,10 +497,14 @@ void TopoShape::setShape(BRepAlgoAPI_Fuse& mkFuse){
     }
 }
 
-void selectEdge(const TopoDS_Edge, const TopoDS_Shape){
+std::string TopoShape::selectEdge(const TopoDS_Edge anEdge, const TopoDS_Shape aContext){
+    std::string edgeLabel = this->_TopoNamer.SelectEdge(anEdge, aContext);
+    return edgeLabel;
 }
 
-void selectEdges(const TopoDS_Edge, const TopoDS_Shape){
+std::vector<std::string> TopoShape::selectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape aContext){
+    std::vector<std::string> edgeLabels = this->_TopoNamer.SelectEdges(Edges, aContext);
+    return edgeLabels;
 }
 
 void TopoShape::DumpTopoHistory() const{
