@@ -23,7 +23,8 @@
 
 #include "PreCompiled.h"
 
-#include "PartFeature.h"
+//#include "PartFeature.h"
+#include "FilletBase.h"
 
 // inclusion of the generated files (generated out of FilletBasePy.xml)
 #include "FilletBasePy.h"
@@ -34,7 +35,7 @@ using namespace Part;
 // returns a string which represent the object e.g. when printed in python
 std::string FilletBasePy::representation(void) const
 {
-    return std::string("<Part::PartFeature::FilletBase>");
+    return std::string("<Part::FilletBase>");
 }
 
 PyObject *FilletBasePy::getCustomAttributes(const char* attr) const
@@ -49,5 +50,7 @@ int FilletBasePy::setCustomAttributes(const char* attr, PyObject *obj)
 
 
 PyObject* FilletBasePy::setEdge(PyObject *args){
+    Part::FilletBase* Base = getFilletBasePtr();
+    Base->setEdge(1, 2., 5.);
     return Py::new_reference_to(Py::String("Not implemented yet"));
 }

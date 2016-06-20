@@ -64,10 +64,13 @@ public:
     TopoShape(const TopoShape&);
     ~TopoShape();
 
+    // Functions added for TNaming stuff
     void operator = (const TopoShape& sh);
     void setShape(const TopoDS_Shape& sh);
     void setShape(const TopoShape& sh);
     void setShape(BRepAlgoAPI_Fuse& mkFuse);
+    void selectEdge(const TopoDS_Edge, const TopoDS_Shape);
+    void selectEdges(const TopoDS_Edge, const TopoDS_Shape);
     void DumpTopoHistory() const;
 
     /** @name Placement control */

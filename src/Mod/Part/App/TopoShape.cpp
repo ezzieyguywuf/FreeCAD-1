@@ -497,6 +497,12 @@ void TopoShape::setShape(BRepAlgoAPI_Fuse& mkFuse){
     }
 }
 
+void selectEdge(const TopoDS_Edge, const TopoDS_Shape){
+}
+
+void selectEdges(const TopoDS_Edge, const TopoDS_Shape){
+}
+
 void TopoShape::DumpTopoHistory() const{
     this->_TopoNamer.DeepDump();
 }

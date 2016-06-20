@@ -211,7 +211,7 @@ PyMODINIT_FUNC initPart()
                                                             ::Type,partModule,"RectangularTrimmedSurface");
 
     Base::Interpreter().addType(&Part::PartFeaturePy        ::Type,partModule,"Feature");
-    Base::Interpreter().addType(&Part::FilletBasePy         ::Type,partModule,"FeatureBaseFillet");
+    Base::Interpreter().addType(&Part::FilletBasePy         ::Type,partModule,"FilletBase");
 
     Base::Interpreter().addType(&Attacher::AttachEnginePy   ::Type,partModule,"AttachEngine");
 
