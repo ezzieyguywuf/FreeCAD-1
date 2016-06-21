@@ -65,7 +65,6 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         TopExp::MapShapes(base->Shape.getValue(), TopAbs_EDGE, mapOfShape);
 
         TopoShape myTopoShape = base->Shape.getShape();
-        TopTools_ListOfShape listOfEdges;
 
         std::vector<FilletElement> values = Edges.getValues();
         for (std::vector<FilletElement>::iterator it = values.begin(); it != values.end(); ++it) {
@@ -74,7 +73,6 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
             double radius2 = it->radius2;
             const TopoDS_Edge& edge = TopoDS::Edge(mapOfShape.FindKey(id));
             mkFillet.Add(radius1, radius2, edge);
-            listOfEdges.Append(edge);
         }
 
         TopoDS_Shape BaseShape = base->Shape.getValue();
@@ -94,7 +92,7 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         prop.touch();
 
         Base::Console().Message("-----Tracking Fillet\n");
-        MyTopoShape._TopoNamer.TrackFilletOperation(listOfEdges, BaseShape, mkFillet);
+        MyTopoShape._TopoNamer.TrackFilletOperation(BaseShape, mkFillet);
 
         Base::Console().Message("-----Exitting fillet thing \n");
         return App::DocumentObject::StdReturn;

@@ -184,22 +184,22 @@ const char* BRepBuilderAPI_FaceErrorText(BRepBuilderAPI_FaceError et)
 {
     switch (et)
     {
-    case BRepBuilderAPI_FaceDone:
-        return "Construction was successful";
-    case BRepBuilderAPI_NoFace:
-        return "No face";
-    case BRepBuilderAPI_NotPlanar:
-        return "Face is not planar";
-    case BRepBuilderAPI_CurveProjectionFailed:
-        return "Curve projection failed";
-    case BRepBuilderAPI_ParametersOutOfRange:
-        return "Parameters out of range";
+        case BRepBuilderAPI_FaceDone:
+            return "Construction was successful";
+        case BRepBuilderAPI_NoFace:
+            return "No face";
+        case BRepBuilderAPI_NotPlanar:
+            return "Face is not planar";
+        case BRepBuilderAPI_CurveProjectionFailed:
+            return "Curve projection failed";
+        case BRepBuilderAPI_ParametersOutOfRange:
+            return "Parameters out of range";
 #if OCC_VERSION_HEX < 0x060500
-    case BRepBuilderAPI_SurfaceNotC2:
-        return "Surface not C2-continous";
+        case BRepBuilderAPI_SurfaceNotC2:
+            return "Surface not C2-continous";
 #endif
-    default:
-        return "Unknown creation error";
+        default:
+            return "Unknown creation error";
     }
 }
 
@@ -226,17 +226,18 @@ TopoShape::~TopoShape()
 }
 
 TopoShape::TopoShape(const TopoDS_Shape& shape)
-  : _Shape(shape)
+    : _Shape(shape)
 {
     Base::Console().Message("-----Instantiated TopoShape with TopoDS_Shape\n");
     _TopoNamer.TrackGeneratedShape(shape);
 }
 
 TopoShape::TopoShape(const TopoShape& shape)
-  : _Shape(shape._Shape)
+    : _Shape(shape._Shape)
 {
     Base::Console().Message("-----Instantiated TopoShape with TopoShape\n");
     _TopoNamer = shape._TopoNamer;
+    _TopoNamer.DeepDump();
 }
 
 std::vector<const char*> TopoShape::getElementTypes(void) const
@@ -263,21 +264,21 @@ Data::Segment* TopoShape::getSubElement(const char* Type, unsigned long n) const
 }
 
 void TopoShape::getLinesFromSubelement(const Data::Segment* element,
-                                       std::vector<Base::Vector3d> &Points,
-                                       std::vector<Line> &lines) const
+        std::vector<Base::Vector3d> &Points,
+        std::vector<Line> &lines) const
 {
 }
 
 void TopoShape::getFacesFromSubelement(const Data::Segment* element,
-                                       std::vector<Base::Vector3d> &Points,
-                                       std::vector<Base::Vector3d> &PointNormals,
-                                       std::vector<Facet> &faces) const
+        std::vector<Base::Vector3d> &Points,
+        std::vector<Base::Vector3d> &PointNormals,
+        std::vector<Facet> &faces) const
 {
     if (element->getTypeId() == ShapeSegment::getClassTypeId()) {
         const TopoDS_Shape& shape = static_cast<const ShapeSegment*>(element)->Shape;
         if (shape.IsNull() || shape.ShapeType() != TopAbs_FACE)
             return;
-    
+
         TopLoc_Location aLoc;
         // doing the meshing and checking the result
         Handle(Poly_Triangulation) aPoly = BRep_Tool::Triangulation(TopoDS::Face(shape),aLoc);
@@ -505,6 +506,11 @@ std::string TopoShape::selectEdge(const TopoDS_Edge anEdge, const TopoDS_Shape a
 std::vector<std::string> TopoShape::selectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape aContext){
     std::vector<std::string> edgeLabels = this->_TopoNamer.SelectEdges(Edges, aContext);
     return edgeLabels;
+}
+
+TopoDS_Edge TopoShape::getSelectedEdge(const std::string NodeTag) const{
+    TopoDS_Edge selectedEdge = this->_TopoNamer.GetSelectedEdge(NodeTag);
+    return selectedEdge;
 }
 
 void TopoShape::DumpTopoHistory() const{

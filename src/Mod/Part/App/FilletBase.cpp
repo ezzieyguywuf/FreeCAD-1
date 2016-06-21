@@ -3,6 +3,7 @@
 #include <Base/Console.h>
 
 #include <TopoDS.hxx>
+#include <TopExp.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 
 #include "PropertyTopoShape.h"
@@ -32,26 +33,46 @@ short FilletBase::mustExecute() const
 //}
 
 void FilletBase::setEdge(int id, double r1, double r2){
-    Base::Console().Message("'setEdge' in PartFeature.cpp called\n");
-    // Get a reference to the Part::Feature
+    App::DocumentObject* link = Base.getValue();
+    if (!link)
+        return; // No object Linked
+    if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
+        return; // Linked object is not a Part
     Part::Feature *base = static_cast<Part::Feature*>(Base.getValue());
 
-    // Get a reference to the TopoDS_Shape and TopoShape
-    TopoDS_Shape BaseShape = base->Shape.getValue();
-    TopoShape myTopoShape  = base->Shape.getShape();
+    try {
+#if defined(__GNUC__) && defined (FC_OS_LINUX)
+        Base::SignalException se;
+#endif
+        Base::Console().Message("'setEdge' in FilletBase.cpp called\n");
+        // Get a reference to the Part::Feature
 
-    // Get a list of all the edges
-    TopTools_IndexedMapOfShape listOfEdges;
-    TopExp::MapShapes(BaseShape, TopAbs_EDGE, listOfEdges);
+        // Get a reference to the TopoDS_Shape and TopoShape
+        Base::Console().Message("Getting TopoDS_Shape\n");
+        // Get a reference to the Part::Feature
+        TopoDS_Shape BaseShape = base->Shape.getValue();
+        Base::Console().Message("Getting TopoShape\n");
+        TopoShape myTopoShape  = base->Shape.getShape();
 
-    // Get the specific edge, I hope
-    TopoDS_Edge anEdge = TopoDS::Edge(listOfEdges.FindKey(id));
+        // Get a list of all the edges
+        TopTools_IndexedMapOfShape listOfEdges;
+        TopExp::MapShapes(BaseShape, TopAbs_EDGE, listOfEdges);
 
-    // 'Select' this edge, or retrieve the TDF_Label if it's already been selected
-    std::string selectionLabel = myTopoShape.selectEdge(anEdge, BaseShape);
-    // This following setValue is defined in PropertyTopoShape, and is the original
-    // implementation
-    this->Edges.setValue(id, r1, r2, selectionLabel);
+        // Get the specific edge, I hope
+        TopoDS_Edge anEdge = TopoDS::Edge(listOfEdges.FindKey(id));
+
+        // 'Select' this edge, or retrieve the TDF_Label if it's already been selected
+        Base::Console().Message("Calling selectEdge\n");
+        std::string selectionLabel = myTopoShape.selectEdge(anEdge, BaseShape);
+        // This following setValue is defined in PropertyTopoShape, and is the original
+        // implementation
+        this->Edges.setValue(id, r1, r2, selectionLabel);
+    }
+    catch (Standard_Failure) {
+        Handle_Standard_Failure e = Standard_Failure::Caught();
+    }
+    catch (...) {
+    }
 }
 void FilletBase::setEdges(const std::vector<FilletElement>& values){
 }

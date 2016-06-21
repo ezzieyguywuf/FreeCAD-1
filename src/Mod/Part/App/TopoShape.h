@@ -73,6 +73,7 @@ public:
     void DumpTopoHistory() const;
     std::string selectEdge(const TopoDS_Edge anEdge, const TopoDS_Shape aContext);
     std::vector<std::string> selectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape aContext);
+    TopoDS_Edge getSelectedEdge(const std::string NodeTag) const;
 
     /** @name Placement control */
     //@{

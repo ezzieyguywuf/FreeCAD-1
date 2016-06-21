@@ -26,14 +26,15 @@ class TopoNamingHelper{
         void AddTextToLabel(const TDF_Label& Label, char const *str);
         std::string SelectEdge(const TopoDS_Edge anEdge, const TopoDS_Shape aShape);
         std::vector<std::string> SelectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape aShape);
+        TopoDS_Edge GetSelectedEdge(const std::string NodeTag) const;
         void Dump() const;
         void Dump(std::ostream& stream) const;
         void DeepDump(std::ostream& stream) const;
         void DeepDump() const;
 
-    private:
+    //private:
         bool CheckIfSelectionExists(const TDF_Label aNode, const TopoDS_Shape aShape) const;
         Handle(TDF_Data) myDataFramework = new TDF_Data();
         TDF_Label myRootNode = myDataFramework->Root();
-        TDF_Label mySelectionNode = TDF_TagSource::NewChild(myRootNode);
+        TDF_Label mySelectionNode;
 };
