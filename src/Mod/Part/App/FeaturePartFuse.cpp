@@ -76,16 +76,14 @@ short MultiFuse::mustExecute() const
 App::DocumentObjectExecReturn *MultiFuse::execute(void)
 {
     std::vector<TopoDS_Shape> s;
-    // Also need the TopoShape's in order to save the history
+    // Also need the TopoShape's in order to save the TNaming history
     std::vector<TopoShape> TopoShapes;
-    //TopoShape firstTopoShape;
-    std::vector<App::DocumentObject*> obj = Shapes.getValues();
 
+    std::vector<App::DocumentObject*> obj = Shapes.getValues();
     std::vector<App::DocumentObject*>::iterator it;
     for (it = obj.begin(); it != obj.end(); ++it) {
         if ((*it)->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) {
             s.push_back(static_cast<Part::Feature*>(*it)->Shape.getValue());
-            //if it.
             TopoShapes.push_back(static_cast<Part::Feature*>(*it)->Shape.getShape());
         }
     }
@@ -94,6 +92,9 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
         try {
             std::vector<ShapeHistory> history;
 #if OCC_VERSION_HEX <= 0x060800
+            // TODO Check if TNaming stuff needs different things in this if OCC_VERSION
+            // block. DONE - the answer is no, there's no tnaming specific stuff in these
+            // two blocks
             TopoDS_Shape resShape = s.front();
             if (resShape.IsNull())
                 throw Base::Exception("Input shape is null");
@@ -102,7 +103,6 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
                     throw Base::Exception("Input shape is null");
 
                 // Let's call algorithm computing a fuse operation:
-                Base::Console().Message("-----Calling Fuse from FeaturePartFuse 2\n");
                 BRepAlgoAPI_Fuse mkFuse(resShape, *it);
                 // Let's check if the fusion has been successful
                 if (!mkFuse.IsDone()) 
@@ -122,8 +122,10 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
                 }
             }
 #else
-            Base::Console().Message("-----Calling Fuse from FeaturePartFuse 3\n");
+            Base::Console().Message("-----Calling Fuse from FeaturePartFuse\n");
             BRepAlgoAPI_Fuse mkFuse;
+
+            // Check if any of the input shapes are null :-/
             TopTools_ListOfShape shapeArguments,shapeTools;
             shapeArguments.Append(s.front());
             for (std::vector<TopoDS_Shape>::iterator it = s.begin()+1; it != s.end(); ++it) {
@@ -131,6 +133,9 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
                     throw Base::Exception("Input shape is null");
                 shapeTools.Append(*it);
             }
+
+            // Finally, set the Fuse arguments - TODO what happens if the length of len(s)
+            // == 2 and one or more were null? Now we don't have enough for a fuse...
             mkFuse.SetArguments(shapeArguments);
             mkFuse.SetTools(shapeTools);
             mkFuse.Build();
@@ -152,6 +157,7 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
                     return new App::DocumentObjectExecReturn("Resulting shape is invalid");
                 }
             }
+
             if (hGrp->GetBool("RefineModel", false)) {
                 TopoDS_Shape oldShape = resShape;
                 BRepBuilderAPI_RefineModel mkRefine(oldShape);
@@ -161,14 +167,12 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
                     *jt = joinHistory(*jt, hist);
             }
 
-            if (!TopoShapes.empty()){
-                this->Shape.setValue(TopoShapes.front());
-                this->Shape.getShape().DumpTopoHistory();
-            }
-            //this->Shape.setValue(resShape);
-            Base::Console().Message("----calling setValue from FeaturePartFuse\n");
-            this->Shape.setValue(mkFuse);
-            Base::Console().Message("----done calling setValue from FeaturePartFuse\n");
+            // this 'setValue' will setShape appropriately as well as add a node to the
+            // TNaming tree. See the setShape call in TopoShape.cpp for more info. TODO:
+            // for now, we only keep the topological history of the first TopoShape. Must
+            // find a way to merge topo histories
+            this->Shape.setValue(mkFuse, TopoShapes.front());
+            //Base::Console().Message("----done calling setValue from FeaturePartFuse\n");
             this->History.setValues(history);
         }
         catch (Standard_Failure) {

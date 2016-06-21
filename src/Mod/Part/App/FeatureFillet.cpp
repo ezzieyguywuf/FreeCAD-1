@@ -55,16 +55,21 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
     if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
         return new App::DocumentObjectExecReturn("Linked object is not a Part object");
     Part::Feature *base = static_cast<Part::Feature*>(Base.getValue());
+    Base::Console().Message("-----recovered TopoShape from somewhere, dumping tree\n");
+    base->Shape.getShape().DumpTopoHistory();
 
     try {
 #if defined(__GNUC__) && defined (FC_OS_LINUX)
         Base::SignalException se;
 #endif
+        TopoShape myTopoShape = base->Shape.getShape();
+        // Instead of using the TopoDS_Shape stored in the App::PropertyLink, let's grab
+        // the one from our TopoShape, so that we know it's part of our TNaming tree
         BRepFilletAPI_MakeFillet mkFillet(base->Shape.getValue());
+        //BRepFilletAPI_MakeFillet mkFillet(myTopoShape.getShape());
         TopTools_IndexedMapOfShape mapOfShape;
         TopExp::MapShapes(base->Shape.getValue(), TopAbs_EDGE, mapOfShape);
 
-        TopoShape myTopoShape = base->Shape.getShape();
 
         std::vector<FilletElement> values = Edges.getValues();
         for (std::vector<FilletElement>::iterator it = values.begin(); it != values.end(); ++it) {

@@ -518,6 +518,7 @@ App::DocumentObjectExecReturn *Cylinder::execute(void)
     if (Height.getValue() < Precision::Confusion())
         return new App::DocumentObjectExecReturn("Height of cylinder too small");
     try {
+        Base::Console().Message("Creating cylinder in PrimitiveFeature.cpp\n");
         BRepPrimAPI_MakeCylinder mkCylr(Radius.getValue(),
                                         Height.getValue(),
                                         Angle.getValue()/180.0f*M_PI);

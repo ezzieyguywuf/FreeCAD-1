@@ -218,7 +218,7 @@ TYPESYSTEM_SOURCE(Part::TopoShape , Data::ComplexGeoData);
 
 TopoShape::TopoShape()
 {
-    Base::Console().Message("-----Instantiated blank TopoShape\n");
+    //Base::Console().Message("-----Instantiated blank TopoShape\n");
 }
 
 TopoShape::~TopoShape()
@@ -228,7 +228,7 @@ TopoShape::~TopoShape()
 TopoShape::TopoShape(const TopoDS_Shape& shape)
     : _Shape(shape)
 {
-    Base::Console().Message("-----Instantiated TopoShape with TopoDS_Shape\n");
+    //Base::Console().Message("-----Instantiated TopoShape with TopoDS_Shape\n");
     _TopoNamer.TrackGeneratedShape(shape);
 }
 
@@ -237,7 +237,7 @@ TopoShape::TopoShape(const TopoShape& shape)
 {
     Base::Console().Message("-----Instantiated TopoShape with TopoShape\n");
     _TopoNamer = shape._TopoNamer;
-    _TopoNamer.DeepDump();
+    //_TopoNamer.DeepDump();
 }
 
 std::vector<const char*> TopoShape::getElementTypes(void) const
@@ -470,7 +470,7 @@ void TopoShape::operator = (const TopoShape& sh)
 void TopoShape::setShape(const TopoDS_Shape& sh){
     if (!this->_Shape.IsEqual(sh)){
         this->_Shape = sh;
-        Base::Console().Message("-----NOTE! EVOLUTION = BRAND NEW?!\n");
+        //Base::Console().Message("-----NOTE! EVOLUTION = BRAND NEW?!\n");
         TopoNamingHelper newTopoNamer;
         this->_TopoNamer = newTopoNamer;
         this->_TopoNamer.TrackGeneratedShape(sh);
@@ -480,7 +480,7 @@ void TopoShape::setShape(const TopoDS_Shape& sh){
 void TopoShape::setShape(const TopoShape& sh){
     //if (!this->_Shape.IsEqual(sh._Shape)){
         this->_Shape = sh._Shape;
-        Base::Console().Message("-----Copying topological evolution...\n");
+        //Base::Console().Message("-----Copying topological evolution...\n");
         this->_TopoNamer = sh._TopoNamer;
         //std::ostringstream output;
         //this->_TopoNamer.DeepDump(output);
@@ -488,13 +488,15 @@ void TopoShape::setShape(const TopoShape& sh){
     //}
 }
 
-void TopoShape::setShape(BRepAlgoAPI_Fuse& mkFuse){
+void TopoShape::setShape(BRepAlgoAPI_Fuse& mkFuse, const TopoShape& Shape){
     TopoDS_Shape resShape = mkFuse.Shape();
     if (!this->_Shape.IsEqual(resShape)){
+        // First, copy the _TopoNamer from the passed shape
+        this->_TopoNamer = Shape._TopoNamer;
+        // Now, store the result shape
         this->_Shape = resShape;
-        Base::Console().Message("-----Adding Fuse to topological evolution\n");
+        // Finally, track the new fused shape in the Topo Tree.
         this->_TopoNamer.TrackFuseOperation(mkFuse);
-        Base::Console().Message("-----Done tracking Fuse evolution\n");
     }
 }
 
