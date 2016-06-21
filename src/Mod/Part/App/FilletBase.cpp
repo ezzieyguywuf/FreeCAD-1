@@ -78,7 +78,7 @@ void FilletBase::setEdges(std::vector<FilletElement>& values){
     int curID;
     double rad1, rad2;
     std::string curSelectionLabel;
-    for ((std::vector<FilletElement>::iterator it = values.begin()); it != values.end(); ++it){
+    for (std::vector<FilletElement>::iterator it = (values.begin()); it != values.end(); ++it){
         curID = it->edgeid;
         rad1  = it->radius1;
         rad2  = it->radius2;

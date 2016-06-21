@@ -68,10 +68,12 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
 
         std::vector<FilletElement> values = Edges.getValues();
         for (std::vector<FilletElement>::iterator it = values.begin(); it != values.end(); ++it) {
-            int id = it->edgeid;
-            double radius1 = it->radius1;
-            double radius2 = it->radius2;
-            const TopoDS_Edge& edge = TopoDS::Edge(mapOfShape.FindKey(id));
+            int id                  = it->edgeid; // not used anymore
+            double radius1          = it->radius1;
+            double radius2          = it->radius2;
+            std::string edgetag     = it->edgetag;
+            //const TopoDS_Edge& edge = TopoDS::Edge(mapOfShape.FindKey(id));
+            const TopoDS_Edge& edge = myTopoShape.getSelectedEdge(edgetag);
             mkFillet.Add(radius1, radius2, edge);
         }
 
