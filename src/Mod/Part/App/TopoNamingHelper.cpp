@@ -44,6 +44,11 @@ TopoNamingHelper::~TopoNamingHelper(){
     Base::Console().Message("-----UnInstantiated TopoNamingHelper\n");
 }
 
+void TopoNamingHelper::operator = (const TopoNamingHelper& helper){
+    this->myDataFramework = helper.myDataFramework;
+    this->myRootNode      = helper.myRootNode;
+    this->mySelectionNode = helper.mySelectionNode;
+}
 
 void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape){
     Base::Console().Message("-----Tracking Generated Shape\n");
@@ -367,10 +372,4 @@ void TopoNamingHelper::DeepDump() const{
     std::ostringstream output;
     DeepDump(output);
     Base::Console().Message(output.str().c_str());
-}
-
-void TopoNamingHelper::operator = (const TopoNamingHelper& helper){
-    this->myDataFramework = helper.myDataFramework;
-    this->myRootNode      = helper.myRootNode;
-    this->mySelectionNode = helper.mySelectionNode;
 }

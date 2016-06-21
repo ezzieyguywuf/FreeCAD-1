@@ -18,5 +18,10 @@
         <UserDocu>Write a single Edge to the TNaming Data Framework</UserDocu>
       </Documentation>
     </Methode>
+    <Methode Name="setEdges">
+      <Documentation>
+        <UserDocu>Write a tuple of Edges to the TNaming Data Framework</UserDocu>
+      </Documentation>
+    </Methode>
   </PythonExport>
 </GenerateModel>

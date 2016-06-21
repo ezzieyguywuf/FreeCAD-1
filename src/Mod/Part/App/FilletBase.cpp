@@ -75,6 +75,15 @@ void FilletBase::setEdge(int id, double r1, double r2){
     }
 }
 void FilletBase::setEdges(const std::vector<FilletElement>& values){
+    FilletElement curElement;
+    int curID;
+    double rad1, rad2;
+    for (std::vector<FilletElement>::const_iterator it = values.begin(); it != values.end(); ++it){
+        curID = it->edgeid;
+        rad1  = it->radius1;
+        rad2  = it->radius2;
+        this->setEdge(curID, rad1, rad2);
+    }
 }
 
 PyObject *FilletBase::getPyObject(void)
