@@ -19,11 +19,13 @@ namespace Part{
         PropertyFilletEdges Edges;
 
         void setEdge(int id, double r1, double r2);
-        void setEdges(const std::vector<Part::FilletElement>& values);
+        void setEdges(std::vector<Part::FilletElement>& values);
         
         virtual PyObject* getPyObject(void);
 
         short mustExecute() const;
+    private:
+        std::string getSelectedEdgeLabel(int id, double r1, double r2) const;
     };
 } // namespace Part
 

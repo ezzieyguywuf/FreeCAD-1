@@ -32,58 +32,60 @@ short FilletBase::mustExecute() const
     //Base::Console().Message("setValue in FilletBase called");
 //}
 
-void FilletBase::setEdge(int id, double r1, double r2){
+std::string FilletBase::getSelectedEdgeLabel(int id, double r1, double r2) const{
     App::DocumentObject* link = Base.getValue();
-    if (!link)
-        return; // No object Linked
-    if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
-        return; // Linked object is not a Part
+    if (!link){
+        Standard_Failure::Raise("ERROR: No object found\n");
+        return ""; // No object Linked
+    }
+    if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())){
+        Standard_Failure::Raise("ERROR: linked object is not a part\n");
+        return ""; // Linked object is not a Part
+    }
     Part::Feature *base = static_cast<Part::Feature*>(Base.getValue());
 
-    try {
-#if defined(__GNUC__) && defined (FC_OS_LINUX)
-        Base::SignalException se;
-#endif
-        Base::Console().Message("'setEdge' in FilletBase.cpp called\n");
-        // Get a reference to the Part::Feature
+    Base::Console().Message("'setEdge' in FilletBase.cpp called\n");
+    // Get a reference to the Part::Feature
 
-        // Get a reference to the TopoDS_Shape and TopoShape
-        Base::Console().Message("Getting TopoDS_Shape\n");
-        // Get a reference to the Part::Feature
-        TopoDS_Shape BaseShape = base->Shape.getValue();
-        Base::Console().Message("Getting TopoShape\n");
-        TopoShape myTopoShape  = base->Shape.getShape();
+    // Get a reference to the TopoDS_Shape and TopoShape
+    Base::Console().Message("Getting TopoDS_Shape\n");
+    // Get a reference to the Part::Feature
+    TopoDS_Shape BaseShape = base->Shape.getValue();
+    Base::Console().Message("Getting TopoShape\n");
+    TopoShape myTopoShape  = base->Shape.getShape();
 
-        // Get a list of all the edges
-        TopTools_IndexedMapOfShape listOfEdges;
-        TopExp::MapShapes(BaseShape, TopAbs_EDGE, listOfEdges);
+    // Get a list of all the edges
+    TopTools_IndexedMapOfShape listOfEdges;
+    TopExp::MapShapes(BaseShape, TopAbs_EDGE, listOfEdges);
 
-        // Get the specific edge, I hope
-        TopoDS_Edge anEdge = TopoDS::Edge(listOfEdges.FindKey(id));
+    // Get the specific edge, I hope
+    TopoDS_Edge anEdge = TopoDS::Edge(listOfEdges.FindKey(id));
 
-        // 'Select' this edge, or retrieve the TDF_Label if it's already been selected
-        Base::Console().Message("Calling selectEdge\n");
-        std::string selectionLabel = myTopoShape.selectEdge(anEdge, BaseShape);
-        // This following setValue is defined in PropertyTopoShape, and is the original
-        // implementation
-        this->Edges.setValue(id, r1, r2, selectionLabel);
-    }
-    catch (Standard_Failure) {
-        Handle_Standard_Failure e = Standard_Failure::Caught();
-    }
-    catch (...) {
-    }
+    // 'Select' this edge, or retrieve the TDF_Label if it's already been selected
+    Base::Console().Message("Calling selectEdge\n");
+    std::string selectionLabel = myTopoShape.selectEdge(anEdge, BaseShape);
+    return selectionLabel;
 }
-void FilletBase::setEdges(const std::vector<FilletElement>& values){
+
+void FilletBase::setEdge(int id, double r1, double r2){
+    // This following setValue is defined in PropertyTopoShape, and is the original
+    // implementation
+    std::string selectionLabel = getSelectedEdgeLabel(id, r1, r2);
+    this->Edges.setValue(id, r1, r2, selectionLabel);
+}
+void FilletBase::setEdges(std::vector<FilletElement>& values){
     FilletElement curElement;
     int curID;
     double rad1, rad2;
-    for (std::vector<FilletElement>::const_iterator it = values.begin(); it != values.end(); ++it){
+    std::string curSelectionLabel;
+    for ((std::vector<FilletElement>::iterator it = values.begin()); it != values.end(); ++it){
         curID = it->edgeid;
         rad1  = it->radius1;
         rad2  = it->radius2;
-        this->setEdge(curID, rad1, rad2);
+        curSelectionLabel = getSelectedEdgeLabel(curID, rad1, rad2);
+        it->edgetag = curSelectionLabel;
     }
+    this->Edges.setValues(values);
 }
 
 PyObject *FilletBase::getPyObject(void)
