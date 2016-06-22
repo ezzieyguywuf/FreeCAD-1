@@ -54,16 +54,9 @@ std::string FilletBase::getSelectedEdgeLabel(int id, double r1, double r2) const
     Base::Console().Message("Getting TopoShape\n");
     TopoShape myTopoShape  = base->Shape.getShape();
 
-    // Get a list of all the edges
-    TopTools_IndexedMapOfShape listOfEdges;
-    TopExp::MapShapes(BaseShape, TopAbs_EDGE, listOfEdges);
-
-    // Get the specific edge, I hope
-    TopoDS_Edge anEdge = TopoDS::Edge(listOfEdges.FindKey(id));
-
     // 'Select' this edge, or retrieve the TDF_Label if it's already been selected
     Base::Console().Message("Calling selectEdge\n");
-    std::string selectionLabel = myTopoShape.selectEdge(anEdge, BaseShape);
+    std::string selectionLabel = myTopoShape.selectEdge(id);
     return selectionLabel;
 }
 

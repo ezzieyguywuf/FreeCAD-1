@@ -1,4 +1,14 @@
-#include <iostream>
+#include "PreCompiled.h"
+
+// NOTE:: ifdef rather than ifndef. This is for integration with my other local
+// freecadTopoTesting thing
+#ifdef _PreComp_
+#include <zipios++/zipfile.h>
+#include <zipios++/zipinputstream.h>
+#include <zipios++/zipoutputstream.h>
+#include <zipios++/meta-iostreams.h>
+#endif
+
 #include <vector>
 
 #include <TDataStd_AsciiString.hxx>
@@ -22,6 +32,8 @@
 #include <TNaming_Selector.hxx>
 #include <TNaming_NamedShape.hxx>
 
+#include <BRepTools.hxx>
+
 TopoNamingHelper::TopoNamingHelper(){
     //std::clog << "-----Instantiated TopoNamingHelper\n";
     mySelectionNode = TDF_TagSource::NewChild(myRootNode);
@@ -29,7 +41,7 @@ TopoNamingHelper::TopoNamingHelper(){
 }
 
 TopoNamingHelper::TopoNamingHelper(const TopoNamingHelper& existing){
-    std::clog << "-----Copying TopoNaming stuff\n";
+    //std::clog << "-----Copying TopoNaming stuff\n";
     this->myDataFramework = existing.myDataFramework;
     this->myRootNode      = existing.myRootNode;
     this->mySelectionNode = existing.mySelectionNode;
@@ -40,7 +52,7 @@ TopoNamingHelper::~TopoNamingHelper(){
 }
 
 void TopoNamingHelper::operator = (const TopoNamingHelper& helper){
-    std::clog << "-----Setting operator = TopoNaming stuff\n";
+    //std::clog << "-----Setting operator = TopoNaming stuff\n";
     this->myDataFramework = helper.myDataFramework;
     this->myRootNode      = helper.myRootNode;
     this->mySelectionNode = helper.mySelectionNode;
@@ -376,4 +388,33 @@ void TopoNamingHelper::DeepDump() const{
     std::ostringstream output;
     DeepDump(output);
     std::cout << output.str();
+}
+
+void TopoNamingHelper::WriteShape(const TDF_Label aLabel, const std::string NameBase, const int numb) const{
+    Handle(TNaming_NamedShape) WriteNS;
+    aLabel.FindAttribute(TNaming_NamedShape::GetID(), WriteNS);
+    TopoDS_Shape ShapeToWrite = WriteNS->Get();
+    std::ostringstream outname;
+    outname << NameBase << "_" << numb << ".brep";
+    std::cout << "writing " << outname.str() << std::endl;
+    BRepTools::Write(ShapeToWrite, outname.str().c_str());
+}
+
+void TopoNamingHelper::WriteNode(const std::string NodeTag, const std::string NameBase, const bool Deep) const{
+    TDF_Label WriteNode;
+    TDF_Tool::Label(myDataFramework, NodeTag.c_str(), WriteNode);
+    if (!WriteNode.IsNull()){
+        this->WriteShape(WriteNode, NameBase, 0);
+        if (Deep){
+            TDF_ChildIterator NodeIterator(WriteNode, Standard_True);
+            int i=1;
+            for(;NodeIterator.More(); NodeIterator.Next(), i++){
+                TDF_Label curLabel = NodeIterator.Value();
+                this->WriteShape(curLabel, NameBase, i);
+            }
+        }
+    }
+    else{
+        std::runtime_error("That Node does not appear to exist on the Data Framework");
+    }
 }

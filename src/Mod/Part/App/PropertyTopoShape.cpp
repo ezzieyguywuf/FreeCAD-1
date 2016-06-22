@@ -94,10 +94,10 @@ void PropertyPartShape::setValue(const TopoDS_Shape& sh)
     hasSetValue();
 }
 
-void PropertyPartShape::setValue(BRepAlgoAPI_Fuse& mkFuse, const TopoShape& Shape)
+void PropertyPartShape::setValue(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse)
 {
     aboutToSetValue();
-    _Shape.setShape(mkFuse, Shape);
+    _Shape.setShape(Shape, mkFuse);
     //_Shape._Shape = sh;
     hasSetValue();
 }

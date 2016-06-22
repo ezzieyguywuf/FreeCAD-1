@@ -98,10 +98,9 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         prop.setContainer(this);
         prop.touch();
 
-        Base::Console().Message("-----Tracking Fillet\n");
-        MyTopoShape._TopoNamer.TrackFilletOperation(BaseShape, mkFillet);
+        // Track the Fillet operation using TNaming
+        MyTopoShape.setShape(BaseShape, mkFillet);
 
-        Base::Console().Message("-----Exitting fillet thing \n");
         return App::DocumentObject::StdReturn;
     }
     catch (Standard_Failure) {

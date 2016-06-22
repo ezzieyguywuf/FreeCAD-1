@@ -171,7 +171,7 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
             // TNaming tree. See the setShape call in TopoShape.cpp for more info. TODO:
             // for now, we only keep the topological history of the first TopoShape. Must
             // find a way to merge topo histories
-            this->Shape.setValue(mkFuse, TopoShapes.front());
+            this->Shape.setValue(TopoShapes.front(), mkFuse);
             //Base::Console().Message("----done calling setValue from FeaturePartFuse\n");
             this->History.setValues(history);
         }

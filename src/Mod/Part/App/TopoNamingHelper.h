@@ -32,6 +32,9 @@ class TopoNamingHelper{
         void DeepDump(std::ostream& stream) const;
         void DeepDump() const;
 
+        void WriteShape(const TDF_Label aLabel, const std::string NameBase, const int numb) const;
+        void WriteNode(const std::string NodeTag, const std::string NameBase, const bool Deep) const;
+
     //private:
         bool CheckIfSelectionExists(const TDF_Label aNode, const TopoDS_Shape aShape) const;
         Handle(TDF_Data) myDataFramework = new TDF_Data();

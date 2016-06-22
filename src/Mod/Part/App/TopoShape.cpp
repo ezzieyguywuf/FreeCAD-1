@@ -467,28 +467,26 @@ void TopoShape::operator = (const TopoShape& sh)
     }
 }
 
-void TopoShape::setShape(const TopoDS_Shape& sh){
-    if (!this->_Shape.IsEqual(sh)){
-        this->_Shape = sh;
-        //Base::Console().Message("-----NOTE! EVOLUTION = BRAND NEW?!\n");
-        TopoNamingHelper newTopoNamer;
-        this->_TopoNamer = newTopoNamer;
-        this->_TopoNamer.TrackGeneratedShape(sh);
-    }
+TopoDS_Shape TopoShape::getShape() const{
+    return _Shape;
 }
 
-void TopoShape::setShape(const TopoShape& sh){
-    //if (!this->_Shape.IsEqual(sh._Shape)){
-        this->_Shape = sh._Shape;
-        //Base::Console().Message("-----Copying topological evolution...\n");
-        this->_TopoNamer = sh._TopoNamer;
-        //std::ostringstream output;
-        //this->_TopoNamer.DeepDump(output);
-        //Base::Console().Message(output.str().c_str());
-    //}
+void TopoShape::setShape(const TopoDS_Shape& shape){
+    this->_Shape = shape;
+    std::clog << "-----NOTE! Evolution = brandnew?!\n";
+    // Since the TopoDS_Shape can't carry a history with it, start the TNaming all over.
+    // TODO: Check to make sure this isn't used incorrectly?
+    TopoNamingHelper newTopoNamer;
+    this->_TopoNamer = newTopoNamer;
+    this->_TopoNamer.TrackGeneratedShape(shape);
 }
 
-void TopoShape::setShape(BRepAlgoAPI_Fuse& mkFuse, const TopoShape& Shape){
+void TopoShape::setShape(const TopoShape& shape){
+    _Shape     = shape._Shape;
+    _TopoNamer = shape._TopoNamer;
+}
+
+void TopoShape::setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse){
     TopoDS_Shape resShape = mkFuse.Shape();
     if (!this->_Shape.IsEqual(resShape)){
         // First, copy the _TopoNamer from the passed shape
@@ -500,13 +498,40 @@ void TopoShape::setShape(BRepAlgoAPI_Fuse& mkFuse, const TopoShape& Shape){
     }
 }
 
-std::string TopoShape::selectEdge(const TopoDS_Edge anEdge, const TopoDS_Shape aContext){
-    std::string edgeLabel = this->_TopoNamer.SelectEdge(anEdge, aContext);
+void TopoShape::setShape(const TopoShape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet){
+    TopoDS_Shape resShape = mkFillet.Shape();
+    if (!this->_Shape.IsEqual(resShape)){
+        // First, copy the _TopoNamer from the passed shape
+        this->_TopoNamer = BaseShape._TopoNamer;
+        // Now, store the result shape
+        this->_Shape = resShape;
+        // Finally, track the new filleted shape in the Topo Tree.
+        this->_TopoNamer.TrackFilletOperation(BaseShape._Shape, mkFillet);
+    }
+}
+std::string TopoShape::selectEdge(const int edgeID){
+    TopTools_IndexedMapOfShape listOfEdges;
+    TopExp::MapShapes(_Shape, TopAbs_EDGE, listOfEdges);
+
+    // Get the specific edge, I hope
+    TopoDS_Edge anEdge = TopoDS::Edge(listOfEdges.FindKey(edgeID));
+
+    std::string edgeLabel = this->_TopoNamer.SelectEdge(anEdge, _Shape);
     return edgeLabel;
 }
 
-std::vector<std::string> TopoShape::selectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape aContext){
-    std::vector<std::string> edgeLabels = this->_TopoNamer.SelectEdges(Edges, aContext);
+std::vector<std::string> TopoShape::selectEdges(const std::vector<int> edgeIDs){
+    std::vector<TopoDS_Edge> Edges;
+
+    TopTools_IndexedMapOfShape listOfEdges;
+    TopExp::MapShapes(_Shape, TopAbs_EDGE, listOfEdges);
+    TopoDS_Edge anEdge;
+    for (std::vector<int>::const_iterator it = edgeIDs.begin(); it != edgeIDs.end(); ++it){
+        int curID = *it;
+        anEdge = TopoDS::Edge(listOfEdges.FindKey(curID));
+        Edges.push_back(anEdge);
+    }
+    std::vector<std::string> edgeLabels = this->_TopoNamer.SelectEdges(Edges, _Shape);
     return edgeLabels;
 }
 

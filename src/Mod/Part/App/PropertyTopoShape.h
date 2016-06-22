@@ -53,7 +53,7 @@ public:
     /// set the part shape
     void setValue(const TopoDS_Shape&);
     // Added for Topological Naming purposes
-    void setValue(BRepAlgoAPI_Fuse& mkFuse, const TopoShape & Shape);
+    void setValue(const TopoShape & Shape, BRepAlgoAPI_Fuse& mkFuse);
     /// get the part shape
     const TopoDS_Shape& getValue(void) const;
     const TopoShape& getShape() const;
