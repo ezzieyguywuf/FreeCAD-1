@@ -1,10 +1,5 @@
-#include "PreCompiled.h"
-
-#ifndef _PreComp_
 #include <iostream>
-#include <Base/Console.h>
-#include <Standard_Failure.hxx>
-#endif
+#include <vector>
 
 #include <TDataStd_AsciiString.hxx>
 #include <TDF_IDFilter.hxx>
@@ -28,31 +23,31 @@
 #include <TNaming_NamedShape.hxx>
 
 TopoNamingHelper::TopoNamingHelper(){
-    //Base::Console().Message("-----Instantiated TopoNamingHelper\n");
+    //std::clog << "-----Instantiated TopoNamingHelper\n";
     mySelectionNode = TDF_TagSource::NewChild(myRootNode);
     AddTextToLabel(mySelectionNode, "Selection Root Node");
 }
 
 TopoNamingHelper::TopoNamingHelper(const TopoNamingHelper& existing){
-    Base::Console().Message("-----Copying TopoNaming stuff\n");
+    std::clog << "-----Copying TopoNaming stuff\n";
     this->myDataFramework = existing.myDataFramework;
     this->myRootNode      = existing.myRootNode;
     this->mySelectionNode = existing.mySelectionNode;
 }
 
 TopoNamingHelper::~TopoNamingHelper(){
-    //Base::Console().Message("-----UnInstantiated TopoNamingHelper\n");
+    //std::clog << "-----UnInstantiated TopoNamingHelper\n";
 }
 
 void TopoNamingHelper::operator = (const TopoNamingHelper& helper){
-    Base::Console().Message("-----Setting operator = TopoNaming stuff\n");
+    std::clog << "-----Setting operator = TopoNaming stuff\n";
     this->myDataFramework = helper.myDataFramework;
     this->myRootNode      = helper.myRootNode;
     this->mySelectionNode = helper.mySelectionNode;
 }
 
 void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape){
-    Base::Console().Message("-----Tracking Generated Shape\n");
+    std::clog << "-----Tracking Generated Shape\n";
     //std::ostringstream outputStream;
     //DeepDump(outputStream);
     //Base::Console().Message(outputStream.str().c_str());
@@ -85,12 +80,12 @@ void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape){
     }
     //std::ostringstream outputStream2;
     //DeepDump(outputStream2);
-    //Base::Console().Message("Data Framework Dump Below\n");
+    //std::clog << "Data Framework Dump Below\n";
     //Base::Console().Message(outputStream2.str().c_str());
 }
 
 void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
-    Base::Console().Message("-----Tracking Fuse Operation\n");
+    std::clog << "-----Tracking Fuse Operation\n";
     // TODO: Need to update to account for an abritrary number of shapes being fused.
     // In a Fuse operation, each face is either Modified from one of the -two- (scratch
     // that) 'many' Shapes being fused, or it is Deleted. There is not an instance where a
@@ -101,7 +96,13 @@ void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
 
     //TopTools_ListOfShape 
 
-    // create a new node under Root, and sub-nodes for the modified faces
+    // create two new nodes under Root. The first is to track the 'Shape1' as a
+    // 'Generated' shape, and the second is to track the ResultShape, with  sub-nodes for
+    // the modified faces on the BaseShape and the 'Shape1' as well. TODO: Need to figure
+    // out a way to incorporate the topo tree from Shape1 into our topo tree, if Shape1
+    // has one.
+    std::clog << "Note: next 'tracking generated shape' msg from TrackFuseOperation\n";
+    this->TrackGeneratedShape(FuseShape);
     TDF_Label LabelRoot    = TDF_TagSource::NewChild(myRootNode);
     TDF_Label BaseModified = TDF_TagSource::NewChild(LabelRoot);
     TDF_Label FuseModified = TDF_TagSource::NewChild(LabelRoot);
@@ -149,13 +150,13 @@ void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
     }
     //std::ostringstream outputStream;
     //DeepDump(outputStream);
-    //Base::Console().Message("Data Framework Dump Below\n");
+    //std::clog << "Data Framework Dump Below\n";
     //Base::Console().Message(outputStream.str().c_str());
 }
 
 void TopoNamingHelper::TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet){
     BRepFilletAPI_MakeFillet Filleter = mkFillet;
-    Base::Console().Message("-----Tracking Fillet Operation\n");
+    std::clog << "-----Tracking Fillet Operation\n";
     //std::ostringstream output;
     //DeepDump(output);
     //Base::Console().Message(output.str().c_str());
@@ -239,7 +240,7 @@ void TopoNamingHelper::TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepF
     }
     //std::ostringstream outputStream;
     //DeepDump(outputStream);
-    //Base::Console().Message("Data Framework Dump Below\n");
+    //std::clog << "Data Framework Dump Below\n";
     //Base::Console().Message(outputStream.str().c_str());
 }
 std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge anEdge, const TopoDS_Shape aShape){
@@ -253,7 +254,7 @@ std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge anEdge, const TopoDS_
     Handle(TNaming_NamedShape) ContextNS;
     TopoDS_Edge checkEdge;
     TopoDS_Shape checkShape;
-    //Base::Console().Message("Dumping whole tree before loop\n");
+    //std::clog << "Dumping whole tree before loop\n";
     //this->DeepDump();
 
     // Only loop through mySelectionNode if it has a child. You cannot rely on
@@ -281,7 +282,8 @@ std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge anEdge, const TopoDS_
                 }
             }
             else{
-                Standard_Failure::Raise("ERROR! NODE SHOULD HAVE A SUB-NODE THAT CONTAINS THE CONTEXT SHAPE! Did you use TNaming_Selector or TNaming_Builder?");
+                std::runtime_error(
+"ERROR! NODE SHOULD HAVE A SUB-NODE THAT CONTAINS THE CONTEXT SHAPE! Did you use TNaming_Selector or TNaming_Builder?");
             }
         }
     }
@@ -289,12 +291,12 @@ std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge anEdge, const TopoDS_
     // If not found, create.
     if (!found){
         SelectedLabel = TDF_TagSource::NewChild(mySelectionNode);
-        //Base::Console().Message("Dumping whole tree before select\n");
+        //std::clog << "Dumping whole tree before select\n";
         //this->DeepDump();
         TNaming_Selector SelectionBuilder(SelectedLabel);
         SelectionBuilder.Select(anEdge, aShape);
         this->AddTextToLabel(SelectedLabel, "A selected edge. Sub-node is the context Shape");
-        //Base::Console().Message("Dumping whole tree after select\n");
+        //std::clog << "Dumping whole tree after select\n";
         //this->DeepDump();
     }
     std::ostringstream dumpedEntry;
@@ -323,7 +325,7 @@ TopoDS_Edge TopoNamingHelper::GetSelectedEdge(const std::string NodeTag) const{
         SelectedEdge = TopoDS::Edge(EdgeNS->Get());
     }
     else{
-        Standard_Failure::Raise("That Node does not appear to exist on the Data Framework");
+        std::runtime_error("That Node does not appear to exist on the Data Framework");
     }
 
     return SelectedEdge;
@@ -373,5 +375,5 @@ void TopoNamingHelper::DeepDump(std::ostream& stream) const{
 void TopoNamingHelper::DeepDump() const{
     std::ostringstream output;
     DeepDump(output);
-    Base::Console().Message(output.str().c_str());
+    std::cout << output.str();
 }
