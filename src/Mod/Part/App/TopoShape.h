@@ -73,7 +73,7 @@ public:
     // Added for Topo Naming stuff
     // set and get the TopoDS_Shape. _Shape should be private...
     void setShape(const TopoDS_Shape& sh);
-    TopoDS_Shape getShape() const;
+    const TopoDS_Shape& getShape() const;
 
     // setShape always takes a TopoShape and optionally an OCC child of
     // BRepBuilderAPI_MakeShape. The _TopoHelper is copied from the TopoShape, so it's

@@ -476,8 +476,10 @@ void TopoShape::operator = (const TopoShape& sh)
     }
 }
 
-TopoDS_Shape TopoShape::getShape() const{
-    return _Shape;
+const TopoDS_Shape& TopoShape::getShape() const{
+    //BRepBuilderAPI_Copy mkCopy(_Shape);
+    const TopoDS_Shape& outShape = _Shape;
+    return outShape;
 }
 
 void TopoShape::setShape(const TopoDS_Shape& shape){

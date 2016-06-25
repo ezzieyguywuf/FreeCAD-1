@@ -109,7 +109,7 @@ BRepFilletAPI_MakeFillet PropertyPartShape::makeTopoShapeFillet(std::vector<Fill
 
 const TopoDS_Shape& PropertyPartShape::getValue(void)const 
 {
-    return _Shape._Shape;
+    return _Shape.getShape();
 }
 
 const TopoShape& PropertyPartShape::getShape() const
