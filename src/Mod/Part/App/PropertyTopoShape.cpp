@@ -103,7 +103,7 @@ void PropertyPartShape::setValue(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFus
 }
 
 BRepFilletAPI_MakeFillet PropertyPartShape::makeTopoShapeFillet(std::vector<FilletElement>& elements){
-    BRepFilletAPI_MakeFillet mkFillet(this->getValue());
+    BRepFilletAPI_MakeFillet mkFillet = this->_Shape.makeTopoShapeFillet(elements);
     return mkFillet;
 }
 
