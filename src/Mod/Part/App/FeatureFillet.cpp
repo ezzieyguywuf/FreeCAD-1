@@ -55,52 +55,71 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
     if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
         return new App::DocumentObjectExecReturn("Linked object is not a Part object");
     Part::Feature *base = static_cast<Part::Feature*>(Base.getValue());
-    Base::Console().Message("-----recovered TopoShape from somewhere, dumping tree\n");
-    base->Shape.getShape().DumpTopoHistory();
+    Base::Console().Message("-----Dumping tree in FeatureFillet near top\n");
+    Base::Console().Message(base->Shape.getShape().DumpTopoHistory().c_str());
 
     try {
 #if defined(__GNUC__) && defined (FC_OS_LINUX)
         Base::SignalException se;
 #endif
+        //Base::Console().Message("-----Dumping tree in FeatureFillet\n");
         TopoShape myTopoShape = base->Shape.getShape();
+        //Base::Console().Message(myTopoShape.DumpTopoHistory().c_str());
         // Instead of using the TopoDS_Shape stored in the App::PropertyLink, let's grab
         // the one from our TopoShape, so that we know it's part of our TNaming tree
-        BRepFilletAPI_MakeFillet mkFillet(base->Shape.getValue());
         //BRepFilletAPI_MakeFillet mkFillet(myTopoShape.getShape());
-        TopTools_IndexedMapOfShape mapOfShape;
-        TopExp::MapShapes(base->Shape.getValue(), TopAbs_EDGE, mapOfShape);
+        //BRepFilletAPI_MakeFillet mkFillet(myTopoShape.getShape());
+        //TopTools_IndexedMapOfShape mapOfShape;
+        //TopExp::MapShapes(myTopoShape.getShape(), TopAbs_EDGE, mapOfShape);
 
 
-        std::vector<FilletElement> values = Edges.getValues();
-        for (std::vector<FilletElement>::iterator it = values.begin(); it != values.end(); ++it) {
-            int id                  = it->edgeid; // not used anymore
-            double radius1          = it->radius1;
-            double radius2          = it->radius2;
-            std::string edgetag     = it->edgetag;
-            //const TopoDS_Edge& edge = TopoDS::Edge(mapOfShape.FindKey(id));
-            const TopoDS_Edge& edge = myTopoShape.getSelectedEdge(edgetag);
-            mkFillet.Add(radius1, radius2, edge);
-        }
+        //std::vector<FilletElement> values = Edges.getValues();
+        std::vector<FilletElement> targetEdges = Edges.getValues();
+        //std::vector<std::string> targetEdges;
+        //for (std::vector<FilletElement>::iterator it = values.begin(); it != values.end(); ++it) {
+            //int id                  = it->edgeid; // not used anymore
+            //double radius1          = it->radius1;
+            //double radius2          = it->radius2;
+            //std::string edgetag     = it->edgetag;
+            //targetEdges.push_back(edgetag);
+            //const TopoDS_Edge& edge  = TopoDS::Edge(mapOfShape.FindKey(id)); // not used anymore
+            //const TopoDS_Edge& edge2 = myTopoShape.getSelectedEdge(edgetag);
+            //if (!edge2.IsNull()){
+                //Base::Console().Message("-----Got an edge...\n");
+            //}
+            //else{
+                //Base::Console().Message("-----Edge was null...\n");
+            //}
+            ////mkFillet.Add(radius1, radius2, edge);
+            //mkFillet.Add(radius1, radius2, edge2);
+        //}
 
-        TopoDS_Shape BaseShape = base->Shape.getValue();
-        TopoShape MyTopoShape = base->Shape.getShape();
 
-        mkFillet.Build();
+        //mkFillet.Build();
+        //this->Shape.setValue(shape); // orig call
+        // Track the Fillet operation using TNaming
+        //TopoDS_Shape BaseShape = base->Shape.getValue();
+        //this->Shape.setValue(myTopoShape, mkFillet); // new call
+        //Base::Console().Message("-----Dumping tree in FeatureFillet after log\n");
+        //Base::Console().Message(this->Shape.getShape().DumpTopoHistory().c_str());
+
+        BRepFilletAPI_MakeFillet mkFillet = this->Shape.makeTopoShapeFillet(targetEdges);
+
         if (!mkFillet.IsDone())
             return new App::DocumentObjectExecReturn("Fillet operation appears to have failed");
+
+        // then all the history junk
+        // make sure the 'PropertyShapeHistory' is not safed in undo/redo (#0001889)
         TopoDS_Shape shape = mkFillet.Shape();
         ShapeHistory history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
-        this->Shape.setValue(shape);
 
-        // make sure the 'PropertyShapeHistory' is not safed in undo/redo (#0001889)
         PropertyShapeHistory prop;
         prop.setValue(history);
         prop.setContainer(this);
         prop.touch();
 
-        // Track the Fillet operation using TNaming
-        MyTopoShape.setShape(BaseShape, mkFillet);
-
+        Base::Console().Message("-----Dumping tree in FeatureFillet before return\n");
+        Base::Console().Message(this->Shape.getShape().DumpTopoHistory().c_str());
         return App::DocumentObject::StdReturn;
     }
     catch (Standard_Failure) {
@@ -110,4 +129,6 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
     catch (...) {
         return new App::DocumentObjectExecReturn("A fatal error occurred when making fillets");
     }
+    Base::Console().Message("-----Dumping tree in FeatureFillet before end\n");
+    Base::Console().Message(this->Shape.getShape().DumpTopoHistory().c_str());
 }

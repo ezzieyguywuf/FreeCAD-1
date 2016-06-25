@@ -177,6 +177,13 @@
 #include "modelRefine.h"
 #include "Tools.h"
 #include "encodeFilename.h"
+//#include "PropertyTopoShape.h"
+
+// redirect std::clog and stuff
+#include <zipios++/zipfile.h>
+#include <zipios++/zipinputstream.h>
+#include <zipios++/zipoutputstream.h>
+#include <zipios++/meta-iostreams.h>
 
 using namespace Part;
 
@@ -461,6 +468,7 @@ PyObject * TopoShape::getPySubShape(const char* Type) const
 
 void TopoShape::operator = (const TopoShape& sh)
 {
+    Base::Console().Message("-----operator = in TopoShape called\n");
     if (this != &sh) {
         this->_Shape     = sh._Shape;
         this->_TopoNamer = sh._TopoNamer;
@@ -472,43 +480,74 @@ TopoDS_Shape TopoShape::getShape() const{
 }
 
 void TopoShape::setShape(const TopoDS_Shape& shape){
-    this->_Shape = shape;
-    std::clog << "-----NOTE! Evolution = brandnew?!\n";
-    // Since the TopoDS_Shape can't carry a history with it, start the TNaming all over.
-    // TODO: Check to make sure this isn't used incorrectly?
-    TopoNamingHelper newTopoNamer;
-    this->_TopoNamer = newTopoNamer;
-    this->_TopoNamer.TrackGeneratedShape(shape);
+    if (!this->_Shape.IsEqual(shape)){
+        TopoDS_Shape setShape(shape);
+        BRepBuilderAPI_Copy mkCopy(shape);
+        this->_Shape = mkCopy.Shape();;
+        std::clog << "-----NOTE!! Evolution = brandnew?!\n";
+        // Since the TopoDS_Shape can't carry a history with it, start the TNaming all over.
+        // TODO: Check to make sure this isn't used incorrectly?
+        TopoNamingHelper newTopoNamer;
+        this->_TopoNamer = newTopoNamer;
+        this->_TopoNamer.TrackGeneratedShape(shape);
+    }
 }
 
 void TopoShape::setShape(const TopoShape& shape){
-    _Shape     = shape._Shape;
-    _TopoNamer = shape._TopoNamer;
+    std::clog << "-----setShape (TopoShape) called\n";
+    this->_Shape     = shape._Shape;
+    this->_TopoNamer = shape._TopoNamer;
 }
 
 void TopoShape::setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse){
+    std::clog << "-----setShape (mkFuse) called\n";
     TopoDS_Shape resShape = mkFuse.Shape();
-    if (!this->_Shape.IsEqual(resShape)){
+    //if (!this->_Shape.IsEqual(resShape)){
         // First, copy the _TopoNamer from the passed shape
         this->_TopoNamer = Shape._TopoNamer;
         // Now, store the result shape
         this->_Shape = resShape;
         // Finally, track the new fused shape in the Topo Tree.
         this->_TopoNamer.TrackFuseOperation(mkFuse);
-    }
+        // let's see the tree
+        std::clog << "----Dumping tree from setShape(...mkFuse)\n";
+        this->_TopoNamer.DeepDump();
+    //}
 }
 
-void TopoShape::setShape(const TopoShape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet){
-    TopoDS_Shape resShape = mkFillet.Shape();
-    if (!this->_Shape.IsEqual(resShape)){
-        // First, copy the _TopoNamer from the passed shape
-        this->_TopoNamer = BaseShape._TopoNamer;
-        // Now, store the result shape
-        this->_Shape = resShape;
-        // Finally, track the new filleted shape in the Topo Tree.
-        this->_TopoNamer.TrackFilletOperation(BaseShape._Shape, mkFillet);
+//void TopoShape::setShape(const TopoShape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet){
+    //Base::Console().Message("----Dumping tree from beggining of setShape(...mkFillet)\n");
+    //Base::Console().Message(this->DumpTopoHistory().c_str());
+    //Base::Console().Message("----Dumping tree from beggining of setShape(...mkFillet) for BaseShape\n");
+    //Base::Console().Message(BaseShape.DumpTopoHistory().c_str());
+    //TopoDS_Shape resShape = mkFillet.Shape();
+    //if (!this->_Shape.IsEqual(resShape)){
+        //// First, copy the _TopoNamer from the passed shape
+        //this->_TopoNamer = BaseShape._TopoNamer;
+        //// Now, store the result shape
+        //this->_Shape = resShape;
+        //// Finally, track the new filleted shape in the Topo Tree.
+        //this->_TopoNamer.TrackFilletOperation(BaseShape._Shape, mkFillet);
+        //Base::Console().Message("----Dumping tree from setShape(...mkFillet)\n");
+        //Base::Console().Message(this->_TopoNamer.DeepDump().c_str());
+    //}
+//}
+
+BRepFilletAPI_MakeFillet TopoShape::makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges){
+    BRepFilletAPI_MakeFillet mkFillet(this->_Shape);
+    for (std::vector<FilletElement>::const_iterator it = targetEdges.begin(); it != targetEdges.end(); ++it) {
+        double radius1      = it->radius1;
+        double radius2      = it->radius2;
+        std::string edgetag = it->edgetag;
+        TopoDS_Edge edge    = this->getSelectedEdge(edgetag);
+        mkFillet.Add(radius1, radius2, edge);
     }
+    mkFillet.Build();
+    this->_TopoNamer.TrackFilletOperation(this->_Shape, mkFillet);
+    this->_Shape = mkFillet.Shape();
+    return mkFillet;
 }
+
 std::string TopoShape::selectEdge(const int edgeID){
     TopTools_IndexedMapOfShape listOfEdges;
     TopExp::MapShapes(_Shape, TopAbs_EDGE, listOfEdges);
@@ -540,8 +579,12 @@ TopoDS_Edge TopoShape::getSelectedEdge(const std::string NodeTag) const{
     return selectedEdge;
 }
 
-void TopoShape::DumpTopoHistory() const{
-    this->_TopoNamer.DeepDump();
+std::string TopoShape::DumpTopoHistory() const{
+    return this->_TopoNamer.DeepDump();
+}
+
+void TopoShape::DumpTopoHistory(std::stringstream& stream) const{
+    this->_TopoNamer.DeepDump(stream);
 }
 
 void TopoShape::convertTogpTrsf(const Base::Matrix4D& mtrx, gp_Trsf& trsf)

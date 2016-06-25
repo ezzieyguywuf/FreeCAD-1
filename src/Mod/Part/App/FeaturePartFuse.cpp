@@ -48,7 +48,7 @@ Fuse::Fuse(void)
 BRepAlgoAPI_BooleanOperation* Fuse::makeOperation(const TopoDS_Shape& base, const TopoDS_Shape& tool) const
 {
     // Let's call algorithm computing a fuse operation:
-    Base::Console().Message("-----Calling Fuse from FeaturePartFuse\n");
+    Base::Console().Message("-----Calling Fuse::makeOperation from FeaturePartFuse\n");
     return new BRepAlgoAPI_Fuse(base, tool);
 }
 
@@ -59,6 +59,7 @@ PROPERTY_SOURCE(Part::MultiFuse, Part::Feature)
 
 MultiFuse::MultiFuse(void)
 {
+    Base::Console().Message("----MultiFuse called in FeaturePartFuse\n");
     ADD_PROPERTY(Shapes,(0));
     Shapes.setSize(0);
     ADD_PROPERTY_TYPE(History,(ShapeHistory()), "Boolean", (App::PropertyType)
@@ -75,6 +76,7 @@ short MultiFuse::mustExecute() const
 
 App::DocumentObjectExecReturn *MultiFuse::execute(void)
 {
+    Base::Console().Message("-----Calling MultiFuse::execute from FeaturePartFuse\n");
     std::vector<TopoDS_Shape> s;
     // Also need the TopoShape's in order to save the TNaming history
     std::vector<TopoShape> TopoShapes;
@@ -122,7 +124,6 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
                 }
             }
 #else
-            Base::Console().Message("-----Calling Fuse from FeaturePartFuse\n");
             BRepAlgoAPI_Fuse mkFuse;
 
             // Check if any of the input shapes are null :-/
@@ -171,7 +172,10 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
             // TNaming tree. See the setShape call in TopoShape.cpp for more info. TODO:
             // for now, we only keep the topological history of the first TopoShape. Must
             // find a way to merge topo histories
+            Base::Console().Message("-----Calling setValue in MultiFuse::execute from FeaturePartFuse\n");
             this->Shape.setValue(TopoShapes.front(), mkFuse);
+            Base::Console().Message("-----dumping tree from FeaturePartFuse\n");
+            Base::Console().Message(this->Shape.getShape().DumpTopoHistory().c_str());
             //Base::Console().Message("----done calling setValue from FeaturePartFuse\n");
             this->History.setValues(history);
         }

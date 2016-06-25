@@ -472,6 +472,31 @@ PyObject*  TopoShapePy::dumpToString(PyObject *args)
     }
 }
 
+PyObject*  TopoShapePy::DumpTopoHistory(PyObject *args)
+{
+    if (!PyArg_ParseTuple(args, ""))
+        return NULL;
+
+    try {
+        std::stringstream stream;
+        getTopoShapePtr()->DumpTopoHistory(stream);
+        return Py::new_reference_to(Py::String(stream.str()));
+    }
+    catch (const Base::Exception& e) {
+        PyErr_SetString(PartExceptionOCCError,e.what());
+        return NULL;
+    }
+    catch (const std::exception& e) {
+        PyErr_SetString(PartExceptionOCCError,e.what());
+        return NULL;
+    }
+    catch (Standard_Failure) {
+        Handle_Standard_Failure e = Standard_Failure::Caught();
+        PyErr_SetString(PartExceptionOCCError, e->GetMessageString());
+        return 0;
+    }
+}
+
 PyObject*  TopoShapePy::exportBrepToString(PyObject *args)
 {
     if (!PyArg_ParseTuple(args, ""))

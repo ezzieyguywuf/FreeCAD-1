@@ -29,11 +29,22 @@
 #include <App/DocumentObject.h>
 #include <App/PropertyGeo.h>
 #include <BRepAlgoAPI_Fuse.hxx>
+#include <BRepFilletAPI_MakeFillet.hxx>
 #include <map>
 #include <vector>
 
 namespace Part
 {
+
+/** A property class to store hash codes and two radii for the fillet algorithm.
+ * @author Werner Mayer
+ */
+//struct PartExport FilletElement {
+    //int edgeid;
+    //double radius1, radius2;
+    //std::string edgetag;
+//};
+
 
 /** The part shape property class.
  * @author Werner Mayer
@@ -54,6 +65,10 @@ public:
     void setValue(const TopoDS_Shape&);
     // Added for Topological Naming purposes
     void setValue(const TopoShape & Shape, BRepAlgoAPI_Fuse& mkFuse);
+    //void setValue(const TopoShape & Shape, BRepFilletAPI_MakeFillet& mkFillet);
+    BRepFilletAPI_MakeFillet makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges);
+    void makeTopoShapeFuse(const std::vector<TopoDS_Shape> AddShapes);
+
     /// get the part shape
     const TopoDS_Shape& getValue(void) const;
     const TopoShape& getShape() const;
@@ -149,15 +164,6 @@ public:
 
 private:
     std::vector<ShapeHistory> _lValueList;
-};
-
-/** A property class to store hash codes and two radii for the fillet algorithm.
- * @author Werner Mayer
- */
-struct PartExport FilletElement {
-    int edgeid;
-    double radius1, radius2;
-    std::string edgetag;
 };
 
 class PartExport PropertyFilletEdges : public App::PropertyLists

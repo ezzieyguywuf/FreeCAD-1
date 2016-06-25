@@ -16,6 +16,7 @@
 #include <TDF_TagSource.hxx>
 #include <TDF_Tool.hxx>
 #include <TDF_ChildIterator.hxx>
+#include <TDF_LabelMap.hxx>
 
 #include "TopoNamingHelper.h"
 
@@ -58,7 +59,7 @@ void TopoNamingHelper::operator = (const TopoNamingHelper& helper){
     this->mySelectionNode = helper.mySelectionNode;
 }
 
-void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape){
+void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name){
     std::clog << "-----Tracking Generated Shape\n";
     //std::ostringstream outputStream;
     //DeepDump(outputStream);
@@ -73,7 +74,7 @@ void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape){
     // create a new node under Root
     TDF_Label LabelRoot = TDF_TagSource::NewChild(myRootNode);
 
-    AddTextToLabel(LabelRoot, "Generated Shape node");
+    AddTextToLabel(LabelRoot, "Generated Shape node", name);
 
     // add the generated shape to the LabelRoot
     MyBuilderPtr = new TNaming_Builder(LabelRoot);
@@ -330,8 +331,13 @@ std::vector<std::string> TopoNamingHelper::SelectEdges(const std::vector<TopoDS_
 TopoDS_Edge TopoNamingHelper::GetSelectedEdge(const std::string NodeTag) const{
     TDF_Label EdgeNode;
     TDF_Tool::Label(myDataFramework, NodeTag.c_str(), EdgeNode);
+    TDF_LabelMap MyMap;
     TopoDS_Edge SelectedEdge;
+
     if (!EdgeNode.IsNull()){
+        MyMap.Add(EdgeNode);
+        TNaming_Selector MySelector(EdgeNode);
+        MySelector.Solve(MyMap);
         Handle(TNaming_NamedShape) EdgeNS;
         EdgeNode.FindAttribute(TNaming_NamedShape::GetID(), EdgeNS);
         SelectedEdge = TopoDS::Edge(EdgeNS->Get());
@@ -343,10 +349,13 @@ TopoDS_Edge TopoNamingHelper::GetSelectedEdge(const std::string NodeTag) const{
     return SelectedEdge;
 }
 
-void TopoNamingHelper::AddTextToLabel(const TDF_Label& Label, char const *str){
+void TopoNamingHelper::AddTextToLabel(const TDF_Label& Label, const char *str, const std::string& name){
+    // Join name and str
+    std::ostringstream stream;
+    stream << "Name: " << name << ", " << str;
     Handle(TDataStd_AsciiString) nameAttribute;
     TCollection_AsciiString myName;
-    myName = str;
+    myName = stream.str().c_str();
     nameAttribute = new TDataStd_AsciiString();
     nameAttribute->Set(myName);
     Label.AddAttribute(nameAttribute);
@@ -362,7 +371,8 @@ void TopoNamingHelper::Dump(std::ostream& stream) const{
     stream << "\n";
 }
 
-void TopoNamingHelper::DeepDump(std::ostream& stream) const{
+void TopoNamingHelper::DeepDump(std::stringstream& stream) const{
+    std::clog << "-----TopoNamingHelper::DeepDump(std::ostream...)\n";
     TDF_IDFilter myFilter;
     myFilter.Keep(TDataStd_AsciiString::GetID());
     myFilter.Keep(TNaming_NamedShape::GetID());
@@ -384,10 +394,12 @@ void TopoNamingHelper::DeepDump(std::ostream& stream) const{
     }
 }
 
-void TopoNamingHelper::DeepDump() const{
-    std::ostringstream output;
+std::string TopoNamingHelper::DeepDump() const{
+    std::clog << "-----TopoNamingHelper::DeepDump()\n";
+    std::stringstream output;
     DeepDump(output);
-    std::cout << output.str();
+    std::clog << output.str();
+    return output.str();
 }
 
 void TopoNamingHelper::WriteShape(const TDF_Label aLabel, const std::string NameBase, const int numb) const{

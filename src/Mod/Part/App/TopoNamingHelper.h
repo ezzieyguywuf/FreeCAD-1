@@ -20,17 +20,17 @@ class TopoNamingHelper{
 
         void operator = (const TopoNamingHelper&);
 
-        void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape);
+        void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name="n/a");
         void TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser);
         void TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
-        void AddTextToLabel(const TDF_Label& Label, char const *str);
+        void AddTextToLabel(const TDF_Label& Label, const char *str, const std::string& name="n/a");
         std::string SelectEdge(const TopoDS_Edge anEdge, const TopoDS_Shape aShape);
         std::vector<std::string> SelectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape aShape);
         TopoDS_Edge GetSelectedEdge(const std::string NodeTag) const;
         void Dump() const;
         void Dump(std::ostream& stream) const;
-        void DeepDump(std::ostream& stream) const;
-        void DeepDump() const;
+        std::string DeepDump() const;
+        void DeepDump(std::stringstream& stream) const;
 
         void WriteShape(const TDF_Label aLabel, const std::string NameBase, const int numb) const;
         void WriteNode(const std::string NodeTag, const std::string NameBase, const bool Deep) const;

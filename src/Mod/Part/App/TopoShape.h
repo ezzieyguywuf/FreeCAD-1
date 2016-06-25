@@ -30,6 +30,8 @@
 #include <TopTools_ListOfShape.hxx>
 #include <App/ComplexGeoData.h>
 #include "TopoNamingHelper.h"
+//#include "PropertyTopoShape.cpp"
+#include "FilletElement.h"
 
 class gp_Ax1;
 class gp_Ax2;
@@ -37,6 +39,8 @@ class gp_Vec;
 
 namespace Part
 {
+
+//struct PartExport FilletElement;
 
 class PartExport ShapeSegment : public Data::Segment
 {
@@ -77,10 +81,12 @@ public:
     // merging _TopoHelpers
     void setShape(const TopoShape& sh);
     void setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse);
-    void setShape(const TopoShape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
+    //void setShape(const TopoShape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
+    BRepFilletAPI_MakeFillet makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges);
 
     // Print out a concise description of the topo tree
-    void DumpTopoHistory() const;
+    std::string DumpTopoHistory() const;
+    void DumpTopoHistory(std::stringstream& stream) const;
 
     // The returned string is of the form "i:i..." where i is an integer. This is a 'Tag'
     // in the OCC Data Framework terminology, and is used to retrieve a specific node in
