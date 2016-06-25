@@ -177,6 +177,7 @@
 #include "modelRefine.h"
 #include "Tools.h"
 #include "encodeFilename.h"
+#include "FilletElement.h"
 //#include "PropertyTopoShape.h"
 
 // redirect std::clog and stuff
@@ -481,9 +482,9 @@ TopoDS_Shape TopoShape::getShape() const{
 
 void TopoShape::setShape(const TopoDS_Shape& shape){
     if (!this->_Shape.IsEqual(shape)){
-        TopoDS_Shape setShape(shape);
-        BRepBuilderAPI_Copy mkCopy(shape);
-        this->_Shape = mkCopy.Shape();;
+        //TopoDS_Shape setShape(shape);
+        //BRepBuilderAPI_Copy mkCopy(shape);
+        this->_Shape = shape;;
         std::clog << "-----NOTE!! Evolution = brandnew?!\n";
         // Since the TopoDS_Shape can't carry a history with it, start the TNaming all over.
         // TODO: Check to make sure this isn't used incorrectly?

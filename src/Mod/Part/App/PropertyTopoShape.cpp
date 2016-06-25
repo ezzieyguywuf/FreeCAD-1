@@ -89,45 +89,31 @@ void PropertyPartShape::setValue(const TopoShape& sh)
 void PropertyPartShape::setValue(const TopoDS_Shape& sh)
 {
     aboutToSetValue();
-    Base::Console().Message("-----Setting TopoDS_Shape from propertytoposhapee...\n");
-    //_Shape.setShape(sh);
-    _Shape._Shape = sh;
+    _Shape.setShape(sh);
+    //_Shape._Shape = sh;
     hasSetValue();
-}
-
-//void PropertyPartShape::setValue(const TopoShape& Shape, BRepFilletAPI_MakeFillet& mkFillet)
-//{
-    //aboutToSetValue();
-    //_Shape.setShape(Shape, mkFillet);
-    ////_Shape._Shape = sh;
-    //hasSetValue();
-//}
-
-BRepFilletAPI_MakeFillet PropertyPartShape::makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges){
-    aboutToSetValue();
-    BRepFilletAPI_MakeFillet outMkFillet = this->_Shape.makeTopoShapeFillet(targetEdges);
-    hasSetValue();
-    return outMkFillet;
 }
 
 void PropertyPartShape::setValue(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse)
 {
     aboutToSetValue();
-    Base::Console().Message("-----Calling setShape(...mkFuse...) in PropertyTopoShape.cpp\n"); 
     _Shape.setShape(Shape, mkFuse);
-    Base::Console().Message("-----finished calling...\n"); 
     //_Shape._Shape = sh;
     hasSetValue();
 }
 
+BRepFilletAPI_MakeFillet PropertyPartShape::makeTopoShapeFillet(std::vector<FilletElement>& elements){
+    BRepFilletAPI_MakeFillet mkFillet(this->getValue());
+    return mkFillet;
+}
+
 const TopoDS_Shape& PropertyPartShape::getValue(void)const 
 {
-    return _Shape.getShape();
+    return _Shape._Shape;
 }
 
 const TopoShape& PropertyPartShape::getShape() const
 {
-    std::clog << "Returning TopoShape from PropertyTopoShape\n";
     return this->_Shape;
 }
 

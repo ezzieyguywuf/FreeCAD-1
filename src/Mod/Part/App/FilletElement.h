@@ -1,7 +1,6 @@
 #ifndef FILLET_ELEMENT
 #define FILLET_ELEMENT
 
-#include "PartFeature.h"
 namespace Part
 {
 
