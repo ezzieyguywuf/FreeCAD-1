@@ -75,7 +75,7 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         // make sure the 'PropertyShapeHistory' is not safed in undo/redo (#0001889)
         TopoDS_Shape shape = mkFillet.Shape();
         ShapeHistory history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
-        this->Shape.setValue(NewTopoShape);
+        //this->Shape.setValue(NewTopoShape);
         Base::Console().Message("-----Dumping tree in FeatureFillet, from NewTopoShape\n");
         Base::Console().Message(NewTopoShape.DumpTopoHistory().c_str());
 
