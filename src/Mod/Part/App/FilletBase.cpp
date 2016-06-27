@@ -47,8 +47,8 @@ std::string FilletBase::getSelectedEdgeLabel(int id, double r1, double r2){
     bool hasNodes = this->Shape.getShape().hasTopoNamingNodes();
     if (hasNodes){
         // TODO add modified shape instead
-        Base::Console().Message("----- There is topo history here, doing nothing...\n");
-        //this->Shape.addShape(base->Shape.getShape());
+        Base::Console().Message("----- There is topo history here, adding 'generated shape'\n");
+        this->Shape.addShape(base->Shape.getShape());
     }
     else{
         Base::Console().Message("----- The topo naming history is blank, grabbing from Base...\n");

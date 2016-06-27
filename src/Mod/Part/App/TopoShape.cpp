@@ -504,9 +504,10 @@ void TopoShape::setShape(const TopoShape& shape){
 }
 
 void TopoShape::addShape(const TopoShape& shape){
-    //Base::Console().Message("-----addShape (TopoShape) called, dumping topo history\n");
+    Base::Console().Message("-----addShape (TopoShape) called, dumping topo history\n");
+    this->_Shape = shape._Shape;
     this->_TopoNamer.TrackGeneratedShape(shape._Shape);
-    //Base::Console().Message(this->DumpTopoHistory().c_str());
+    Base::Console().Message(this->DumpTopoHistory().c_str());
 }
 
 void TopoShape::setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse){

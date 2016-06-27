@@ -129,10 +129,9 @@ void Feature::onChanged(const App::Property* prop)
     // if the point data has changed check and adjust the transformation as well
     else if (prop == &this->Shape) {
         if (this->isRecomputing()) {
-            Base::Console().Message("-----Creating new TopoShape in PartFeature, dumping aftec setTransform\n");
+            Base::Console().Message("-----Creating new TopoShape in PartFeature\n");
             TopoShape& shape = const_cast<TopoShape&>(this->Shape.getShape());
             shape.setTransform(this->Placement.getValue().toMatrix());
-            Base::Console().Message(this->Shape.getShape().DumpTopoHistory().c_str());
         }
         else {
             Base::Placement p;

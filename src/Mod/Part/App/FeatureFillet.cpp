@@ -56,16 +56,16 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         return new App::DocumentObjectExecReturn("Linked object is not a Part object");
     Part::Feature *base = static_cast<Part::Feature*>(Base.getValue());
 
-    //bool hasNodes = this->Shape.getShape().hasTopoNamingNodes();
-    //if (hasNodes){
-        //// TODO add modified shape instead
-        //Base::Console().Message("----- There is topo history here, adding generated shape TODO: add modified shape instead....\n");
-        //this->Shape.addShape(base->Shape.getShape());
-    //}
-    //else{
-        //Base::Console().Message("----- The topo naming history is blank, grabbing from Base...\n");
-        //this->Shape.setValue(base->Shape.getShape());
-    //}
+    bool hasNodes = this->Shape.getShape().hasTopoNamingNodes();
+    if (hasNodes){
+        // TODO add modified shape instead
+        Base::Console().Message("----- There is topo history here (FeatureFillet), adding generated shape TODO: add modified shape instead....\n");
+        this->Shape.addShape(base->Shape.getShape());
+    }
+    else{
+        Base::Console().Message("----- The topo naming history is blank (FeatureFillet), grabbing from Base...\n");
+        this->Shape.setValue(base->Shape.getShape());
+    }
     Base::Console().Message("-----Dumping this history in FeatureFillet.cpp neat top\n");
     Base::Console().Message(this->Shape.getShape().DumpTopoHistory().c_str());
 
