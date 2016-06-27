@@ -56,16 +56,16 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         return new App::DocumentObjectExecReturn("Linked object is not a Part object");
     Part::Feature *base = static_cast<Part::Feature*>(Base.getValue());
 
-    bool hasNodes = this->Shape.getShape().hasTopoNamingNodes();
-    if (hasNodes){
-        // TODO add modified shape instead
-        Base::Console().Message("----- There is topo history here, adding generated shape TODO: add modified shape instead....\n");
-        this->Shape.addShape(base->Shape.getShape());
-    }
-    else{
-        Base::Console().Message("----- The topo naming history is blank, grabbing from Base...\n");
-        this->Shape.setValue(base->Shape.getShape());
-    }
+    //bool hasNodes = this->Shape.getShape().hasTopoNamingNodes();
+    //if (hasNodes){
+        //// TODO add modified shape instead
+        //Base::Console().Message("----- There is topo history here, adding generated shape TODO: add modified shape instead....\n");
+        //this->Shape.addShape(base->Shape.getShape());
+    //}
+    //else{
+        //Base::Console().Message("----- The topo naming history is blank, grabbing from Base...\n");
+        //this->Shape.setValue(base->Shape.getShape());
+    //}
     Base::Console().Message("-----Dumping this history in FeatureFillet.cpp neat top\n");
     Base::Console().Message(this->Shape.getShape().DumpTopoHistory().c_str());
 
@@ -78,7 +78,8 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         //this->Shape.addGeneratedShape(NewTopoShape);
         TopoShape NewTopoShape = this->Shape.getShape();
 
-        BRepFilletAPI_MakeFillet mkFillet = this->Shape.addFilletedShape(targetEdges);
+        //BRepFilletAPI_MakeFillet mkFillet = this->Shape.addFilletedShape(targetEdges);
+        BRepFilletAPI_MakeFillet mkFillet = NewTopoShape.makeTopoShapeFillet(targetEdges);
 
         //BRepFilletAPI_MakeFillet mkFillet(base->Shape.getValue());
         //TopTools_IndexedMapOfShape mapOfShape;
@@ -103,9 +104,9 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         TopoDS_Shape shape = mkFillet.Shape();
         ShapeHistory history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
         //this->Shape.setValue(shape);
-        //this->Shape.setValue(NewTopoShape);
-        //Base::Console().Message("-----Dumping tree in FeatureFillet, from NewTopoShape\n");
-        //Base::Console().Message(NewTopoShape.DumpTopoHistory().c_str());
+        this->Shape.setValue(NewTopoShape);
+        Base::Console().Message("-----Dumping tree in FeatureFillet, from 'this'\n");
+        Base::Console().Message(this->Shape.getShape().DumpTopoHistory().c_str());
 
         PropertyShapeHistory prop;
         prop.setValue(history);

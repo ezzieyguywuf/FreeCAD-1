@@ -44,8 +44,19 @@ std::string FilletBase::getSelectedEdgeLabel(int id, double r1, double r2){
         return ""; // Linked object is not a Part
     }
     Part::Feature *base = static_cast<Part::Feature*>(Base.getValue());
+    bool hasNodes = this->Shape.getShape().hasTopoNamingNodes();
+    if (hasNodes){
+        // TODO add modified shape instead
+        Base::Console().Message("----- There is topo history here, doing nothing...\n");
+        //this->Shape.addShape(base->Shape.getShape());
+    }
+    else{
+        Base::Console().Message("----- The topo naming history is blank, grabbing from Base...\n");
+        this->Shape.setValue(base->Shape.getShape().getShape());
+    }
 
-    const std::string selectionLabel = base->Shape.selectEdge(id);
+    const std::string selectionLabel = this->Shape.selectEdge(id);
+    //const std::string selectionLabel = base->Shape.selectEdge(id);
     //Base::Console().Message("-----dumping 'base' in FilletBase.cpp\n");
     //Base::Console().Message(base->Shape.getShape().DumpTopoHistory().c_str());
     return selectionLabel;
