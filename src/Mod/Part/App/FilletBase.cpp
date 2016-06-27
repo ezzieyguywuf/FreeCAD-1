@@ -5,6 +5,7 @@
 #include <TopoDS.hxx>
 #include <TopExp.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
+# include <Standard_Failure.hxx>
 
 #include "PropertyTopoShape.h"
 #include "FilletBase.h"
@@ -32,7 +33,7 @@ short FilletBase::mustExecute() const
     //Base::Console().Message("setValue in FilletBase called");
 //}
 
-std::string FilletBase::getSelectedEdgeLabel(int id, double r1, double r2) const{
+std::string FilletBase::getSelectedEdgeLabel(int id, double r1, double r2){
     App::DocumentObject* link = Base.getValue();
     if (!link){
         Standard_Failure::Raise("ERROR: No object found\n");
@@ -44,29 +45,32 @@ std::string FilletBase::getSelectedEdgeLabel(int id, double r1, double r2) const
     }
     Part::Feature *base = static_cast<Part::Feature*>(Base.getValue());
 
-    Base::Console().Message("'setEdge' in FilletBase.cpp called\n");
-    // Get a reference to the Part::Feature
-
-    // Get a reference to the TopoDS_Shape and TopoShape
-    Base::Console().Message("Getting TopoDS_Shape\n");
-    // Get a reference to the Part::Feature
-    TopoDS_Shape BaseShape = base->Shape.getValue();
-    Base::Console().Message("Getting TopoShape\n");
-    TopoShape myTopoShape  = base->Shape.getShape();
-
-    // 'Select' this edge, or retrieve the TDF_Label if it's already been selected
-    Base::Console().Message("Calling selectEdge\n");
-    std::string selectionLabel = myTopoShape.selectEdge(id);
+    const std::string selectionLabel = base->Shape.selectEdge(id);
+    Base::Console().Message("-----dumping 'base' in FilletBase.cpp\n");
+    Base::Console().Message(base->Shape.getShape().DumpTopoHistory().c_str());
     return selectionLabel;
+
 }
 
 void FilletBase::setEdge(int id, double r1, double r2){
     // This following setValue is defined in PropertyTopoShape, and is the original
-    // implementation
+    // implementation    
+    //App::DocumentObject* link = Base.getValue();
+    //if (!link)
+        //Standard_Failure::Raise("No object linked");
+    //if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
+        //Standard_Failure::Raise("Linked object is not a Part object");
+    Part::FilletBase *base = static_cast<Part::FilletBase*>(Base.getValue());
     std::string selectionLabel = getSelectedEdgeLabel(id, r1, r2);
     this->Edges.setValue(id, r1, r2, selectionLabel);
 }
 void FilletBase::setEdges(std::vector<FilletElement>& values){
+    //App::DocumentObject* link = Base.getValue();
+    //if (!link)
+        //Standard_Failure::Raise("No object linked");
+    //if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
+        //Standard_Failure::Raise("Linked object is not a Part object");
+    //Part::FilletBase *base = static_cast<Part::FilletBase*>(Base.getValue());
     FilletElement curElement;
     int curID;
     double rad1, rad2;

@@ -256,7 +256,7 @@ void TopoNamingHelper::TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepF
     //std::clog << "Data Framework Dump Below\n";
     //Base::Console().Message(outputStream.str().c_str());
 }
-std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge anEdge, const TopoDS_Shape aShape){
+std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge& anEdge, const TopoDS_Shape& aShape){
     // The label returned will be for the selected Edge
     TDF_Label SelectedLabel;
     std::string SelecedLabelEntryString;
@@ -295,8 +295,7 @@ std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge anEdge, const TopoDS_
                 }
             }
             else{
-                std::runtime_error(
-"ERROR! NODE SHOULD HAVE A SUB-NODE THAT CONTAINS THE CONTEXT SHAPE! Did you use TNaming_Selector or TNaming_Builder?");
+                std::runtime_error( "ERROR! NODE SHOULD HAVE A SUB-NODE THAT CONTAINS THE CONTEXT SHAPE! Did you use TNaming_Selector or TNaming_Builder?");
             }
         }
     }
@@ -304,7 +303,7 @@ std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge anEdge, const TopoDS_
     // If not found, create.
     if (!found){
         SelectedLabel = TDF_TagSource::NewChild(mySelectionNode);
-        //std::clog << "Dumping whole tree before select\n";
+        std::clog << "Creating Selection sub-node\n";
         //this->DeepDump();
         TNaming_Selector SelectionBuilder(SelectedLabel);
         SelectionBuilder.Select(anEdge, aShape);
@@ -318,7 +317,7 @@ std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge anEdge, const TopoDS_
 }
 
 std::vector<std::string> TopoNamingHelper::SelectEdges(const std::vector<TopoDS_Edge> Edges,
-                                                     const TopoDS_Shape aShape){
+                                                     const TopoDS_Shape& aShape){
     std::vector<std::string> outputLabels;
     for (std::vector<TopoDS_Edge>::const_iterator it = Edges.begin(); it != Edges.end(); ++it){
         TopoDS_Edge curEdge = *it;
@@ -338,15 +337,40 @@ TopoDS_Edge TopoNamingHelper::GetSelectedEdge(const std::string NodeTag) const{
         MyMap.Add(EdgeNode);
         TNaming_Selector MySelector(EdgeNode);
         MySelector.Solve(MyMap);
-        Handle(TNaming_NamedShape) EdgeNS;
-        EdgeNode.FindAttribute(TNaming_NamedShape::GetID(), EdgeNS);
-        SelectedEdge = TopoDS::Edge(EdgeNS->Get());
+        Handle(TNaming_NamedShape) EdgeNS = MySelector.NamedShape();
+        //EdgeNode.FindAttribute(TNaming_NamedShape::GetID(), EdgeNS);
+        TopoDS_Edge SelectedEdge = TopoDS::Edge((TopoDS_Shape)EdgeNS->Get());
+        return SelectedEdge;
     }
     else{
         std::runtime_error("That Node does not appear to exist on the Data Framework");
+        return SelectedEdge;
     }
+}
 
-    return SelectedEdge;
+TopoDS_Shape TopoNamingHelper::GetNodeShape(const std::string NodeTag) const{
+    TDF_Label TargetNode;
+    TDF_Tool::Label(myDataFramework, NodeTag.c_str(), TargetNode);
+    TDF_LabelMap MyMap;
+    TopoDS_Shape OutShape;
+
+    if (!TargetNode.IsNull()){
+        MyMap.Add(TargetNode);
+        TNaming_Selector MySelector(TargetNode);
+        MySelector.Solve(MyMap);
+        Handle(TNaming_NamedShape) TargetNS;
+        if (TargetNode.IsAttribute(TNaming_NamedShape::GetID())){
+            TargetNode.FindAttribute(TNaming_NamedShape::GetID(), TargetNS);
+            OutShape = TargetNS->Get();
+        }
+        else{
+            std::runtime_error("That Node does not appear to contain a NamedShape\n");
+        }
+    }
+    else{
+        std::runtime_error("That Node does not appear to exist on the Data Framework\n");
+    }
+    return OutShape;
 }
 
 void TopoNamingHelper::AddTextToLabel(const TDF_Label& Label, const char *str, const std::string& name){

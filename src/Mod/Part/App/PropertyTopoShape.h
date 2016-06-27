@@ -53,10 +53,15 @@ public:
     void setValue(const TopoShape&);
     /// set the part shape
     void setValue(const TopoDS_Shape&);
+
     // Added for Topological Naming purposes
     void setValue(const TopoShape & Shape, BRepAlgoAPI_Fuse& mkFuse);
-    BRepFilletAPI_MakeFillet makeTopoShapeFillet(std::vector<FilletElement>& elements);
-    /// get the part shape
+    void addGeneratedShape(const TopoShape& Shape);
+    BRepFilletAPI_MakeFillet addFilletedShape(std::vector<FilletElement>& elements);
+    const std::string selectEdge(const int targetID);
+    //------- end of topo naming additions
+    //
+    // get the part shape
     const TopoDS_Shape& getValue(void) const;
     const TopoShape& getShape() const;
     const Data::ComplexGeoData* getComplexData() const;

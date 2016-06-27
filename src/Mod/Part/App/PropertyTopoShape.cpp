@@ -80,6 +80,7 @@ PropertyPartShape::~PropertyPartShape()
 
 void PropertyPartShape::setValue(const TopoShape& sh)
 {
+    Base::Console().Message("-----setValue called in PropertyTopoShape with TopoShape\n");
     aboutToSetValue();
     //_Shape = sh;
     _Shape.setShape(sh);
@@ -88,9 +89,16 @@ void PropertyPartShape::setValue(const TopoShape& sh)
 
 void PropertyPartShape::setValue(const TopoDS_Shape& sh)
 {
+    Base::Console().Message("-----setValue called in PropertyTopoShape with TopoDS_Shape\n");
     aboutToSetValue();
     _Shape.setShape(sh);
     //_Shape._Shape = sh;
+    hasSetValue();
+}
+
+void PropertyPartShape::addGeneratedShape(const TopoShape& Shape){
+    aboutToSetValue();
+    _Shape.addShape(Shape);
     hasSetValue();
 }
 
@@ -102,7 +110,8 @@ void PropertyPartShape::setValue(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFus
     hasSetValue();
 }
 
-BRepFilletAPI_MakeFillet PropertyPartShape::makeTopoShapeFillet(std::vector<FilletElement>& elements){
+BRepFilletAPI_MakeFillet PropertyPartShape::addFilletedShape(std::vector<FilletElement>& elements){
+    Base::Console().Message("-----PropertyPartShape::makeTopoShapeFillet being called...\n");
     BRepFilletAPI_MakeFillet mkFillet = this->_Shape.makeTopoShapeFillet(elements);
     return mkFillet;
 }
@@ -115,6 +124,10 @@ const TopoDS_Shape& PropertyPartShape::getValue(void)const
 const TopoShape& PropertyPartShape::getShape() const
 {
     return this->_Shape;
+}
+const std::string PropertyPartShape::selectEdge(const int targetID){
+    Base::Console().Message("-----PropertyPartShape::selectEdge being called...\n");
+    return this->_Shape.selectEdge(targetID);
 }
 
 const Data::ComplexGeoData* PropertyPartShape::getComplexData() const

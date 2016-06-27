@@ -80,6 +80,7 @@ public:
     // important to pass the one with the most data. I don't currently have a way of
     // merging _TopoHelpers
     void setShape(const TopoShape& sh);
+    void addShape(const TopoShape& Shape);
     void setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse);
     //void setShape(const TopoShape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
     BRepFilletAPI_MakeFillet makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges);
@@ -92,7 +93,7 @@ public:
     // in the OCC Data Framework terminology, and is used to retrieve a specific node in
     // the Data Framework
     std::string selectEdge(const int edgeID);
-    std::vector<std::string> selectEdges(const std::vector<int> edgeIDs);
+    //std::vector<std::string> selectEdges(const std::vector<int> edgeIDs);
 
     // use the NodeTag to retrieve an edge
     TopoDS_Edge getSelectedEdge(const std::string NodeTag) const;

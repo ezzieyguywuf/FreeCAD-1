@@ -57,6 +57,7 @@ short Box::mustExecute() const
 
 App::DocumentObjectExecReturn *Box::execute(void)
 {
+    Base::Console().Message("-----a Box is being made in FeaturePartBox.\n");
     double L = Length.getValue();
     double W = Width.getValue();
     double H = Height.getValue();

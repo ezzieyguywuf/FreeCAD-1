@@ -84,7 +84,7 @@ PyObject* FilletBasePy::setEdges(PyObject *args){
         return NULL;
     }
 
-    while (next = PyIter_Next(iter)){
+    while (next = (PyIter_Next(iter))){
         if (!PyArg_ParseTuple(next, "idd", &curIndex, &rad1, &rad2)){
             //PyErr_SetString(PyExc_RuntimeError, "ERROR! Must be a tuple as such 2: (int, double, double)");
             Py_DECREF(iter);

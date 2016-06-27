@@ -24,9 +24,10 @@ class TopoNamingHelper{
         void TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser);
         void TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
         void AddTextToLabel(const TDF_Label& Label, const char *str, const std::string& name="n/a");
-        std::string SelectEdge(const TopoDS_Edge anEdge, const TopoDS_Shape aShape);
-        std::vector<std::string> SelectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape aShape);
+        std::string SelectEdge(const TopoDS_Edge& anEdge, const TopoDS_Shape& aShape);
+        std::vector<std::string> SelectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape& aShape);
         TopoDS_Edge GetSelectedEdge(const std::string NodeTag) const;
+        TopoDS_Shape GetNodeShape(const std::string NodeTag) const;
         void Dump() const;
         void Dump(std::ostream& stream) const;
         std::string DeepDump() const;

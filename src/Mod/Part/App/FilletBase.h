@@ -25,7 +25,7 @@ namespace Part{
 
         short mustExecute() const;
     private:
-        std::string getSelectedEdgeLabel(int id, double r1, double r2) const;
+        std::string getSelectedEdgeLabel(int id, double r1, double r2);
     };
 } // namespace Part
 
