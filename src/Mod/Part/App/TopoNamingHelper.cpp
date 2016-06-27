@@ -60,7 +60,7 @@ void TopoNamingHelper::operator = (const TopoNamingHelper& helper){
 }
 
 void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name){
-    std::clog << "-----Tracking Generated Shape\n";
+    //std::clog << "-----Tracking Generated Shape\n";
     //std::ostringstream outputStream;
     //DeepDump(outputStream);
     //Base::Console().Message(outputStream.str().c_str());
@@ -93,12 +93,12 @@ void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, c
     }
     //std::ostringstream outputStream2;
     //DeepDump(outputStream2);
-    //std::clog << "Data Framework Dump Below\n";
+    ////std::clog << "Data Framework Dump Below\n";
     //Base::Console().Message(outputStream2.str().c_str());
 }
 
 void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
-    std::clog << "-----Tracking Fuse Operation\n";
+    //std::clog << "-----Tracking Fuse Operation\n";
     // TODO: Need to update to account for an abritrary number of shapes being fused.
     // In a Fuse operation, each face is either Modified from one of the -two- (scratch
     // that) 'many' Shapes being fused, or it is Deleted. There is not an instance where a
@@ -114,7 +114,7 @@ void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
     // the modified faces on the BaseShape and the 'Shape1' as well. TODO: Need to figure
     // out a way to incorporate the topo tree from Shape1 into our topo tree, if Shape1
     // has one.
-    std::clog << "Note: next 'tracking generated shape' msg from TrackFuseOperation\n";
+    //std::clog << "Note: next 'tracking generated shape' msg from TrackFuseOperation\n";
     this->TrackGeneratedShape(FuseShape);
     TDF_Label LabelRoot    = TDF_TagSource::NewChild(myRootNode);
     TDF_Label BaseModified = TDF_TagSource::NewChild(LabelRoot);
@@ -163,13 +163,13 @@ void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
     }
     //std::ostringstream outputStream;
     //DeepDump(outputStream);
-    //std::clog << "Data Framework Dump Below\n";
+    ////std::clog << "Data Framework Dump Below\n";
     //Base::Console().Message(outputStream.str().c_str());
 }
 
 void TopoNamingHelper::TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet){
     BRepFilletAPI_MakeFillet Filleter = mkFillet;
-    std::clog << "-----Tracking Fillet Operation\n";
+    //std::clog << "-----Tracking Fillet Operation\n";
     //std::ostringstream output;
     //DeepDump(output);
     //Base::Console().Message(output.str().c_str());
@@ -303,7 +303,7 @@ std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge& anEdge, const TopoDS
     // If not found, create.
     if (!found){
         SelectedLabel = TDF_TagSource::NewChild(mySelectionNode);
-        std::clog << "Creating Selection sub-node\n";
+        //std::clog << "Creating Selection sub-node\n";
         //this->DeepDump();
         TNaming_Selector SelectionBuilder(SelectedLabel);
         SelectionBuilder.Select(anEdge, aShape);
@@ -373,6 +373,15 @@ TopoDS_Shape TopoNamingHelper::GetNodeShape(const std::string NodeTag) const{
     return OutShape;
 }
 
+bool TopoNamingHelper::HasNodes() const{
+    bool out = false;
+    int numb = this->myRootNode.NbChildren();
+    if (numb > 1){
+        out = true;
+    }
+    return out;
+}
+
 void TopoNamingHelper::AddTextToLabel(const TDF_Label& Label, const char *str, const std::string& name){
     // Join name and str
     std::ostringstream stream;
@@ -396,7 +405,7 @@ void TopoNamingHelper::Dump(std::ostream& stream) const{
 }
 
 void TopoNamingHelper::DeepDump(std::stringstream& stream) const{
-    std::clog << "-----TopoNamingHelper::DeepDump(std::ostream...)\n";
+    //std::clog << "-----TopoNamingHelper::DeepDump(std::ostream...)\n";
     TDF_IDFilter myFilter;
     myFilter.Keep(TDataStd_AsciiString::GetID());
     myFilter.Keep(TNaming_NamedShape::GetID());
@@ -419,10 +428,10 @@ void TopoNamingHelper::DeepDump(std::stringstream& stream) const{
 }
 
 std::string TopoNamingHelper::DeepDump() const{
-    std::clog << "-----TopoNamingHelper::DeepDump()\n";
+    //std::clog << "-----TopoNamingHelper::DeepDump()\n";
     std::stringstream output;
     DeepDump(output);
-    std::clog << output.str();
+    //std::clog << output.str();
     return output.str();
 }
 

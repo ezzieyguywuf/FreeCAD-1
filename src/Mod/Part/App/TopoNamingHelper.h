@@ -28,6 +28,12 @@ class TopoNamingHelper{
         std::vector<std::string> SelectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape& aShape);
         TopoDS_Edge GetSelectedEdge(const std::string NodeTag) const;
         TopoDS_Shape GetNodeShape(const std::string NodeTag) const;
+
+        // Does the Topo tree have additional nodes aside from the Selection one created
+        // at initialization?
+        bool HasNodes() const;
+
+        // debugging stuff
         void Dump() const;
         void Dump(std::ostream& stream) const;
         std::string DeepDump() const;

@@ -56,7 +56,7 @@ public:
 
     // Added for Topological Naming purposes
     void setValue(const TopoShape & Shape, BRepAlgoAPI_Fuse& mkFuse);
-    void addGeneratedShape(const TopoShape& Shape);
+    void addShape(const TopoShape& Shape);
     BRepFilletAPI_MakeFillet addFilletedShape(std::vector<FilletElement>& elements);
     const std::string selectEdge(const int targetID);
     //------- end of topo naming additions

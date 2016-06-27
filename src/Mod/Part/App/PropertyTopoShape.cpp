@@ -96,7 +96,7 @@ void PropertyPartShape::setValue(const TopoDS_Shape& sh)
     hasSetValue();
 }
 
-void PropertyPartShape::addGeneratedShape(const TopoShape& Shape){
+void PropertyPartShape::addShape(const TopoShape& Shape){
     aboutToSetValue();
     _Shape.addShape(Shape);
     hasSetValue();
@@ -111,7 +111,7 @@ void PropertyPartShape::setValue(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFus
 }
 
 BRepFilletAPI_MakeFillet PropertyPartShape::addFilletedShape(std::vector<FilletElement>& elements){
-    Base::Console().Message("-----PropertyPartShape::makeTopoShapeFillet being called...\n");
+    Base::Console().Message("-----PropertyPartShape::addFilletedShape being called...\n");
     BRepFilletAPI_MakeFillet mkFillet = this->_Shape.makeTopoShapeFillet(elements);
     return mkFillet;
 }
@@ -126,8 +126,14 @@ const TopoShape& PropertyPartShape::getShape() const
     return this->_Shape;
 }
 const std::string PropertyPartShape::selectEdge(const int targetID){
-    Base::Console().Message("-----PropertyPartShape::selectEdge being called...\n");
-    return this->_Shape.selectEdge(targetID);
+    aboutToSetValue();
+    Base::Console().Message("-----PropertyPartShape::selectEdge being called, dumping history...\n");
+    Base::Console().Message(this->_Shape.DumpTopoHistory().c_str());
+    const std::string nodeLabel = this->_Shape.selectEdge(targetID);
+    hasSetValue();
+    Base::Console().Message("-----Dumping after PropertyPartShape::selectEdge\n");
+    Base::Console().Message(this->_Shape.DumpTopoHistory().c_str());
+    return nodeLabel;
 }
 
 const Data::ComplexGeoData* PropertyPartShape::getComplexData() const
@@ -529,10 +535,11 @@ PyObject *PropertyFilletEdges::getPyObject(void)
     std::vector<FilletElement>::const_iterator it;
     int index = 0;
     for (it = _lValueList.begin(); it != _lValueList.end(); ++it) {
-        Py::Tuple ent(3);
+        Py::Tuple ent(4);
         ent.setItem(0, Py::Int(it->edgeid));
         ent.setItem(1, Py::Float(it->radius1));
         ent.setItem(2, Py::Float(it->radius2));
+        ent.setItem(3, Py::String(it->edgetag));
         list[index++] = ent;
     }
 
@@ -550,6 +557,7 @@ void PropertyFilletEdges::setPyObject(PyObject *value)
         fe.edgeid = (int)Py::Int(ent.getItem(0));
         fe.radius1 = (double)Py::Float(ent.getItem(1));
         fe.radius2 = (double)Py::Float(ent.getItem(2));
+        fe.edgetag = (std::string)Py::String(ent.getItem(3));
         values.push_back(fe);
     }
 

@@ -84,6 +84,7 @@ public:
     void setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse);
     //void setShape(const TopoShape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
     BRepFilletAPI_MakeFillet makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges);
+    bool hasTopoNamingNodes() const;
 
     // Print out a concise description of the topo tree
     std::string DumpTopoHistory() const;

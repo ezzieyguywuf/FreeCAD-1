@@ -226,7 +226,7 @@ TYPESYSTEM_SOURCE(Part::TopoShape , Data::ComplexGeoData);
 
 TopoShape::TopoShape()
 {
-    Base::Console().Message("-----Instantiated blank TopoShape\n");
+    //Base::Console().Message("-----Instantiated blank TopoShape\n");
 }
 
 TopoShape::~TopoShape()
@@ -236,14 +236,14 @@ TopoShape::~TopoShape()
 TopoShape::TopoShape(const TopoDS_Shape& shape)
     : _Shape(shape)
 {
-    Base::Console().Message("-----Instantiated TopoShape with TopoDS_Shape\n");
+    //Base::Console().Message("-----Instantiated TopoShape with TopoDS_Shape\n");
     _TopoNamer.TrackGeneratedShape(shape);
 }
 
 TopoShape::TopoShape(const TopoShape& shape)
     : _Shape(shape._Shape)
 {
-    Base::Console().Message("-----Instantiated TopoShape with TopoShape\n");
+    //Base::Console().Message("-----Instantiated TopoShape with TopoShape\n");
     _TopoNamer = shape._TopoNamer;
     //_TopoNamer.DeepDump();
 }
@@ -469,7 +469,7 @@ PyObject * TopoShape::getPySubShape(const char* Type) const
 
 void TopoShape::operator = (const TopoShape& sh)
 {
-    Base::Console().Message("-----operator = in TopoShape called\n");
+    //Base::Console().Message("-----operator = in TopoShape called\n");
     if (this != &sh) {
         this->_Shape     = sh._Shape;
         this->_TopoNamer = sh._TopoNamer;
@@ -487,7 +487,7 @@ void TopoShape::setShape(const TopoDS_Shape& shape){
         //TopoDS_Shape setShape(shape);
         //BRepBuilderAPI_Copy mkCopy(shape);
         this->_Shape = shape;;
-        Base::Console().Message("-----NOTE!! Evolution = brandnew?!\n");
+        //Base::Console().Message("-----NOTE!! Evolution = brandnew?!\n");
         // Since the TopoDS_Shape can't carry a history with it, start the TNaming all over.
         // TODO: Check to make sure this isn't used incorrectly?
         TopoNamingHelper newTopoNamer;
@@ -497,20 +497,20 @@ void TopoShape::setShape(const TopoDS_Shape& shape){
 }
 
 void TopoShape::setShape(const TopoShape& shape){
-    Base::Console().Message("-----setShape (TopoShape) called, dumping topo history\n");
+    //Base::Console().Message("-----setShape (TopoShape) called, dumping topo history\n");
     this->_Shape     = shape._Shape;
     this->_TopoNamer = shape._TopoNamer;
-    Base::Console().Message(this->DumpTopoHistory().c_str());
+    //Base::Console().Message(this->DumpTopoHistory().c_str());
 }
 
 void TopoShape::addShape(const TopoShape& shape){
-    Base::Console().Message("-----addShape (TopoShape) called, dumping topo history\n");
+    //Base::Console().Message("-----addShape (TopoShape) called, dumping topo history\n");
     this->_TopoNamer.TrackGeneratedShape(shape._Shape);
-    Base::Console().Message(this->DumpTopoHistory().c_str());
+    //Base::Console().Message(this->DumpTopoHistory().c_str());
 }
 
 void TopoShape::setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse){
-    Base::Console().Message("-----setShape (mkFuse) called\n");
+    //Base::Console().Message("-----setShape (mkFuse) called\n");
     TopoDS_Shape resShape = mkFuse.Shape();
     //if (!this->_Shape.IsEqual(resShape)){
         // First, copy the _TopoNamer from the passed shape
@@ -520,7 +520,7 @@ void TopoShape::setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse){
         // Finally, track the new fused shape in the Topo Tree.
         this->_TopoNamer.TrackFuseOperation(mkFuse);
         // let's see the tree
-        Base::Console().Message("-----Dumping tree from setShape(...mkFuse)\n");
+        //Base::Console().Message("-----Dumping tree from setShape(...mkFuse)\n");
         this->_TopoNamer.DeepDump();
     //}
 }
@@ -544,7 +544,9 @@ void TopoShape::setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse){
 //}
 //
 BRepFilletAPI_MakeFillet TopoShape::makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges){
-    BRepFilletAPI_MakeFillet mkFillet(this->_Shape);
+    Base::Console().Message("-----makeTopoShapeFillet (TopoShape) called, dumpinghistory\n");
+    Base::Console().Message(this->DumpTopoHistory().c_str());
+    BRepFilletAPI_MakeFillet mkFillet(this->_TopoNamer.GetNodeShape("0:2"));
     //TopoDS_Edge edge = this->getSelectedEdge(selectedLabel);
     //mkFillet.Add(2., 2., edge);
     for (std::vector<FilletElement>::const_iterator it = targetEdges.begin(); it != targetEdges.end(); ++it) {
@@ -595,6 +597,9 @@ TopoDS_Edge TopoShape::getSelectedEdge(const std::string NodeTag) const{
     return selectedEdge;
 }
 
+bool TopoShape::hasTopoNamingNodes() const{
+    return this->_TopoNamer.HasNodes();
+}
 std::string TopoShape::DumpTopoHistory() const{
     return this->_TopoNamer.DeepDump();
 }
@@ -1550,7 +1555,7 @@ TopoDS_Shape TopoShape::common(TopoDS_Shape shape) const
 
 TopoDS_Shape TopoShape::fuse(TopoDS_Shape shape) const
 {
-    Base::Console().Message("-----TopoShape::fuse called\n");
+    //Base::Console().Message("-----TopoShape::fuse called\n");
     if (this->_Shape.IsNull())
         Standard_Failure::Raise("Base shape is null");
     if (shape.IsNull())
@@ -1562,7 +1567,7 @@ TopoDS_Shape TopoShape::fuse(TopoDS_Shape shape) const
 
 TopoDS_Shape TopoShape::multiFuse(const std::vector<TopoDS_Shape>& shapes, Standard_Real tolerance) const
 {
-    Base::Console().Message("-----TopoShape::multiFuse called\n");
+    //Base::Console().Message("-----TopoShape::multiFuse called\n");
     if (this->_Shape.IsNull())
         Standard_Failure::Raise("Base shape is null");
 #if OCC_VERSION_HEX <= 0x060800

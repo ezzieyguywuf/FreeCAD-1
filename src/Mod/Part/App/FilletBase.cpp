@@ -46,8 +46,8 @@ std::string FilletBase::getSelectedEdgeLabel(int id, double r1, double r2){
     Part::Feature *base = static_cast<Part::Feature*>(Base.getValue());
 
     const std::string selectionLabel = base->Shape.selectEdge(id);
-    Base::Console().Message("-----dumping 'base' in FilletBase.cpp\n");
-    Base::Console().Message(base->Shape.getShape().DumpTopoHistory().c_str());
+    //Base::Console().Message("-----dumping 'base' in FilletBase.cpp\n");
+    //Base::Console().Message(base->Shape.getShape().DumpTopoHistory().c_str());
     return selectionLabel;
 
 }
