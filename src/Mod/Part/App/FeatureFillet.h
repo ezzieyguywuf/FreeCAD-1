@@ -26,6 +26,7 @@
 
 #include <App/PropertyStandard.h>
 #include "PartFeature.h"
+#include "TopoShape_Fillet.h"
 
 namespace Part
 {
@@ -46,6 +47,8 @@ public:
         return "PartGui::ViewProviderFillet";
     }
     //@}
+private:
+    TopoShape_Fillet _ShapeFillet;
 };
 
 } //namespace Part
