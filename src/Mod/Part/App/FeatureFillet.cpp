@@ -61,10 +61,11 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
 #if defined(__GNUC__) && defined (FC_OS_LINUX)
         Base::SignalException se;
 #endif
-        if (dynamic_cast<TopoShape_Fillet&>(*this->Shape.getShape()).hasTopoNamingNodes()){
+        TopoShape_Fillet FilletShape = dynamic_cast<const TopoShape_Fillet&>(this->Shape.getShape());
+        if (FilletShape.hasTopoNamingNodes()){
             // If there are nodes, this means an edge (or more) has already been selected.
             // Let's maintain this topological history
-            TopoShape_Fillet FilletShape = dynamic_cast<TopoShape_Fillet&>(*this->Shape.getShape());
+            
             // Since we're being recomputed, likely the Base shape has changed. Let's add
             // the updated base shape to the topological history.
             // TODO: make a 'check if updated' call in TopoNamingHelper
@@ -74,7 +75,7 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
             // If there are no nodes, then no fillets have been made yet. Let's use the
             // Base shape as the topo basis, i.e. no topological history except for
             // 'Generated'
-            TopoShape_Fillet FilletShape(base->Shape.getValue());
+            FilletShape = TopoShape_Fillet(base->Shape.getValue());
         }
 
         std::vector<FilletElement> values = Edges.getValues();

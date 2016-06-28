@@ -31,6 +31,7 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include <type_traits>
 
 namespace Part
 {
@@ -54,7 +55,10 @@ public:
     void setValue(const TopoDS_Shape&);
 
     template <class T>
-    void setValue(const T& aShape)
+    typename std::enable_if<
+                std::is_base_of<TopoShape, T>::value,
+        void
+    >::type setValue(const T& aShape)
     {
         aboutToSetValue();
         _Shape = std::make_unique<T>(aShape);
