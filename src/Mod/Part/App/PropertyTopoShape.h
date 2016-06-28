@@ -30,6 +30,7 @@
 #include <App/PropertyGeo.h>
 #include <map>
 #include <vector>
+#include <memory>
 
 namespace Part
 {
@@ -47,10 +48,19 @@ public:
 
     /** @name Getter/setter */
     //@{
-    /// set the part shape
-    void setValue(const TopoShape&);
+    ///// set the part shape
+    //void setValue(const TopoShape&);
     /// set the part shape
     void setValue(const TopoDS_Shape&);
+
+    template <class T>
+    void setValue(const T& aShape)
+    {
+        aboutToSetValue();
+        _Shape = std::make_unique<T>(aShape);
+        hasSetValue();
+    }
+
     /// get the part shape
     const TopoDS_Shape& getValue(void) const;
     const TopoShape& getShape() const;
@@ -92,7 +102,7 @@ public:
     virtual void getPaths(std::vector<App::ObjectIdentifier> & paths) const;
 
 private:
-    TopoShape _Shape;
+    std::unique_ptr<TopoShape> _Shape;
 };
 
 struct PartExport ShapeHistory {

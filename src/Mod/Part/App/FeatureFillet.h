@@ -48,7 +48,7 @@ public:
     }
     //@}
 private:
-    TopoShape_Fillet _ShapeFillet;
+    TopoShape_Fillet _FilletShape;
 };
 
 } //namespace Part

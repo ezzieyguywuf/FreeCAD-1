@@ -33,6 +33,8 @@
 
 
 #include "FeatureFillet.h"
+#include "TopoShape.h"
+#include "TopoShape_Fillet.h"
 #include <Base/Exception.h>
 
 
@@ -43,6 +45,7 @@ PROPERTY_SOURCE(Part::Fillet, Part::FilletBase)
 
 Fillet::Fillet()
 {
+    this->Shape.setValue(_FilletShape);
 }
 
 App::DocumentObjectExecReturn *Fillet::execute(void)
@@ -58,24 +61,41 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
 #if defined(__GNUC__) && defined (FC_OS_LINUX)
         Base::SignalException se;
 #endif
-        BRepFilletAPI_MakeFillet mkFillet(base->Shape.getValue());
-        TopTools_IndexedMapOfShape mapOfShape;
-        TopExp::MapShapes(base->Shape.getValue(), TopAbs_EDGE, mapOfShape);
+        if (dynamic_cast<TopoShape_Fillet&>(*this->Shape.getShape()).hasTopoNamingNodes()){
+            // If there are nodes, this means an edge (or more) has already been selected.
+            // Let's maintain this topological history
+            TopoShape_Fillet FilletShape = dynamic_cast<TopoShape_Fillet&>(*this->Shape.getShape());
+            // Since we're being recomputed, likely the Base shape has changed. Let's add
+            // the updated base shape to the topological history.
+            // TODO: make a 'check if updated' call in TopoNamingHelper
+            FilletShape.addShape(base->Shape.getValue());
+        }
+        else{
+            // If there are no nodes, then no fillets have been made yet. Let's use the
+            // Base shape as the topo basis, i.e. no topological history except for
+            // 'Generated'
+            TopoShape_Fillet FilletShape(base->Shape.getValue());
+        }
 
         std::vector<FilletElement> values = Edges.getValues();
         for (std::vector<FilletElement>::iterator it = values.begin(); it != values.end(); ++it) {
             int id = it->edgeid;
-            double radius1 = it->radius1;
-            double radius2 = it->radius2;
-            const TopoDS_Edge& edge = TopoDS::Edge(mapOfShape.FindKey(id));
-            mkFillet.Add(radius1, radius2, edge);
+            std::string edgetag = it->edgetag;
+            if (edgetag.empty()){
+                it->edgetag = FilletShape.selectEdge(id);
+            }
         }
 
-        TopoDS_Shape shape = mkFillet.Shape();
-        if (shape.IsNull())
+        // This is where the fillet operation is done now, in TopoShape_Fillet
+        BRepFilletAPI_MakeFillet mkFillet = FilletShape.makeTopoShapeFillet(values);
+
+        if (!mkFillet.IsDone())
             return new App::DocumentObjectExecReturn("Resulting shape is null");
+
+        TopoDS_Shape shape = mkFillet.Shape();
         ShapeHistory history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
-        this->Shape.setValue(shape);
+        //this->Shape.setValue(shape);
+        this->Shape.setValue(FilletShape);
 
         // make sure the 'PropertyShapeHistory' is not safed in undo/redo (#0001889)
         PropertyShapeHistory prop;

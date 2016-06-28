@@ -932,10 +932,7 @@ bool DlgFilletEdges::accept()
 
     Gui::WaitCursor wc;
     code += QString::fromLatin1(
-        "#Note, following line commented by W.Sanyer\n"
-        "#FreeCAD.ActiveDocument.%1.Edges = __fillets__\n"
-        "#Note, following line replaced ...Edges = ...\n"
-        "FreeCAD.ActiveDocument.%1.setEdges(__fillets__)\n"
+        "FreeCAD.ActiveDocument.%1.Edges = __fillets__\n"
         "del __fillets__\n"
         "FreeCADGui.ActiveDocument.%2.Visibility = False\n")
         .arg(name).arg(shape);
