@@ -34,7 +34,6 @@
 # include <TopExp_Explorer.hxx>
 # include <TopTools_IndexedMapOfShape.hxx>
 # include <Standard_Failure.hxx>
-# include <TopoDS.hxx>
 # include <TopoDS_Face.hxx>
 # include <gp_Dir.hxx>
 # include <gp_Pln.hxx> // for Precision::Confusion()
@@ -80,7 +79,6 @@ short Feature::mustExecute(void) const
 
 App::DocumentObjectExecReturn *Feature::recompute(void)
 {
-    Base::Console().Message("-----a Part::Feature is being recomputed\n");
     try {
         return App::GeoFeature::recompute();
     }
@@ -94,7 +92,6 @@ App::DocumentObjectExecReturn *Feature::recompute(void)
 
 App::DocumentObjectExecReturn *Feature::execute(void)
 {
-    Base::Console().Message("-----a Part::Feature is being touched\n");
     this->Shape.touch();
     return App::DocumentObject::StdReturn;
 }
@@ -129,7 +126,6 @@ void Feature::onChanged(const App::Property* prop)
     // if the point data has changed check and adjust the transformation as well
     else if (prop == &this->Shape) {
         if (this->isRecomputing()) {
-            Base::Console().Message("-----Creating new TopoShape in PartFeature\n");
             TopoShape& shape = const_cast<TopoShape&>(this->Shape.getShape());
             shape.setTransform(this->Placement.getValue().toMatrix());
         }
@@ -244,43 +240,21 @@ const char* Feature::getViewProviderName(void) const {
 
 // ---------------------------------------------------------
 
-//PROPERTY_SOURCE(Part::FilletBase, Part::Feature)
+PROPERTY_SOURCE(Part::FilletBase, Part::Feature)
 
-//FilletBase::FilletBase()
-//{
-    //ADD_PROPERTY(Base,(0));
-    //ADD_PROPERTY(Edges,(0,0,0));
-    //Edges.setSize(0);
-//}
+FilletBase::FilletBase()
+{
+    ADD_PROPERTY(Base,(0));
+    ADD_PROPERTY(Edges,(0,0,0));
+    Edges.setSize(0);
+}
 
-//short FilletBase::mustExecute() const
-//{
-    //if (Base.isTouched() || Edges.isTouched())
-        //return 1;
-    //return 0;
-//}
-
-//void FilletBase::setEdge(int id, double r1, double r2){
-    //// Get a reference to the Part::Feature
-    //Part::Feature *base = static_cast<Part::Feature*>(Base.getValue());
-
-    //// Get a reference to the TopoDS_Shape and TopoShape
-    //TopoDS_Shape BaseShape = base->Shape.getValue();
-    //TopoShape myTopoShape  = base->Shape.getShape();
-
-    //// Get a list of all the edges
-    //TopTools_IndexedMapOfShape listOfEdges;
-    //TopExp::MapShapes(BaseShape, TopAbs_EDGE, listOfEdges);
-
-    //// Get the specific edge, I hope
-    //TopoDS_Edge anEdge = TopoDS::Edge(listOfEdges.FindKey(id));
-
-    //// 'Select' this edge, or retrieve the TDF_Label if it's already been selected
-    //TDF_Label selectionLabel = myTopoShape.selectEdge(anEdge, BaseShape);
-    //// TODO call the same functions that were originall called in PropertyTopoShape (I // think)
-//}
-//void FilletBase::setEdges(const std::vector<FilletElement>& values){
-//}
+short FilletBase::mustExecute() const
+{
+    if (Base.isTouched() || Edges.isTouched())
+        return 1;
+    return 0;
+}
 
 // ---------------------------------------------------------
 

@@ -68,11 +68,6 @@ Sub-elements such as vertices, edges or faces are accessible as:
         <UserDocu>Dump information about the shape to a string.</UserDocu>
       </Documentation>
     </Methode>
-    <Methode Name="DumpTopoHistory" Const="true">
-      <Documentation>
-        <UserDocu>Dump information about the Topological Naming History.</UserDocu>
-      </Documentation>
-    </Methode>
     <Methode Name="exportStl" Const="true">
       <Documentation>
         <UserDocu>Export the content of this shape to an STL mesh file.</UserDocu>

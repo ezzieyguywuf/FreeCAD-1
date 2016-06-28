@@ -69,7 +69,6 @@ generate_from_xml(RectangularTrimmedSurfacePy)
 generate_from_xml(SurfaceOfExtrusionPy)
 generate_from_xml(SurfaceOfRevolutionPy)
 generate_from_xml(PartFeaturePy)
-generate_from_xml(FilletBasePy)
 generate_from_xml(AttachableObjectPy)
 generate_from_xml(Part2DObjectPy)
 generate_from_xml(AttachEnginePy)
@@ -129,8 +128,6 @@ SET(Features_SRCS
     PartFeatures.h
     PartFeature.cpp
     PartFeature.h
-    FilletBase.cpp
-    FilletBase.h
     PartFeatureReference.cpp
     PartFeatureReference.h
     Part2DObject.cpp
@@ -221,8 +218,6 @@ SET(Python_SRCS
     SurfaceOfRevolutionPyImp.cpp
     PartFeaturePy.xml
     PartFeaturePyImp.cpp
-    FilletBasePy.xml
-    FilletBasePyImp.cpp
     AttachableObjectPy.xml
     AttachableObjectPyImp.cpp
     Part2DObjectPy.xml
@@ -277,6 +272,8 @@ SET(Part_SRCS
     TopoShape.h
     TopoNamingHelper.cpp
     TopoNamingHelper.h
+    TopoShape_Fillet.cpp
+    TopoShape_Fillet.h
     edgecluster.cpp
     edgecluster.h
     modelRefine.cpp

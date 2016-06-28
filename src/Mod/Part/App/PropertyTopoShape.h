@@ -28,10 +28,8 @@
 #include <TopAbs_ShapeEnum.hxx>
 #include <App/DocumentObject.h>
 #include <App/PropertyGeo.h>
-#include <BRepAlgoAPI_Fuse.hxx>
 #include <map>
 #include <vector>
-#include "FilletElement.h"
 
 namespace Part
 {
@@ -53,15 +51,7 @@ public:
     void setValue(const TopoShape&);
     /// set the part shape
     void setValue(const TopoDS_Shape&);
-
-    // Added for Topological Naming purposes
-    void setValue(const TopoShape & Shape, BRepAlgoAPI_Fuse& mkFuse);
-    void addShape(const TopoShape& Shape);
-    BRepFilletAPI_MakeFillet addFilletedShape(std::vector<FilletElement>& elements);
-    const std::string selectEdge(const int targetID);
-    //------- end of topo naming additions
-    //
-    // get the part shape
+    /// get the part shape
     const TopoDS_Shape& getValue(void) const;
     const TopoShape& getShape() const;
     const Data::ComplexGeoData* getComplexData() const;
@@ -161,11 +151,10 @@ private:
 /** A property class to store hash codes and two radii for the fillet algorithm.
  * @author Werner Mayer
  */
-//struct PartExport FilletElement {
-    //int edgeid;
-    //double radius1, radius2;
-    //std::string edgetag;
-//};
+struct PartExport FilletElement {
+    int edgeid;
+    double radius1, radius2;
+};
 
 class PartExport PropertyFilletEdges : public App::PropertyLists
 {
@@ -184,7 +173,7 @@ public:
 
     /** Sets the property
      */
-    void setValue(int id, double r1, double r2, std::string idtag);
+    void setValue(int id, double r1, double r2);
 
     void setValues (const std::vector<FilletElement>& values);
 

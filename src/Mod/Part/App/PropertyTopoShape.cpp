@@ -80,60 +80,26 @@ PropertyPartShape::~PropertyPartShape()
 
 void PropertyPartShape::setValue(const TopoShape& sh)
 {
-    Base::Console().Message("-----setValue called in PropertyTopoShape with TopoShape\n");
     aboutToSetValue();
-    //_Shape = sh;
-    _Shape.setShape(sh);
+    _Shape = sh;
     hasSetValue();
 }
 
 void PropertyPartShape::setValue(const TopoDS_Shape& sh)
 {
-    Base::Console().Message("-----setValue called in PropertyTopoShape with TopoDS_Shape\n");
     aboutToSetValue();
-    _Shape.setShape(sh);
-    //_Shape._Shape = sh;
+    _Shape._Shape = sh;
     hasSetValue();
-}
-
-void PropertyPartShape::addShape(const TopoShape& Shape){
-    aboutToSetValue();
-    _Shape.addShape(Shape);
-    hasSetValue();
-}
-
-void PropertyPartShape::setValue(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse)
-{
-    aboutToSetValue();
-    _Shape.setShape(Shape, mkFuse);
-    //_Shape._Shape = sh;
-    hasSetValue();
-}
-
-BRepFilletAPI_MakeFillet PropertyPartShape::addFilletedShape(std::vector<FilletElement>& elements){
-    Base::Console().Message("-----PropertyPartShape::addFilletedShape being called...\n");
-    BRepFilletAPI_MakeFillet mkFillet = this->_Shape.makeTopoShapeFillet(elements);
-    return mkFillet;
 }
 
 const TopoDS_Shape& PropertyPartShape::getValue(void)const 
 {
-    return _Shape.getShape();
+    return _Shape._Shape;
 }
 
 const TopoShape& PropertyPartShape::getShape() const
 {
     return this->_Shape;
-}
-const std::string PropertyPartShape::selectEdge(const int targetID){
-    aboutToSetValue();
-    Base::Console().Message("-----PropertyPartShape::selectEdge being called, dumping history...\n");
-    Base::Console().Message(this->_Shape.DumpTopoHistory().c_str());
-    const std::string nodeLabel = this->_Shape.selectEdge(targetID);
-    hasSetValue();
-    Base::Console().Message("-----Dumping after PropertyPartShape::selectEdge\n");
-    Base::Console().Message(this->_Shape.DumpTopoHistory().c_str());
-    return nodeLabel;
 }
 
 const Data::ComplexGeoData* PropertyPartShape::getComplexData() const
@@ -511,14 +477,13 @@ PropertyFilletEdges::~PropertyFilletEdges()
 {
 }
 
-void PropertyFilletEdges::setValue(int id, double r1, double r2, std::string idtag)
+void PropertyFilletEdges::setValue(int id, double r1, double r2)
 {
     aboutToSetValue();
     _lValueList.resize(1);
-    _lValueList[0].edgeid  = id;
+    _lValueList[0].edgeid = id;
     _lValueList[0].radius1 = r1;
     _lValueList[0].radius2 = r2;
-    _lValueList[0].edgetag = idtag;
     hasSetValue();
 }
 
@@ -535,11 +500,10 @@ PyObject *PropertyFilletEdges::getPyObject(void)
     std::vector<FilletElement>::const_iterator it;
     int index = 0;
     for (it = _lValueList.begin(); it != _lValueList.end(); ++it) {
-        Py::Tuple ent(4);
+        Py::Tuple ent(3);
         ent.setItem(0, Py::Int(it->edgeid));
         ent.setItem(1, Py::Float(it->radius1));
         ent.setItem(2, Py::Float(it->radius2));
-        ent.setItem(3, Py::String(it->edgetag));
         list[index++] = ent;
     }
 
@@ -557,7 +521,6 @@ void PropertyFilletEdges::setPyObject(PyObject *value)
         fe.edgeid = (int)Py::Int(ent.getItem(0));
         fe.radius1 = (double)Py::Float(ent.getItem(1));
         fe.radius2 = (double)Py::Float(ent.getItem(2));
-        fe.edgetag = (std::string)Py::String(ent.getItem(3));
         values.push_back(fe);
     }
 

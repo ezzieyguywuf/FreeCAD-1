@@ -35,9 +35,6 @@
 
 
 #include "FeatureChamfer.h"
-#include "FilletBase.h"
-#include "PartFeature.h"
-#include "PartFeaturePy.h"
 
 
 using namespace Part;
