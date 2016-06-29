@@ -31,6 +31,7 @@
 #include <App/PropertyGeo.h>
 #include <map>
 #include <vector>
+#include <string>
 
 namespace Part
 {
@@ -166,7 +167,7 @@ public:
 
     /** Sets the property
      */
-    void setValue(int id, double r1, double r2);
+    void setValue(int id, double r1, double r2, std::string edgetag="");
 
     void setValues (const std::vector<FilletElement>& values);
 

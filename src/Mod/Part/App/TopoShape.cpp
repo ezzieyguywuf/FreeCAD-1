@@ -504,10 +504,10 @@ void TopoShape::setShape(const TopoShape& shape){
 }
 
 void TopoShape::addShape(const TopoShape& shape){
-    Base::Console().Message("-----addShape (TopoShape) called, dumping topo history\n");
+    //Base::Console().Message("-----addShape (TopoShape) called, dumping topo history\n");
     this->_Shape = shape._Shape;
     this->_TopoNamer.TrackGeneratedShape(shape._Shape);
-    Base::Console().Message(this->DumpTopoHistory().c_str());
+    //Base::Console().Message(this->DumpTopoHistory().c_str());
 }
 
 void TopoShape::setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse){
@@ -545,8 +545,8 @@ void TopoShape::setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse){
 //}
 //
 BRepFilletAPI_MakeFillet TopoShape::makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges){
-    Base::Console().Message("-----makeTopoShapeFillet (TopoShape) called, dumpinghistory\n");
-    Base::Console().Message(this->DumpTopoHistory().c_str());
+    //Base::Console().Message("-----makeTopoShapeFillet (TopoShape) called, dumpinghistory\n");
+    //Base::Console().Message(this->DumpTopoHistory().c_str());
     BRepFilletAPI_MakeFillet mkFillet(this->_TopoNamer.GetNodeShape("0:2"));
     //TopoDS_Edge edge = this->getSelectedEdge(selectedLabel);
     //mkFillet.Add(2., 2., edge);

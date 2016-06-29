@@ -477,13 +477,17 @@ PropertyFilletEdges::~PropertyFilletEdges()
 {
 }
 
-void PropertyFilletEdges::setValue(int id, double r1, double r2)
+void PropertyFilletEdges::setValue(int id, double r1, double r2, std::string edgetag)
 {
     aboutToSetValue();
     _lValueList.resize(1);
     _lValueList[0].edgeid = id;
     _lValueList[0].radius1 = r1;
     _lValueList[0].radius2 = r2;
+    // only accept non-empty edgetag
+    if (!edgetag.empty()){
+        _lValueList[0].edgetag = edgetag;
+    }
     hasSetValue();
 }
 
