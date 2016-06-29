@@ -25,6 +25,7 @@
 #define PART_PROPERTYTOPOSHAPE_H
 
 #include "TopoShape.h"
+#include "FilletElement.h"
 #include <TopAbs_ShapeEnum.hxx>
 #include <App/DocumentObject.h>
 #include <App/PropertyGeo.h>
@@ -146,14 +147,6 @@ public:
 
 private:
     std::vector<ShapeHistory> _lValueList;
-};
-
-/** A property class to store hash codes and two radii for the fillet algorithm.
- * @author Werner Mayer
- */
-struct PartExport FilletElement {
-    int edgeid;
-    double radius1, radius2;
 };
 
 class PartExport PropertyFilletEdges : public App::PropertyLists

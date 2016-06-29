@@ -272,8 +272,6 @@ SET(Part_SRCS
     TopoShape.h
     TopoNamingHelper.cpp
     TopoNamingHelper.h
-    TopoShape_Fillet.cpp
-    TopoShape_Fillet.h
     edgecluster.cpp
     edgecluster.h
     modelRefine.cpp

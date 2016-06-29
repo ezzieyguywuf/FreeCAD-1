@@ -34,7 +34,6 @@
 
 #include "FeatureFillet.h"
 #include "TopoShape.h"
-#include "TopoShape_Fillet.h"
 #include <Base/Exception.h>
 
 
@@ -45,7 +44,6 @@ PROPERTY_SOURCE(Part::Fillet, Part::FilletBase)
 
 Fillet::Fillet()
 {
-    this->Shape.setValue(_FilletShape);
 }
 
 App::DocumentObjectExecReturn *Fillet::execute(void)
@@ -61,7 +59,7 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
 #if defined(__GNUC__) && defined (FC_OS_LINUX)
         Base::SignalException se;
 #endif
-        TopoShape_Fillet FilletShape = dynamic_cast<const TopoShape_Fillet&>(this->Shape.getShape());
+        TopoShape FilletShape = this->Shape.getShape();
         if (FilletShape.hasTopoNamingNodes()){
             // If there are nodes, this means an edge (or more) has already been selected.
             // Let's maintain this topological history
@@ -75,7 +73,7 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
             // If there are no nodes, then no fillets have been made yet. Let's use the
             // Base shape as the topo basis, i.e. no topological history except for
             // 'Generated'
-            FilletShape = TopoShape_Fillet(base->Shape.getValue());
+            FilletShape = TopoShape(base->Shape.getValue());
         }
 
         std::vector<FilletElement> values = Edges.getValues();
