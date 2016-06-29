@@ -30,8 +30,6 @@
 #include <App/PropertyGeo.h>
 #include <map>
 #include <vector>
-#include <memory>
-#include <type_traits>
 
 namespace Part
 {
@@ -49,22 +47,10 @@ public:
 
     /** @name Getter/setter */
     //@{
-    ///// set the part shape
-    //void setValue(const TopoShape&);
+    /// set the part shape
+    void setValue(const TopoShape&);
     /// set the part shape
     void setValue(const TopoDS_Shape&);
-
-    template <class T>
-    typename std::enable_if<
-                std::is_base_of<TopoShape, T>::value,
-        void
-    >::type setValue(const T& aShape)
-    {
-        aboutToSetValue();
-        _Shape = std::make_unique<T>(aShape);
-        hasSetValue();
-    }
-
     /// get the part shape
     const TopoDS_Shape& getValue(void) const;
     const TopoShape& getShape() const;
@@ -106,7 +92,7 @@ public:
     virtual void getPaths(std::vector<App::ObjectIdentifier> & paths) const;
 
 private:
-    std::unique_ptr<TopoShape> _Shape;
+    TopoShape _Shape;
 };
 
 struct PartExport ShapeHistory {
@@ -168,7 +154,6 @@ private:
 struct PartExport FilletElement {
     int edgeid;
     double radius1, radius2;
-    std::string edgetag="";
 };
 
 class PartExport PropertyFilletEdges : public App::PropertyLists

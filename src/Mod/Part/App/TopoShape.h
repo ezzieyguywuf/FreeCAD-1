@@ -29,6 +29,9 @@
 #include <TopoDS_Wire.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <App/ComplexGeoData.h>
+#include "TopoNamingHelper.h"
+//#include "PropertyTopoShape.cpp"
+#include "FilletElement.h"
 
 class gp_Ax1;
 class gp_Ax2;
@@ -36,6 +39,8 @@ class gp_Vec;
 
 namespace Part
 {
+
+//struct PartExport FilletElement;
 
 class PartExport ShapeSegment : public Data::Segment
 {
@@ -63,7 +68,36 @@ public:
     TopoShape(const TopoShape&);
     ~TopoShape();
 
-    void operator = (const TopoShape&);
+    void operator = (const TopoShape& sh);
+
+    // Added for Topo Naming stuff
+    // set and get the TopoDS_Shape. _Shape should be private...
+    void setShape(const TopoDS_Shape& sh);
+    const TopoDS_Shape& getShape() const;
+
+    // setShape always takes a TopoShape and optionally an OCC child of
+    // BRepBuilderAPI_MakeShape. The _TopoHelper is copied from the TopoShape, so it's
+    // important to pass the one with the most data. I don't currently have a way of
+    // merging _TopoHelpers
+    void setShape(const TopoShape& sh);
+    void addShape(const TopoShape& Shape);
+    void setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse);
+    //void setShape(const TopoShape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
+    BRepFilletAPI_MakeFillet makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges);
+    bool hasTopoNamingNodes() const;
+
+    // Print out a concise description of the topo tree
+    std::string DumpTopoHistory() const;
+    void DumpTopoHistory(std::stringstream& stream) const;
+
+    // The returned string is of the form "i:i..." where i is an integer. This is a 'Tag'
+    // in the OCC Data Framework terminology, and is used to retrieve a specific node in
+    // the Data Framework
+    std::string selectEdge(const int edgeID);
+    //std::vector<std::string> selectEdges(const std::vector<int> edgeIDs);
+
+    // use the NodeTag to retrieve an edge
+    TopoDS_Edge getSelectedEdge(const std::string NodeTag) const;
 
     /** @name Placement control */
     //@{
@@ -233,6 +267,9 @@ public:
     //@}
 
     TopoDS_Shape _Shape;
+
+    private:
+        TopoNamingHelper _TopoNamer;
 };
 
 } //namespace Part

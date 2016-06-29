@@ -78,6 +78,13 @@ PropertyPartShape::~PropertyPartShape()
 {
 }
 
+void PropertyPartShape::setValue(const TopoShape& sh)
+{
+    aboutToSetValue();
+    _Shape = sh;
+    hasSetValue();
+}
+
 void PropertyPartShape::setValue(const TopoDS_Shape& sh)
 {
     aboutToSetValue();
@@ -85,15 +92,14 @@ void PropertyPartShape::setValue(const TopoDS_Shape& sh)
     hasSetValue();
 }
 
-
 const TopoDS_Shape& PropertyPartShape::getValue(void)const 
 {
-    return _Shape->_Shape;
+    return _Shape._Shape;
 }
 
 const TopoShape& PropertyPartShape::getShape() const
 {
-    return *(this->_Shape);
+    return this->_Shape;
 }
 
 const Data::ComplexGeoData* PropertyPartShape::getComplexData() const
