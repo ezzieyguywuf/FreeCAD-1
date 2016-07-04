@@ -11,6 +11,11 @@
 
 #include <vector>
 
+#include <Geom_Plane.hxx>
+#include <GeomAPI_ProjectPointOnCurve.hxx>
+#include <Geom_Line.hxx>
+#include <Precision.hxx>
+
 #include <TDataStd_AsciiString.hxx>
 #include <TDF_IDFilter.hxx>
 #include <TDF_TagSource.hxx>
@@ -32,35 +37,35 @@
 #include <TNaming_Builder.hxx>
 #include <TNaming_Selector.hxx>
 #include <TNaming_NamedShape.hxx>
+#include <TNaming_UsedShapes.hxx>
+#include <TNaming_Tool.hxx>
 
 #include <BRepTools.hxx>
+#include <BRep_Tool.hxx>
 
 TopoNamingHelper::TopoNamingHelper(){
-    //std::clog << "-----Instantiated TopoNamingHelper\n";
     mySelectionNode = TDF_TagSource::NewChild(myRootNode);
     AddTextToLabel(mySelectionNode, "Selection Root Node");
 }
 
 TopoNamingHelper::TopoNamingHelper(const TopoNamingHelper& existing){
-    //std::clog << "-----Copying TopoNaming stuff\n";
     this->myDataFramework = existing.myDataFramework;
     this->myRootNode      = existing.myRootNode;
     this->mySelectionNode = existing.mySelectionNode;
 }
 
 TopoNamingHelper::~TopoNamingHelper(){
-    //std::clog << "-----UnInstantiated TopoNamingHelper\n";
 }
 
 void TopoNamingHelper::operator = (const TopoNamingHelper& helper){
-    //std::clog << "-----Setting operator = TopoNaming stuff\n";
+    //std::clog << "----------Setting operator = TopoNaming stuff\n";
     this->myDataFramework = helper.myDataFramework;
     this->myRootNode      = helper.myRootNode;
     this->mySelectionNode = helper.mySelectionNode;
 }
 
 void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name){
-    //std::clog << "-----Tracking Generated Shape\n";
+    //std::clog << "----------Tracking Generated Shape\n";
     //std::ostringstream outputStream;
     //DeepDump(outputStream);
     //Base::Console().Message(outputStream.str().c_str());
@@ -93,12 +98,12 @@ void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, c
     }
     //std::ostringstream outputStream2;
     //DeepDump(outputStream2);
-    ////std::clog << "Data Framework Dump Below\n";
+    ////std::clog << "----------Data Framework Dump Below\n";
     //Base::Console().Message(outputStream2.str().c_str());
 }
 
 void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
-    //std::clog << "-----Tracking Fuse Operation\n";
+    //std::clog << "----------Tracking Fuse Operation\n";
     // TODO: Need to update to account for an abritrary number of shapes being fused.
     // In a Fuse operation, each face is either Modified from one of the -two- (scratch
     // that) 'many' Shapes being fused, or it is Deleted. There is not an instance where a
@@ -114,7 +119,7 @@ void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
     // the modified faces on the BaseShape and the 'Shape1' as well. TODO: Need to figure
     // out a way to incorporate the topo tree from Shape1 into our topo tree, if Shape1
     // has one.
-    //std::clog << "Note: next 'tracking generated shape' msg from TrackFuseOperation\n";
+    //std::clog << "----------Note: next 'tracking generated shape' msg from TrackFuseOperation\n";
     this->TrackGeneratedShape(FuseShape);
     TDF_Label LabelRoot    = TDF_TagSource::NewChild(myRootNode);
     TDF_Label BaseModified = TDF_TagSource::NewChild(LabelRoot);
@@ -163,13 +168,13 @@ void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
     }
     //std::ostringstream outputStream;
     //DeepDump(outputStream);
-    ////std::clog << "Data Framework Dump Below\n";
+    ////std::clog << "----------Data Framework Dump Below\n";
     //Base::Console().Message(outputStream.str().c_str());
 }
 
 void TopoNamingHelper::TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet){
     BRepFilletAPI_MakeFillet Filleter = mkFillet;
-    //std::clog << "-----Tracking Fillet Operation\n";
+    //std::clog << "----------Tracking Fillet Operation\n";
     //std::ostringstream output;
     //DeepDump(output);
     //Base::Console().Message(output.str().c_str());
@@ -201,11 +206,11 @@ void TopoNamingHelper::TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepF
     TopTools_IndexedMapOfShape mapOfEdges;
     TopExp::MapShapes(BaseShape, TopAbs_EDGE, mapOfEdges);
     for (int i=1; i<=mapOfEdges.Extent(); i++){
-        TopoDS_Edge curEdge = TopoDS::Edge(mapOfEdges.FindKey(i));
-        TopTools_ListOfShape generatedFaces = Filleter.Generated(curEdge);
+        const TopoDS_Edge& curEdge = TopoDS::Edge(mapOfEdges.FindKey(i));
+        const TopTools_ListOfShape& generatedFaces = Filleter.Generated(curEdge);
         TopTools_ListIteratorOfListOfShape it(generatedFaces);
         for (;it.More(); it.Next()){
-            TopoDS_Shape checkShape = it.Value();
+            const TopoDS_Shape& checkShape = it.Value();
             if (!curEdge.IsSame(checkShape)){
                 FacesFromEdgeBuilder.Generated(curEdge, checkShape);
             }
@@ -218,13 +223,13 @@ void TopoNamingHelper::TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepF
     TopTools_IndexedMapOfShape mapOfFaces;
     TopExp::MapShapes(BaseShape, TopAbs_FACE, mapOfFaces);
     for (int i=1; i<=mapOfFaces.Extent(); i++){
-        TopoDS_Face curFace = TopoDS::Face(mapOfFaces.FindKey(i));
+        const TopoDS_Face& curFace = TopoDS::Face(mapOfFaces.FindKey(i));
 
         // First check Modified
-        TopTools_ListOfShape modifiedFaces = Filleter.Modified(curFace);
+        const TopTools_ListOfShape& modifiedFaces = Filleter.Modified(curFace);
         TopTools_ListIteratorOfListOfShape it(modifiedFaces);
         for (; it.More(); it.Next()){
-            TopoDS_Shape checkShape = it.Value();
+            const TopoDS_Shape& checkShape = it.Value();
             if (!curFace.IsSame(checkShape)){
                 ModifiedBuilder.Modify(curFace, checkShape);
             }
@@ -241,11 +246,11 @@ void TopoNamingHelper::TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepF
     TopTools_IndexedMapOfShape mapOfVertices;
     TopExp::MapShapes(BaseShape, TopAbs_VERTEX, mapOfVertices);
     for (int i=1; i<=mapOfVertices.Extent(); i++){
-        TopoDS_Shape curVertex = mapOfVertices.FindKey(i);
-        TopTools_ListOfShape generatedFaces = Filleter.Generated(curVertex);
+        const TopoDS_Shape& curVertex = mapOfVertices.FindKey(i);
+        const TopTools_ListOfShape& generatedFaces = Filleter.Generated(curVertex);
         TopTools_ListIteratorOfListOfShape it(generatedFaces);
         for (;it.More(); it.Next()){
-            TopoDS_Shape checkShape = it.Value();
+            const TopoDS_Shape& checkShape = it.Value();
             if (!curVertex.IsSame(checkShape)){
                 FacesFromEdgeBuilder.Generated(curVertex, checkShape);
             }
@@ -253,66 +258,83 @@ void TopoNamingHelper::TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepF
     }
     //std::ostringstream outputStream;
     //DeepDump(outputStream);
-    //std::clog << "Data Framework Dump Below\n";
+    //std::clog << "----------Data Framework Dump Below\n";
     //Base::Console().Message(outputStream.str().c_str());
 }
-std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge& anEdge, const TopoDS_Shape& aShape){
-    // The label returned will be for the selected Edge
-    TDF_Label SelectedLabel;
-    std::string SelecedLabelEntryString;
-    // Whether or not the selected Edge is already in the tree
-    bool found = false;
-    // These will be used to check each existing Selection
-    Handle(TNaming_NamedShape) EdgeNS;
-    Handle(TNaming_NamedShape) ContextNS;
-    TopoDS_Edge checkEdge;
-    TopoDS_Shape checkShape;
-    //std::clog << "Dumping whole tree before loop\n";
-    //this->DeepDump();
 
-    // Only loop through mySelectionNode if it has a child. You cannot rely on
-    // TDF_ChildIterator to not loop through an empty branch.
-    if (mySelectionNode.HasChild()){
-        for (TDF_ChildIterator it(mySelectionNode, Standard_False); it.More(); it.Next()){
-            TDF_Label EdgeNode    = it.Value();
+void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, const TopoDS_Shape& NewShape){
+    TDF_Label OrigNode;
+    TDF_Tool::Label(myDataFramework, OrigShapeNodeTag.c_str(), OrigNode);
 
-            // Double check to make sure it was made using TNaming_Selector, i.e. that it
-            // has a sub-node.
-            if (EdgeNode.HasChild()){
-                TDF_Label ContextNode = EdgeNode.FindChild(1, Standard_False);
+    // create new node for modified shape
+    TDF_Label NewNode = TDF_TagSource::NewChild(myRootNode);
+    this->AddTextToLabel(NewNode, "Modified Node");
 
-                // Get the Edge and Contex Shape for this sub-node
-                EdgeNode.FindAttribute(TNaming_NamedShape::GetID(), EdgeNS);
-                ContextNode.FindAttribute(TNaming_NamedShape::GetID(), ContextNS);
-                checkEdge  = TopoDS::Edge(EdgeNS->Get());
-                checkShape = ContextNS->Get();
 
-                // Check if this sub-node is the same as what's been passed in
-                if (anEdge.IsEqual(checkEdge) && aShape.IsEqual(checkShape)){
-                    SelectedLabel = EdgeNode;
-                    found    = true;
-                    break;
+    if (!OrigNode.IsNull()){
+        Handle(TNaming_NamedShape) OrigShapeNS;
+        if (OrigNode.IsAttribute(TNaming_NamedShape::GetID())){
+            OrigNode.FindAttribute(TNaming_NamedShape::GetID(), OrigShapeNS);
+            const TopoDS_Shape& OrigShape = OrigShapeNS->Get();
+
+            // Add the NewShape as a modification of the OrigSape
+            TNaming_Builder ModifiedBuilder(NewNode);
+            ModifiedBuilder.Modify(OrigShape, NewShape);
+
+            // Now add the modified shapes
+
+            TopTools_IndexedMapOfShape OrigFaces;
+            TopTools_IndexedMapOfShape NewFaces;
+            TopExp::MapShapes(OrigShape, TopAbs_FACE, OrigFaces);
+            TopExp::MapShapes(NewShape , TopAbs_FACE, NewFaces);
+            // TODO: Need to fix this so that it works for more general cases.
+            // This is just a hack to see if the proper history is what was
+            // causing the previous error with Fillets when rebuilding
+            for (int i=1; i<=OrigFaces.Extent(); i++){
+                const TopoDS_Face& CurOrigFace = TopoDS::Face(OrigFaces.FindKey(i));
+                const TopoDS_Face& CurNewFace = TopoDS::Face(NewFaces.FindKey(i));
+
+                if (i!=5){
+                    TDF_Label NewFaceLabel = TDF_TagSource::NewChild(NewNode);
+                    TNaming_Builder NewFaceBuilder(NewFaceLabel);
+                    NewFaceBuilder.Modify(CurOrigFace, CurNewFace);
                 }
             }
-            else{
-                std::runtime_error( "ERROR! NODE SHOULD HAVE A SUB-NODE THAT CONTAINS THE CONTEXT SHAPE! Did you use TNaming_Selector or TNaming_Builder?");
-            }
+        }
+        else{
+            std::clog << "----------ERROR!!!!! ORIGNODE DID NOT HAVE A NAMEDSHAPE!!!!" << std::endl;
         }
     }
-
-    // If not found, create.
-    if (!found){
-        SelectedLabel = TDF_TagSource::NewChild(mySelectionNode);
-        //std::clog << "Creating Selection sub-node\n";
-        //this->DeepDump();
-        TNaming_Selector SelectionBuilder(SelectedLabel);
-        SelectionBuilder.Select(anEdge, aShape);
-        this->AddTextToLabel(SelectedLabel, "A selected edge. Sub-node is the context Shape");
-        //std::clog << "Dumping whole tree after select\n";
-        //this->DeepDump();
+    else{
+        std::clog << "----------ERROR!!!!! ORIGNODE WAS NULL!!!!" << std::endl;
     }
+}
+
+std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge& anEdge, const TopoDS_Shape& aShape){
+    Handle(TNaming_NamedShape) EdgeNS;
+    bool identified = TNaming_Selector::IsIdentified(mySelectionNode, anEdge, EdgeNS);
+
     std::ostringstream dumpedEntry;
-    SelectedLabel.EntryDump(dumpedEntry);
+    if (!identified){
+        std::clog << "----------Creating selection (did not exist)...\n";
+        const TDF_Label SelectedLabel = TDF_TagSource::NewChild(mySelectionNode);
+        TNaming_Selector SelectionBuilder(SelectedLabel);
+        bool check = SelectionBuilder.Select(anEdge, aShape);
+        if (check){
+            std::clog << "----------Selection WAS succesfull" << std::endl;
+        }
+        else{
+            std::clog << "----------Selection WAS NOT suffesfull" << std::endl;
+        }
+        this->AddTextToLabel(SelectedLabel, "A selected edge. Sub-node is the context Shape");
+        SelectedLabel.EntryDump(dumpedEntry);
+    }
+    else{
+        std::clog << "----------Node existing, returning existing selection...\n";
+        const TDF_Label SelectedLabel = EdgeNS->Label();
+        SelectedLabel.EntryDump(dumpedEntry);
+    }
+
     return dumpedEntry.str();
 }
 
@@ -328,49 +350,104 @@ std::vector<std::string> TopoNamingHelper::SelectEdges(const std::vector<TopoDS_
 }
 
 TopoDS_Edge TopoNamingHelper::GetSelectedEdge(const std::string NodeTag) const{
+    std::clog << "----------Retrieving edge for tag: " << NodeTag <<  std::endl;
     TDF_Label EdgeNode;
     TDF_Tool::Label(myDataFramework, NodeTag.c_str(), EdgeNode);
     TDF_LabelMap MyMap;
-    TopoDS_Edge SelectedEdge;
 
     if (!EdgeNode.IsNull()){
         MyMap.Add(EdgeNode);
         TNaming_Selector MySelector(EdgeNode);
-        MySelector.Solve(MyMap);
-        Handle(TNaming_NamedShape) EdgeNS = MySelector.NamedShape();
+        bool solved = MySelector.Solve(MyMap);
+        if (solved){
+            std::clog << "----------Selection solve was succesfull!" << std::endl;
+        }
+        else{
+            std::clog << "----------selection solve was not succesful......" << std::endl;
+        }
+        //Handle(TNaming_NamedShape) EdgeNS = MySelector.NamedShape();
         //EdgeNode.FindAttribute(TNaming_NamedShape::GetID(), EdgeNS);
-        TopoDS_Edge SelectedEdge = TopoDS::Edge((TopoDS_Shape)EdgeNS->Get());
+        TopoDS_Edge SelectedEdge = TopoDS::Edge(MySelector.NamedShape()->Get());
         return SelectedEdge;
     }
     else{
-        std::runtime_error("That Node does not appear to exist on the Data Framework");
-        return SelectedEdge;
+        throw std::runtime_error("That Node does not appear to exist on the Data Framework");
     }
 }
 
+TopoDS_Shape TopoNamingHelper::GetSelectedBaseShape(const std::string NodeTag) const{
+    std::ostringstream baseNodeStream;
+    baseNodeStream << NodeTag << ":1";
+    std::string baseNodeTag = baseNodeStream.str();
+    std::clog << "----------Retrieving Base for tag: " << baseNodeTag <<  std::endl;
+    return this->GetNodeShape(baseNodeTag);
+}
+
 TopoDS_Shape TopoNamingHelper::GetNodeShape(const std::string NodeTag) const{
+    std::ostringstream out;
+    out << "----------GetNodeShape for NodeTag = " << NodeTag << std::endl;
+    std::clog << out.str();
     TDF_Label TargetNode;
     TDF_Tool::Label(myDataFramework, NodeTag.c_str(), TargetNode);
-    TDF_LabelMap MyMap;
-    TopoDS_Shape OutShape;
+    //TDF_LabelMap MyMap;
+
+    //TDF_ChildIterator TreeIterator(myRootNode, Standard_True);
+    //for(;TreeIterator.More(); TreeIterator.Next()){
+        //TDF_Label curLabel = TreeIterator.Value();
+        //MyMap.Add(curLabel);
+    //}
 
     if (!TargetNode.IsNull()){
-        MyMap.Add(TargetNode);
-        TNaming_Selector MySelector(TargetNode);
-        MySelector.Solve(MyMap);
+        //TNaming_Selector MySelector(TargetNode);
+        //MySelector.Solve(MyMap);
         Handle(TNaming_NamedShape) TargetNS;
         if (TargetNode.IsAttribute(TNaming_NamedShape::GetID())){
             TargetNode.FindAttribute(TNaming_NamedShape::GetID(), TargetNS);
-            OutShape = TargetNS->Get();
+            //TopoDS_Shape OutShape = TNaming_Tool::CurrentShape(TargetNS);
+            TopoDS_Shape OutShape = TargetNS->Get();
+            //if (OutShape.IsNull()){
+                //std::clog << "----------OutShape is NULL..." << std::endl;
+            //}
+            //else{
+                //std::clog << "----------OutShape is NOT NULL!!!!" << std::endl;
+            //}
+            return OutShape;
         }
         else{
-            std::runtime_error("That Node does not appear to contain a NamedShape\n");
+            std::clog << "----------Throwing an error! Node does not contain a NamedShape...\n";
+            throw std::runtime_error("That Node does not appear to contain a NamedShape\n");
         }
     }
     else{
-        std::runtime_error("That Node does not appear to exist on the Data Framework\n");
+        std::clog << "----------Throwing an error! Node doesn't exist...\n";
+        throw std::runtime_error("That Node does not appear to exist on the Data Framework\n");
     }
-    return OutShape;
+}
+
+TopoDS_Shape TopoNamingHelper::GetTipShape() const {
+    const TDF_Label& tipLabel = this->myRootNode.FindChild(this->myRootNode.NbChildren(), Standard_False);
+    //std::clog << "----------Dumping tipLabel\n";
+    //std::clog << tipLabel;
+    //std::clog << "----------Returning label with entry: ";
+    //tipLabel.EntryDump(std::clog);
+    //std::clog << std::endl;
+    Handle(TNaming_NamedShape) tipNS;
+    tipLabel.FindAttribute(TNaming_NamedShape::GetID(), tipNS);
+    //if (tipNS->IsEmpty()){
+        //std::clog << "----------tipNS is empty...\n";
+    //}
+    //else{
+        //std::clog << "----------tipNS is not empty!!!\n";
+    //}
+    TopoDS_Shape tipShape = TNaming_Tool::GetShape(tipNS);
+    //const TopoDS_Shape& tipShape = tipNS->Get();
+    //if (tipShape.IsNull()){
+        //std::clog << "----------tipShape is null (in TopoNamingHElper)...\n";
+    //}
+    //else{
+        //std::clog << "----------tipShape is not null (in TopoNamingHelper)!!!!\n";
+    //}
+    return tipShape;
 }
 
 bool TopoNamingHelper::HasNodes() const{
@@ -394,9 +471,148 @@ void TopoNamingHelper::AddTextToLabel(const TDF_Label& Label, const char *str, c
     Label.AddAttribute(nameAttribute);
 }
 
+bool TopoNamingHelper::CompareTwoEdgeTopologies(const TopoDS_Edge& edge1, const TopoDS_Edge& edge2, int numCheckPoints){
+    double c1Start, c1End, c2Start, c2End;
+    Handle(Geom_Curve) curve1 = BRep_Tool::Curve(edge1, c1Start, c1End);
+    Handle(Geom_Curve) curve2 = BRep_Tool::Curve(edge2, c2Start, c2End);
+
+    // First, check if one is closed and the other isn't
+    if ((curve1->IsClosed() && !curve2->IsClosed()) ||
+        (!curve1->IsClosed() && curve2->IsClosed())){
+        std::clog << "----------One edge is closed" << std::endl;
+        // if one is closed and the other isn't they can't be equal.
+        return false;
+    }
+
+    // Next compare endpoints
+    gp_Pnt c1StartPnt = curve1->Value(c1Start);
+    gp_Pnt c1EndPnt   = curve1->Value(c1End);
+    gp_Pnt c2StartPnt = curve2->Value(c2Start);
+    gp_Pnt c2EndPnt   = curve2->Value(c2End);
+
+    // curve2's end point COULD be curve1's start point
+    if (!(c1StartPnt.IsEqual(c2StartPnt, Precision::Confusion()) && c1EndPnt.IsEqual(c2EndPnt  , Precision::Confusion())) &&
+        !(c1StartPnt.IsEqual(c2EndPnt  , Precision::Confusion()) && c1EndPnt.IsEqual(c2StartPnt, Precision::Confusion()))){
+        // if endpoints don't match, can't be the same curve
+        //std::clog << "----------End points don't match" << std::endl;
+        return false;
+    }
+
+    // finally, compare points on the lines
+    GeomAPI_ProjectPointOnCurve projector;
+    float interval = (c1End - c1Start) / numCheckPoints;
+
+    // NOTE: it should be OK if interval is negative: that just means that c1End is
+    // smaller than c1Start, but since we're starting at c1Start, the negative interval
+    // takes us in the correct direction.
+    for (float point = (c1Start + interval); (point <= c1End && point >=c1Start) || (point >=c1End && point <=c1Start); point += interval){
+        gp_Pnt point1 = curve1->Value(point);
+        projector.Init(point1, curve2);
+        if(projector.LowerDistance() > Precision::Confusion()){
+            std::clog << "----------Projection not close enough" << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
+
+bool TopoNamingHelper::CompareTwoFaceTopologies(const TopoDS_Shape& face1, const TopoDS_Shape& face2){
+    TopTools_IndexedMapOfShape Edges1;
+    TopTools_IndexedMapOfShape Edges2;
+    TopExp::MapShapes(face1, TopAbs_EDGE, Edges1);
+    TopExp::MapShapes(face2, TopAbs_EDGE, Edges2);
+    if (Edges1.Extent() != Edges2.Extent()) {
+        // Different number of edges mean different Faces
+        return false;
+    }
+    for (int i=1; i<= Edges1.Extent(); i++){
+        TopoDS_Edge Edge1 = TopoDS::Edge(Edges1.FindKey(i));
+        bool match = false;
+        for (int j=1; j<= Edges2.Extent(); j++){
+            TopoDS_Edge Edge2 = TopoDS::Edge(Edges2.FindKey(j));
+            if (BRepTools::Compare(Edge1, Edge2)){
+                std::clog << "----------Found match!" << std::endl;
+                match = true;
+                break;
+            }
+            if (CompareTwoEdgeTopologies(Edge1, Edge2)){
+                //std::clog << "----------Found match (my way)!" << std::endl;
+                match = true;
+                break;
+            }
+        }
+        if (!match){
+            // if any single edge does not match, then the faces cannot be equal.
+            //std::clog << "----------No match found..." << std::endl;
+            return false;
+        }
+    }
+    std::clog << "----------All edges match!" << std::endl;
+
+    //if (face2.IsEqual(face1)){
+        //std::clog << "----------for i = " << i << " and j = "<<j << ", Faces ARE equal" << std::endl;
+    //}
+    //else{
+        //std::clog << "----------for i = " << i << " and j = "<<j << ", Faces ARE NOT equal" << std::endl;
+        
+    //}
+    //if (face2.IsSame(face1)){
+        //std::clog << "----------for i = " << i << " and j = "<<j << ", Faces ARE same" << std::endl;
+    //}
+    //else{
+        //std::clog << "----------for i = " << i << " and j = "<<j << ", Faces ARE NOT same" << std::endl;
+        
+    //}
+    //if (face2.IsPartner(face1)){
+        //std::clog << "----------for i = " << i << " and j = "<<j << ", Faces ARE partners" << std::endl;
+    //}
+    //else{
+        //std::clog << "----------for i = " << i << " and j = "<<j << ", Faces ARE NOT partners" << std::endl;
+        
+    //}
+    //if (face2.Location() == face1.Location()){
+        //std::clog << "----------for i = " << i << " and j = "<<j << ", Faces ARE equal location" << std::endl;
+    //}
+    //else{
+        //std::clog << "----------for i = " << i << " and j = "<<j << ", Faces ARE NOT equal location" << std::endl;
+        
+    //}
+    //if (face2.Orientation() == face1.Orientation()){
+        //std::clog << "----------for i = " << i << " and j = "<<j << ", Faces ARE equal orientation" << std::endl;
+    //}
+    //else{
+        //std::clog << "----------for i = " << i << " and j = "<<j << ", Faces ARE NOT equal orientation" << std::endl;
+        
+    //}
+
+    Handle(Geom_Surface) Surface1 = BRep_Tool::Surface(TopoDS::Face(face1));
+    Handle(Geom_Surface) Surface2 = BRep_Tool::Surface(TopoDS::Face(face2));
+    if(Surface1->IsKind(STANDARD_TYPE(Geom_Plane))){
+        Handle(Geom_Plane) Plane1 = Handle(Geom_Plane)::DownCast(Surface1);
+        Handle(Geom_Plane) Plane2 = Handle(Geom_Plane)::DownCast(Surface2);
+        //gp_Dir p1Dir = Plane1->Axis().Direction();
+        //gp_Dir p2Dir = Plane2->Axis().Direction();
+        Standard_Real p1A, p1B, p1C, p1D, p2A, p2B, p2C, p2D;
+        Plane1->Coefficients(p1A, p1B, p1C, p1D);
+        Plane2->Coefficients(p2A, p2B, p2C, p2D);
+        //std::clog << "----------Plane1: " << p1A << "x + " <<p1B << "y + "<<p1C << "z + " << p1D << " = 0.0" << std::endl;
+        //std::clog << "----------Plane2: " << p2A << "x + " <<p2B << "y + "<<p2C << "z + " << p2D << " = 0.0" << std::endl;
+        //std::clog << "----------Plane1 Dir: (" << p1Dir.X() << ", " << p1Dir.Y() << ", " << p1Dir.Z() << ")" << std::endl;
+        //std::clog << "----------Plane2 Dir: (" << p2Dir.X() << ", " << p2Dir.Y() << ", " << p2Dir.Z() << ")" << std::endl;
+        if (p1A == p2A && p1B == p2B && p1C == p2C && p1D ==p2D) {
+            return true;
+        }
+    }
+    else{
+        std::clog << "----------Don't know how to handle that geometry..." << std::endl;
+    }
+    // else if (IsKind(cylindrical something)
+    return false;
+}
+
 void TopoNamingHelper::Dump() const{
-    TDF_Tool::DeepDump(std::cout, myDataFramework);
-    std::cout << "\n";
+    TDF_Tool::DeepDump(std::clog, myDataFramework);
+    std::clog << "\n";
 }
 
 void TopoNamingHelper::Dump(std::ostream& stream) const{
@@ -428,11 +644,21 @@ void TopoNamingHelper::DeepDump(std::stringstream& stream) const{
 }
 
 std::string TopoNamingHelper::DeepDump() const{
-    //std::clog << "-----TopoNamingHelper::DeepDump()\n";
+    //std::clog << "----------TopoNamingHelper::DeepDump()\n";
     std::stringstream output;
     DeepDump(output);
     //std::clog << output.str();
     return output.str();
+}
+
+std::string TopoNamingHelper::DFDump() const{
+    std::ostringstream outStream;
+    TDF_IDFilter myFilter;
+    myFilter.Keep(TDataStd_AsciiString::GetID());
+    myFilter.Keep(TNaming_NamedShape::GetID());
+    myFilter.Keep(TNaming_UsedShapes::GetID());
+    TDF_Tool::ExtendedDeepDump(outStream, myDataFramework, myFilter);
+    return outStream.str();
 }
 
 void TopoNamingHelper::WriteShape(const TDF_Label aLabel, const std::string NameBase, const int numb) const{
@@ -441,7 +667,7 @@ void TopoNamingHelper::WriteShape(const TDF_Label aLabel, const std::string Name
     TopoDS_Shape ShapeToWrite = WriteNS->Get();
     std::ostringstream outname;
     outname << NameBase << "_" << numb << ".brep";
-    std::cout << "writing " << outname.str() << std::endl;
+    std::clog << "----------writing " << outname.str() << std::endl;
     BRepTools::Write(ShapeToWrite, outname.str().c_str());
 }
 
@@ -460,6 +686,6 @@ void TopoNamingHelper::WriteNode(const std::string NodeTag, const std::string Na
         }
     }
     else{
-        std::runtime_error("That Node does not appear to exist on the Data Framework");
+        throw std::runtime_error("That Node does not appear to exist on the Data Framework");
     }
 }

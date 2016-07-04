@@ -1,4 +1,6 @@
-#include <iostream>
+#include <vector>
+#include <string>
+
 #include <TDF_Data.hxx>
 #include <TDF_Label.hxx>
 #include <TDF_TagSource.hxx>
@@ -23,11 +25,14 @@ class TopoNamingHelper{
         void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name="n/a");
         void TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser);
         void TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
+        void TrackModifiedShape(const std::string& OrigShapeNodeTag, const TopoDS_Shape& NewShape);
         void AddTextToLabel(const TDF_Label& Label, const char *str, const std::string& name="n/a");
         std::string SelectEdge(const TopoDS_Edge& anEdge, const TopoDS_Shape& aShape);
         std::vector<std::string> SelectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape& aShape);
         TopoDS_Edge GetSelectedEdge(const std::string NodeTag) const;
+        TopoDS_Shape GetSelectedBaseShape(const std::string NodeTag) const;
         TopoDS_Shape GetNodeShape(const std::string NodeTag) const;
+        TopoDS_Shape GetTipShape() const;
 
         // Does the Topo tree have additional nodes aside from the Selection one created
         // at initialization?
@@ -38,11 +43,16 @@ class TopoNamingHelper{
         void Dump(std::ostream& stream) const;
         std::string DeepDump() const;
         void DeepDump(std::stringstream& stream) const;
+        std::string DFDump() const;
 
         void WriteShape(const TDF_Label aLabel, const std::string NameBase, const int numb) const;
         void WriteNode(const std::string NodeTag, const std::string NameBase, const bool Deep) const;
 
-    //private:
+        // Class functions
+        static bool CompareTwoFaceTopologies(const TopoDS_Shape& face1, const TopoDS_Shape& face2);
+        static bool CompareTwoEdgeTopologies(const TopoDS_Edge& edge1, const TopoDS_Edge& edge2, int numCheckPoints=10);
+
+    private:
         bool CheckIfSelectionExists(const TDF_Label aNode, const TopoDS_Shape aShape) const;
         Handle(TDF_Data) myDataFramework = new TDF_Data();
         TDF_Label myRootNode = myDataFramework->Root();

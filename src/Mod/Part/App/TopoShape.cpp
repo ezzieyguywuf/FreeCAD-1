@@ -470,10 +470,8 @@ PyObject * TopoShape::getPySubShape(const char* Type) const
 void TopoShape::operator = (const TopoShape& sh)
 {
     //Base::Console().Message("-----operator = in TopoShape called\n");
-    if (this != &sh) {
-        this->_Shape     = sh._Shape;
-        this->_TopoNamer = sh._TopoNamer;
-    }
+    this->_Shape     = sh._Shape;
+    this->_TopoNamer = sh._TopoNamer;
 }
 
 const TopoDS_Shape& TopoShape::getShape() const{
@@ -547,9 +545,14 @@ void TopoShape::setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse){
 BRepFilletAPI_MakeFillet TopoShape::makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges){
     //Base::Console().Message("-----makeTopoShapeFillet (TopoShape) called, dumpinghistory\n");
     //Base::Console().Message(this->DumpTopoHistory().c_str());
-    BRepFilletAPI_MakeFillet mkFillet(this->_TopoNamer.GetNodeShape("0:2"));
-    //TopoDS_Edge edge = this->getSelectedEdge(selectedLabel);
-    //mkFillet.Add(2., 2., edge);
+    TopoDS_Shape baseShape = this->_TopoNamer.GetTipShape();
+    BRepFilletAPI_MakeFillet mkFillet(baseShape);
+    if (baseShape.IsNull()){
+        std::clog << "baseShape is NULL (in TopoShape.cpp)..." << std::endl;
+    }
+    else{
+        std::clog << "baseShape is NOT NULL (in TopoShape.cpp)!!!!" << std::endl;
+    }
     for (std::vector<FilletElement>::const_iterator it = targetEdges.begin(); it != targetEdges.end(); ++it) {
         double radius1      = it->radius1;
         double radius2      = it->radius2;
@@ -558,11 +561,17 @@ BRepFilletAPI_MakeFillet TopoShape::makeTopoShapeFillet(const std::vector<Fillet
         outstring << "Retrieving edge for NodeTag=" << edgetag << "\n";
         Base::Console().Message(outstring.str().c_str());
         TopoDS_Edge edge    = TopoDS::Edge(this->getSelectedEdge(edgetag));
+        if (edge.IsNull()){
+            std::clog << "edge is Null (in TopoShape.cpp)..." << std::endl;
+        }
+        else{
+            std::clog << "edge is NOT NULL (in TopoShape.cpp)!!!!" << std::endl;
+        }
 
         mkFillet.Add(radius1, radius2, edge);
     }
     mkFillet.Build();
-    this->_TopoNamer.TrackFilletOperation(this->_Shape, mkFillet);
+    this->_TopoNamer.TrackFilletOperation(baseShape, mkFillet);
     this->_Shape = mkFillet.Shape();
     return mkFillet;
 }
