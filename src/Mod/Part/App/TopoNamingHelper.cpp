@@ -310,6 +310,12 @@ void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, c
     }
 }
 
+void TopoNamingHelper::TrackModifiedFilletBaseShape(const TopoDS_Shape& NewBaseShape){
+    // TODO: How can we make sure that node "0:2" is _always_ the first instance of the
+    // Base Shape in a Filleted Shape Data Framework? Is that already taken care of based
+    // on FeatureFillet is using the TopoShape access methods?
+}
+
 std::string TopoNamingHelper::SelectEdge(const TopoDS_Edge& anEdge, const TopoDS_Shape& aShape){
     Handle(TNaming_NamedShape) EdgeNS;
     bool identified = TNaming_Selector::IsIdentified(mySelectionNode, anEdge, EdgeNS);
@@ -449,6 +455,10 @@ TopoDS_Shape TopoNamingHelper::GetTipShape() const {
         //std::clog << "----------tipShape is not null (in TopoNamingHelper)!!!!\n";
     //}
     return tipShape;
+}
+
+std::string TopoNamingHelper::GetLatestFilletBase() const{
+    return "";
 }
 
 bool TopoNamingHelper::HasNodes() const{

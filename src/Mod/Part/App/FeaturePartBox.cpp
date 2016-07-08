@@ -44,6 +44,9 @@ Box::Box()
     ADD_PROPERTY_TYPE(Length,(10.0f),"Box",App::Prop_None,"The length of the box");
     ADD_PROPERTY_TYPE(Width ,(10.0f),"Box",App::Prop_None,"The width of the box");
     ADD_PROPERTY_TYPE(Height,(10.0f),"Box",App::Prop_None,"The height of the box");
+    _PrevHeight = -1;
+    _PrevLength = -1;
+    _PrevWidth  = -1;
 }
 
 short Box::mustExecute() const
@@ -61,6 +64,10 @@ App::DocumentObjectExecReturn *Box::execute(void)
     double L = Length.getValue();
     double W = Width.getValue();
     double H = Height.getValue();
+
+    // operation will store which of the Length/Width/Height have changed
+    //
+    unsigned short int operation;
 
     if (L < Precision::Confusion())
         return new App::DocumentObjectExecReturn("Length of box too small");
