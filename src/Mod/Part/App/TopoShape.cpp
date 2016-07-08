@@ -508,6 +508,10 @@ void TopoShape::addShape(const TopoShape& shape){
     //Base::Console().Message(this->DumpTopoHistory().c_str());
 }
 
+void TopoShape::modifyShape(const std::string& NodeTag, const TopoDS_Shape& Shape){
+    this->_TopoNamer.TrackModifiedShape(NodeTag, Shape);
+}
+
 void TopoShape::setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse){
     //Base::Console().Message("-----setShape (mkFuse) called\n");
     TopoDS_Shape resShape = mkFuse.Shape();

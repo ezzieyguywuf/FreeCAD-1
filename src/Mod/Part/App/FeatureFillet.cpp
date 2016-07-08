@@ -72,7 +72,8 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
             // Since we're being recomputed, likely the Base shape has changed. Let's add
             // the updated base shape to the topological history.
             // TODO: make a 'check if updated' call in TopoNamingHelper
-            FilletShape.addShape(base->Shape.getValue());
+            //FilletShape.addShape(base->Shape.getValue());
+            FilletShape.modifyShape("0:2", base->Shape.getValue());
         }
         else{
             Base::Console().Message("----- Did not find topo naming nodes...\n");

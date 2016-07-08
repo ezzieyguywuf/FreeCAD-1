@@ -81,6 +81,7 @@ public:
     // merging _TopoHelpers
     void setShape(const TopoShape& sh);
     void addShape(const TopoShape& Shape);
+    void modifyShape(const std::string& NodeTag, const TopoDS_Shape& Shape);
     void setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse);
     //void setShape(const TopoShape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
     BRepFilletAPI_MakeFillet makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges);
