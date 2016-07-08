@@ -268,14 +268,14 @@ void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, c
 
     // create new node for modified shape
     TDF_Label NewNode = TDF_TagSource::NewChild(myRootNode);
-    this->AddTextToLabel(NewNode, "Modified Node");
+    //this->AddTextToLabel(NewNode, "Modified Node");
 
 
     if (!OrigNode.IsNull()){
         Handle(TNaming_NamedShape) OrigShapeNS;
         if (OrigNode.IsAttribute(TNaming_NamedShape::GetID())){
             OrigNode.FindAttribute(TNaming_NamedShape::GetID(), OrigShapeNS);
-            const TopoDS_Shape& OrigShape = OrigShapeNS->Get();
+            TopoDS_Shape OrigShape = OrigShapeNS->Get();
 
             // Add the NewShape as a modification of the OrigSape
             TNaming_Builder ModifiedBuilder(NewNode);
@@ -291,8 +291,8 @@ void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, c
             // This is just a hack to see if the proper history is what was
             // causing the previous error with Fillets when rebuilding
             for (int i=1; i<=OrigFaces.Extent(); i++){
-                const TopoDS_Face& CurOrigFace = TopoDS::Face(OrigFaces.FindKey(i));
-                const TopoDS_Face& CurNewFace = TopoDS::Face(NewFaces.FindKey(i));
+                TopoDS_Face CurOrigFace = TopoDS::Face(OrigFaces.FindKey(i));
+                TopoDS_Face CurNewFace = TopoDS::Face(NewFaces.FindKey(i));
 
                 if (i!=5){
                     TDF_Label NewFaceLabel = TDF_TagSource::NewChild(NewNode);
@@ -356,7 +356,7 @@ TopoDS_Edge TopoNamingHelper::GetSelectedEdge(const std::string NodeTag) const{
     TDF_LabelMap MyMap;
 
     if (!EdgeNode.IsNull()){
-        MyMap.Add(EdgeNode);
+        //MyMap.Add(EdgeNode);
         TNaming_Selector MySelector(EdgeNode);
         bool solved = MySelector.Solve(MyMap);
         if (solved){
@@ -367,6 +367,7 @@ TopoDS_Edge TopoNamingHelper::GetSelectedEdge(const std::string NodeTag) const{
         }
         //Handle(TNaming_NamedShape) EdgeNS = MySelector.NamedShape();
         //EdgeNode.FindAttribute(TNaming_NamedShape::GetID(), EdgeNS);
+        //const TopoDS_Edge& SelectedEdge = TopoDS::Edge(MySelector.NamedShape()->Get());
         TopoDS_Edge SelectedEdge = TopoDS::Edge(MySelector.NamedShape()->Get());
         return SelectedEdge;
     }
