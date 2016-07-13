@@ -14,6 +14,13 @@
 #include <BRepAlgoAPI_Fuse.hxx>
 #include <BRepFilletAPI_MakeFillet.hxx>
 
+enum class BoxState{
+    length     = 1<<0;
+    height     = 1<<1;
+    width      = 1<<2;
+    translated = 1<<3;
+}
+
 class TopoNamingHelper{
     public:
         TopoNamingHelper();
@@ -26,6 +33,7 @@ class TopoNamingHelper{
         void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name="n/a");
         void TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser);
         void TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
+        void TrackModifiedShape(const TopoDS_Shape& NewShape);
         void TrackModifiedShape(const std::string& OrigShapeNodeTag, const TopoDS_Shape& NewShape);
         void TrackModifiedFilletBaseShape(const TopoDS_Shape& NewBaseShape);
         std::string SelectEdge(const TopoDS_Edge& anEdge, const TopoDS_Shape& aShape);

@@ -31,6 +31,7 @@
 #include <Base/Console.h>
 #include <Base/Reader.h>
 #include "FeaturePartBox.h"
+#include "TopoNamingHelper.h"
 
 
 using namespace Part;
@@ -64,11 +65,6 @@ App::DocumentObjectExecReturn *Box::execute(void)
     double L = Length.getValue();
     double W = Width.getValue();
     double H = Height.getValue();
-
-    // operation will store which of the Length/Width/Height have changed
-    //
-    unsigned short int operation;
-
     if (L < Precision::Confusion())
         return new App::DocumentObjectExecReturn("Length of box too small");
 
@@ -78,11 +74,33 @@ App::DocumentObjectExecReturn *Box::execute(void)
     if (H < Precision::Confusion())
         return new App::DocumentObjectExecReturn("Height of box too small");
 
+    // BoxState enum is defined in TopoNamingHelper.h
+    BoxState boxState;
+    if (_PrevHeight == -1 || _PrevHeight != H){
+        _PrevHeight = H;
+        boxState = boxState & BoxState::height;
+    }
+    if (_PrevWidth == -1 || _PrevWidth != W){
+        _PrevWidth = W;
+        boxState = boxState & BoxState::width;
+    }
+    if (_PrevLength == -1 || _PrevLength != L){
+        _PrevWidth = L;
+        boxState = boxState & BoxState::width;
+    }
+
     try {
         // Build a box using the dimension attributes
-        BRepPrimAPI_MakeBox mkBox(L, W, H);
-        TopoDS_Shape ResultShape = mkBox.Shape();
-        this->Shape.setValue(ResultShape);
+        //BRepPrimAPI_MakeBox mkBox(L, W, H);
+        //TopoDS_Shape ResultShape = mkBox.Shape();
+        //this->Shape.setValue(ResultShape);
+        TopoShape NewBoxShape = this->Shape.getShape();
+        if (!NewBoxShape.hasTopoNamingNodes()){
+            NewBoxShape.makeBox(H, L, W);
+        }
+        else{
+            NewBoxShape.updateBox(H, L, W)
+        }
     }
     catch (Standard_Failure) {
         Handle_Standard_Failure e = Standard_Failure::Caught();

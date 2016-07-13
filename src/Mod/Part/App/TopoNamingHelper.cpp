@@ -262,6 +262,12 @@ void TopoNamingHelper::TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepF
     //Base::Console().Message(outputStream.str().c_str());
 }
 
+void TrackModifiedShape(const TopoDS_Shape& NewShape){
+    std::ostringstream tipTagStream;
+    tipTagStream << "0:" << this->myRootNode.NbChildren();
+    this->TrackModifiedShape(tipTagStream.str(), NewShape);
+}
+
 void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, const TopoDS_Shape& NewShape){
     TDF_Label OrigNode;
     TDF_Tool::Label(myDataFramework, OrigShapeNodeTag.c_str(), OrigNode);

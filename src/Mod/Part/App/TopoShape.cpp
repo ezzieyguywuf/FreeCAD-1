@@ -72,6 +72,7 @@
 # include <BRepOffsetAPI_ThruSections.hxx>
 # include <BRepPrimAPI_MakePrism.hxx>
 # include <BRepPrimAPI_MakeRevol.hxx>
+# include <BRepPrimAPI_MakeBox.hxx>
 # include <BRepTools.hxx>
 # include <BRepTools_ReShape.hxx>
 # include <BRepTools_ShapeSet.hxx>
@@ -578,6 +579,23 @@ BRepFilletAPI_MakeFillet TopoShape::makeTopoShapeFillet(const std::vector<Fillet
     this->_TopoNamer.TrackFilletOperation(baseShape, mkFillet);
     this->_Shape = mkFillet.Shape();
     return mkFillet;
+}
+
+void makeBox(const double& height, const double& length, const double& width){
+    BRepPrimAPI_MakeBox mkBox(height, length, width);
+    this->_TopoNamer.TrackGeneratedShape(mkBox.Shape());
+}
+
+void updateBox(const double& height, const double& length, const double& width){
+    // TODO: Check to make sure the Topo history is for a box??? I'm assuming it is, and
+    // updating the TipShape as needed
+    if (!this->_TopoNamer.HasBox()){
+        this->makeBox(height, length, width);
+    }
+    else{
+        BRepPrimAPI_MakeBox mkBox(height, length, width);
+        this->_TopoNamer.TrackModifiedShape(mkBox.Shape());
+    }
 }
 
 std::string TopoShape::selectEdge(const int edgeID){

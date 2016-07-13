@@ -84,6 +84,8 @@ public:
     void modifyShape(const std::string& NodeTag, const TopoDS_Shape& Shape);
     void setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse);
     //void setShape(const TopoShape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
+    void makeBox(const double& height, const double& length, const double& width);
+    void updateBox(const double& height, const double& length, const double& width);
     BRepFilletAPI_MakeFillet makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges);
     bool hasTopoNamingNodes() const;
 
@@ -91,7 +93,7 @@ public:
     std::string DumpTopoHistory() const;
     void DumpTopoHistory(std::stringstream& stream) const;
 
-    // The returned string is of the form "i:i..." where i is an integer. This is a 'Tag'
+    // The returned string is of the form "i:j..." where i,j,etc... is an integer. This is a 'Tag'
     // in the OCC Data Framework terminology, and is used to retrieve a specific node in
     // the Data Framework
     std::string selectEdge(const int edgeID);
