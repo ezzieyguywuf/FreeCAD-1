@@ -262,57 +262,63 @@ void TopoNamingHelper::TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepF
     //Base::Console().Message(outputStream.str().c_str());
 }
 
-void TrackModifiedShape(const TopoDS_Shape& NewShape){
+void TopoNamingHelper::TrackModifiedShape(const TopoDS_Shape& NewShape, const TopoData& TData){
     std::ostringstream tipTagStream;
     tipTagStream << "0:" << this->myRootNode.NbChildren();
-    this->TrackModifiedShape(tipTagStream.str(), NewShape);
+    this->TrackModifiedShape(tipTagStream.str(), NewShape, TData);
 }
 
-void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, const TopoDS_Shape& NewShape){
+void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, const TopoDS_Shape& NewShape, const TopoData& TData){
+    // NOTE: This method assumes that the NewShape has NOT been translated. If it has, the
+    // behaviour of the topological naming algorithm is not defined, it will probably fail
     TDF_Label OrigNode;
     TDF_Tool::Label(myDataFramework, OrigShapeNodeTag.c_str(), OrigNode);
 
-    // create new node for modified shape
-    TDF_Label NewNode = TDF_TagSource::NewChild(myRootNode);
-    //this->AddTextToLabel(NewNode, "Modified Node");
-
-
     if (!OrigNode.IsNull()){
-        Handle(TNaming_NamedShape) OrigShapeNS;
-        if (OrigNode.IsAttribute(TNaming_NamedShape::GetID())){
-            OrigNode.FindAttribute(TNaming_NamedShape::GetID(), OrigShapeNS);
-            TopoDS_Shape OrigShape = OrigShapeNS->Get();
+        // create new node for modified shape
+        TDF_Label NewNode = TDF_TagSource::NewChild(myRootNode);
+        AddTextToLabel(NewNode, "Modified Node");
 
-            // Add the NewShape as a modification of the OrigSape
-            TNaming_Builder ModifiedBuilder(NewNode);
-            ModifiedBuilder.Modify(OrigShape, NewShape);
+        // Create subnodes for appropriate Topo Data and Builders, but only if necessary
+        if (TData.GeneratedFaces.Size() > 0){
+            TDF_Label Generated = TDF_TagSource::NewChild(NewNode);
+            AddTextToLabel(Generated, "Generated faces");
+            TNaming_Builder GeneratedBuilder(Generated);
 
-            // Now add the modified shapes
-
-            TopTools_IndexedMapOfShape OrigFaces;
-            TopTools_IndexedMapOfShape NewFaces;
-            TopExp::MapShapes(OrigShape, TopAbs_FACE, OrigFaces);
-            TopExp::MapShapes(NewShape , TopAbs_FACE, NewFaces);
-            // TODO: Need to fix this so that it works for more general cases.
-            // This is just a hack to see if the proper history is what was
-            // causing the previous error with Fillets when rebuilding
-            for (int i=1; i<=OrigFaces.Extent(); i++){
-                TopoDS_Face CurOrigFace = TopoDS::Face(OrigFaces.FindKey(i));
-                TopoDS_Face CurNewFace = TopoDS::Face(NewFaces.FindKey(i));
-
-                if (i!=5){
-                    TDF_Label NewFaceLabel = TDF_TagSource::NewChild(NewNode);
-                    TNaming_Builder NewFaceBuilder(NewFaceLabel);
-                    NewFaceBuilder.Modify(CurOrigFace, CurNewFace);
-                }
+            TopTools_ListIteratorOfListOfShape genIterator(TData.GeneratedFaces);
+            for (; modIterator.More(); modIterator.Next()){
+                TopoDS_Face gennedFace = TopoDS::Face(genIterator.Value());
+                GeneratedBuilder.Generated(gennedFace);
             }
         }
-        else{
-            std::clog << "----------ERROR!!!!! ORIGNODE DID NOT HAVE A NAMEDSHAPE!!!!" << std::endl;
+
+        if (TData.ModifiedFaces.size() > 0){
+            TDF_Label Modified  = TDF_TagSource::NewChild(NewNode);
+            AddTextToLabel(Modified, "Modified faces");
+            TNaming_Builder ModifiedBuilder(Modified);
+
+            for (std::vector<TopoDS_Face>::iterator it = TData.ModifiedFaces.begin(); it != TData.ModifiedFaces.end(); ++it){
+                TopoDS_Face origFace = TopoDS::Face(*it[0]);
+                TopoDS_Face newFace = TopoDS::Face(*it[1]);
+                ModifiedBuilder.Modify(origFace, newFace);
+            }
         }
+
+        if (TData.DeletedFaces.Size() > 0){
+            TDF_Label Deleted   = TDF_TagSource::NewChild(NewNode);
+            AddTextToLabel(Deleted, "Deleted faces");
+            TNaming_Builder DeletedBuilder(Deleted);
+
+            TopTools_ListIteratorOfListOfShape delIterator(TData.DeletedFaces);
+            for (; delIterator.More(); delIterator.Next()){
+                TopoDS_Face deletedFace = TopoDS::Face(delIterator.Value());
+                DeletedBuilder.Delete(deletedFace);
+            }
+        }
+
     }
     else{
-        std::clog << "----------ERROR!!!!! ORIGNODE WAS NULL!!!!" << std::endl;
+        throw std::runtime_error("----------ERROR!!!!! ORIGNODE WAS NULL!!!!");
     }
 }
 
@@ -477,15 +483,17 @@ bool TopoNamingHelper::HasNodes() const{
 }
 
 void TopoNamingHelper::AddTextToLabel(const TDF_Label& Label, const char *str, const std::string& name){
-    // Join name and str
-    std::ostringstream stream;
-    stream << "Name: " << name << ", " << str;
-    Handle(TDataStd_AsciiString) nameAttribute;
-    TCollection_AsciiString myName;
-    myName = stream.str().c_str();
-    nameAttribute = new TDataStd_AsciiString();
-    nameAttribute->Set(myName);
-    Label.AddAttribute(nameAttribute);
+    if (!Label.IsAttribute(TCollection_AsciiString::GetID())){
+        // Join name and str
+        std::ostringstream stream;
+        stream << "Name: " << name << ", " << str;
+        Handle(TDataStd_AsciiString) nameAttribute;
+        TCollection_AsciiString myName;
+        myName = stream.str().c_str();
+        nameAttribute = new TDataStd_AsciiString();
+        nameAttribute->Set(myName);
+        Label.AddAttribute(nameAttribute);
+    }
 }
 
 bool TopoNamingHelper::CompareTwoEdgeTopologies(const TopoDS_Edge& edge1, const TopoDS_Edge& edge2, int numCheckPoints){

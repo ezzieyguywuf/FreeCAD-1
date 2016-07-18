@@ -89,6 +89,11 @@ public:
     BRepFilletAPI_MakeFillet makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges);
     bool hasTopoNamingNodes() const;
 
+    // Any Part::Feature that uses TopoShape will need a createXXX and updateXXX method
+    // within TopoShape.
+    void createBox(const double height, const double length, const double width);
+    bool updateBox(const double deltaH, const double deltaL, const double deltaW);
+
     // Print out a concise description of the topo tree
     std::string DumpTopoHistory() const;
     void DumpTopoHistory(std::stringstream& stream) const;

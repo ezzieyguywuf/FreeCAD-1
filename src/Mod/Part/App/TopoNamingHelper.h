@@ -21,6 +21,12 @@ enum class BoxState{
     translated = 1<<3;
 }
 
+struct TopoData{
+    TopTools_ListOfShape GeneratedFaces;
+    std::vector<TopoDS_Face[2]> ModifiedFaces;
+    TopTools_ListOfShape DeletedFaces;
+};
+
 class TopoNamingHelper{
     public:
         TopoNamingHelper();
@@ -29,12 +35,13 @@ class TopoNamingHelper{
 
         void operator = (const TopoNamingHelper&);
 
+        // TODO Need to add methods for tracking a translation to a shape.
         // Make changes to the Data Framework to track Topological Changes
         void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name="n/a");
         void TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser);
         void TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
-        void TrackModifiedShape(const TopoDS_Shape& NewShape);
-        void TrackModifiedShape(const std::string& OrigShapeNodeTag, const TopoDS_Shape& NewShape);
+        void TrackModifiedShape(const TopoDS_Shape& NewShape, const TopoData& TData);
+        void TrackModifiedShape(const std::string& OrigShapeNodeTag, const TopoDS_Shape& NewShape, const TopoData& TData);
         void TrackModifiedFilletBaseShape(const TopoDS_Shape& NewBaseShape);
         std::string SelectEdge(const TopoDS_Edge& anEdge, const TopoDS_Shape& aShape);
         std::vector<std::string> SelectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape& aShape);
@@ -87,6 +94,7 @@ class TopoNamingHelper{
 
     private:
         bool CheckIfSelectionExists(const TDF_Label aNode, const TopoDS_Shape aShape) const;
+        //bool NodesAreEqual(const TDF_Label& Node1, const TDF_Label& Node2) const;
         Handle(TDF_Data) myDataFramework = new TDF_Data();
         TDF_Label myRootNode = myDataFramework->Root();
         TDF_Label mySelectionNode;

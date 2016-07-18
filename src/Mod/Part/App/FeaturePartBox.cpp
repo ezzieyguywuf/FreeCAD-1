@@ -95,12 +95,7 @@ App::DocumentObjectExecReturn *Box::execute(void)
         //TopoDS_Shape ResultShape = mkBox.Shape();
         //this->Shape.setValue(ResultShape);
         TopoShape NewBoxShape = this->Shape.getShape();
-        if (!NewBoxShape.hasTopoNamingNodes()){
-            NewBoxShape.makeBox(H, L, W);
-        }
-        else{
-            NewBoxShape.updateBox(H, L, W)
-        }
+        NewBoxShape.updateBox(H, L, W)
     }
     catch (Standard_Failure) {
         Handle_Standard_Failure e = Standard_Failure::Caught();
