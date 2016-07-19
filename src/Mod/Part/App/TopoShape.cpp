@@ -509,9 +509,9 @@ void TopoShape::addShape(const TopoShape& shape){
     //Base::Console().Message(this->DumpTopoHistory().c_str());
 }
 
-void TopoShape::modifyShape(const std::string& NodeTag, const TopoDS_Shape& Shape){
-    this->_TopoNamer.TrackModifiedShape(NodeTag, Shape);
-}
+//void TopoShape::modifyShape(const std::string& NodeTag, const TopoDS_Shape& Shape){
+    //this->_TopoNamer.TrackModifiedShape(NodeTag, Shape);
+//}
 
 void TopoShape::setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse){
     //Base::Console().Message("-----setShape (mkFuse) called\n");
@@ -581,21 +581,32 @@ BRepFilletAPI_MakeFillet TopoShape::makeTopoShapeFillet(const std::vector<Fillet
     return mkFillet;
 }
 
-void makeBox(const double& height, const double& length, const double& width){
-    BRepPrimAPI_MakeBox mkBox(height, length, width);
-    this->_TopoNamer.TrackGeneratedShape(mkBox.Shape());
+void TopoShape::createBox(const BoxData& BData){
+    TopoData TData;
+    BRepPrimAPI_MakeBox mkBox(BData.Height, BData.Length, BData.Width);
+    // NOTE: The order here matters, as updateBox depends on it
+    TData.GeneratedFaces = this->getBoxFaces(mkBox);
+    this->_TopoNamer.TrackGeneratedShape(mkBox.Shape(), TData);
 }
 
-void updateBox(const double& height, const double& length, const double& width){
-    // TODO: Check to make sure the Topo history is for a box??? I'm assuming it is, and
-    // updating the TipShape as needed
-    if (!this->_TopoNamer.HasBox()){
-        this->makeBox(height, length, width);
+bool TopoShape::updateBox(const BoxData& BData){
+    // TODO Do I need to check to ensure the Topo History is for a Box?
+    TopoData TData;
+    BRepPrimAPI_MakeBox mkBox(BData.Height, BData.Length, BData.Width);
+
+    TopoDS_Face origFace, newFace;
+    std::vector<TopoDS_Face> newFaces = this->getBoxFacesVector(mkBox);
+
+    for (int i=1; i<=6; i++){
+        origFace = TopoDS::Face(_TopoNamer.GetChildShape(_TopoNamer.GetTipNode(), i));
+        newFace  = newFaces[i];
+
+        if (!_TopoNamer.CompareTwoFaceTopologies(origFace, newFace)){
+            TData.ModifiedFaces.push_back({origFace, newFace});
+        }
     }
-    else{
-        BRepPrimAPI_MakeBox mkBox(height, length, width);
-        this->_TopoNamer.TrackModifiedShape(mkBox.Shape());
-    }
+
+    this->_TopoNamer.TrackModifiedShape(mkBox.Shape(), TData);
 }
 
 std::string TopoShape::selectEdge(const int edgeID){
@@ -2886,4 +2897,19 @@ void TopoShape::getPoints(std::vector<Base::Vector3d> &Points,
     // if no faces are found then the normals can be cleared
     if (!hasFaces)
         Normals.clear();
+}
+
+std::vector<TopoDS_Face> TopoShape::getBoxFacesVector(BRepPrimAPI_MakeBox mkBox) const{
+    std::vector<TopoDS_Face> OutFaces = {mkBox.TopFace(), mkBox.BottomFace(), mkBox.LeftFace(), mkBox.RightFace(), mkBox.FrontFace(), mkBox.BackFace()};
+    return OutFaces;
+}
+TopTools_ListOfShape TopoShape::getBoxFaces(BRepPrimAPI_MakeBox mkBox) const{
+    TopTools_ListOfShape OutFaces;
+    OutFaces.Append(mkBox.TopFace());
+    OutFaces.Append(mkBox.BottomFace());
+    OutFaces.Append(mkBox.LeftFace());
+    OutFaces.Append(mkBox.RightFace());
+    OutFaces.Append(mkBox.FrontFace());
+    OutFaces.Append(mkBox.BackFace());
+    return OutFaces;
 }

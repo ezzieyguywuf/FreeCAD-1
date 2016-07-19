@@ -29,7 +29,9 @@
 #include <TopoDS_Wire.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <App/ComplexGeoData.h>
+#include <BRepPrimAPI_MakeBox.hxx>
 #include "TopoNamingHelper.h"
+#include "TopoNamingData.h"
 //#include "PropertyTopoShape.cpp"
 #include "FilletElement.h"
 
@@ -81,18 +83,16 @@ public:
     // merging _TopoHelpers
     void setShape(const TopoShape& sh);
     void addShape(const TopoShape& Shape);
-    void modifyShape(const std::string& NodeTag, const TopoDS_Shape& Shape);
+    //void modifyShape(const std::string& NodeTag, const TopoDS_Shape& Shape);
     void setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse);
     //void setShape(const TopoShape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
-    void makeBox(const double& height, const double& length, const double& width);
-    void updateBox(const double& height, const double& length, const double& width);
     BRepFilletAPI_MakeFillet makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges);
     bool hasTopoNamingNodes() const;
 
     // Any Part::Feature that uses TopoShape will need a createXXX and updateXXX method
     // within TopoShape.
-    void createBox(const double height, const double length, const double width);
-    bool updateBox(const double deltaH, const double deltaL, const double deltaW);
+    void createBox(const BoxData& BData);
+    bool updateBox(const BoxData& BData);
 
     // Print out a concise description of the topo tree
     std::string DumpTopoHistory() const;
@@ -278,6 +278,8 @@ public:
 
     private:
         TopoNamingHelper _TopoNamer;
+        std::vector<TopoDS_Face> getBoxFacesVector(BRepPrimAPI_MakeBox mkBox) const;
+        TopTools_ListOfShape getBoxFaces(BRepPrimAPI_MakeBox mkBox) const;
 };
 
 } //namespace Part

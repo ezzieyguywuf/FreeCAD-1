@@ -1,3 +1,6 @@
+#ifndef TOPO_NAMINGHELPER_H
+#define TOPO_NAMINGHELPER_H
+
 #include <vector>
 #include <string>
 
@@ -13,19 +16,7 @@
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
 #include <BRepFilletAPI_MakeFillet.hxx>
-
-enum class BoxState{
-    length     = 1<<0;
-    height     = 1<<1;
-    width      = 1<<2;
-    translated = 1<<3;
-}
-
-struct TopoData{
-    TopTools_ListOfShape GeneratedFaces;
-    std::vector<TopoDS_Face[2]> ModifiedFaces;
-    TopTools_ListOfShape DeletedFaces;
-};
+#include "TopoNamingData.h"
 
 class TopoNamingHelper{
     public:
@@ -38,6 +29,7 @@ class TopoNamingHelper{
         // TODO Need to add methods for tracking a translation to a shape.
         // Make changes to the Data Framework to track Topological Changes
         void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name="n/a");
+        void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name="n/a");
         void TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser);
         void TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
         void TrackModifiedShape(const TopoDS_Shape& NewShape, const TopoData& TData);
@@ -65,6 +57,10 @@ class TopoNamingHelper{
         // Return the TopoDS_Shape at the very tip of the Data Framework. TODO do we need
         // to check to make sure the latest operation actually stored a TopoDS_Shape?
         TopoDS_Shape GetTipShape() const;
+        // Return the TDF_Label at the very tip of the Data Framework
+        TDF_Label GetTipNode() const;
+        // Get TopoDS_Shape stored in the nth node under the passed Label
+        TopoDS_Shape GetChildShape(const TDF_Label& ParentLabel, const int& n) const;
         // Does the Topo tree have additional nodes aside from the Selection one created
         // at initialization?
         bool HasNodes() const;
@@ -99,3 +95,4 @@ class TopoNamingHelper{
         TDF_Label myRootNode = myDataFramework->Root();
         TDF_Label mySelectionNode;
 };
+#endif /* ifndef TOPONAMINGHELPER_H */

@@ -45,9 +45,6 @@ Box::Box()
     ADD_PROPERTY_TYPE(Length,(10.0f),"Box",App::Prop_None,"The length of the box");
     ADD_PROPERTY_TYPE(Width ,(10.0f),"Box",App::Prop_None,"The width of the box");
     ADD_PROPERTY_TYPE(Height,(10.0f),"Box",App::Prop_None,"The height of the box");
-    _PrevHeight = -1;
-    _PrevLength = -1;
-    _PrevWidth  = -1;
 }
 
 short Box::mustExecute() const
@@ -74,28 +71,19 @@ App::DocumentObjectExecReturn *Box::execute(void)
     if (H < Precision::Confusion())
         return new App::DocumentObjectExecReturn("Height of box too small");
 
-    // BoxState enum is defined in TopoNamingHelper.h
-    BoxState boxState;
-    if (_PrevHeight == -1 || _PrevHeight != H){
-        _PrevHeight = H;
-        boxState = boxState & BoxState::height;
-    }
-    if (_PrevWidth == -1 || _PrevWidth != W){
-        _PrevWidth = W;
-        boxState = boxState & BoxState::width;
-    }
-    if (_PrevLength == -1 || _PrevLength != L){
-        _PrevWidth = L;
-        boxState = boxState & BoxState::width;
-    }
-
     try {
         // Build a box using the dimension attributes
         //BRepPrimAPI_MakeBox mkBox(L, W, H);
         //TopoDS_Shape ResultShape = mkBox.Shape();
         //this->Shape.setValue(ResultShape);
+        BoxData BData(H, L, W);
         TopoShape NewBoxShape = this->Shape.getShape();
-        NewBoxShape.updateBox(H, L, W)
+        if (!NewBoxShape.hasTopoNamingNodes()){
+            NewBoxShape.createBox(BData);
+        }
+        else{
+            NewBoxShape.updateBox(BData);
+        }
     }
     catch (Standard_Failure) {
         Handle_Standard_Failure e = Standard_Failure::Caught();

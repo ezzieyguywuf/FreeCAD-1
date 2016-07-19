@@ -65,6 +65,18 @@ void TopoNamingHelper::operator = (const TopoNamingHelper& helper){
 }
 
 void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name){
+    TopoData FaceData;
+
+    TopTools_IndexedMapOfShape mapOfFaces;
+    TopExp::MapShapes(GeneratedShape, TopAbs_FACE, mapOfFaces);
+    for (int i=1; i <= mapOfFaces.Extent(); i++){
+        TopoDS_Face curFace = TopoDS::Face(mapOfFaces.FindKey(i));
+        FaceData.GeneratedFaces.Append(curFace);
+    }
+    this->TrackGeneratedShape(GeneratedShape, FaceData, name);
+}
+
+void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name){
     //std::clog << "----------Tracking Generated Shape\n";
     //std::ostringstream outputStream;
     //DeepDump(outputStream);
@@ -72,9 +84,6 @@ void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, c
     // Declare variables
     TNaming_Builder* MyBuilderPtr;
     TDF_Label curLabel;
-    TopTools_IndexedMapOfShape mapOfFaces;
-    TopoDS_Face curFace;
-    int i;
 
     // create a new node under Root
     TDF_Label LabelRoot = TDF_TagSource::NewChild(myRootNode);
@@ -86,10 +95,10 @@ void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, c
     MyBuilderPtr->Generated(GeneratedShape);
 
     // Now iterate over each face and add as a child to the new node we created
-    TopExp::MapShapes(GeneratedShape, TopAbs_FACE, mapOfFaces);
-    for (i=1; i <= mapOfFaces.Extent(); i++){
-        curFace = TopoDS::Face(mapOfFaces.FindKey(i));
         // Create a new sub-node for the Face
+    TopTools_ListIteratorOfListOfShape genIterator(TData.GeneratedFaces);
+    for (; genIterator.More(); genIterator.Next()){
+        TopoDS_Face curFace = TopoDS::Face(genIterator.Value());
         curLabel = TDF_TagSource::NewChild(LabelRoot);
         // add Face to the sub-node
         delete MyBuilderPtr;
@@ -286,7 +295,7 @@ void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, c
             TNaming_Builder GeneratedBuilder(Generated);
 
             TopTools_ListIteratorOfListOfShape genIterator(TData.GeneratedFaces);
-            for (; modIterator.More(); modIterator.Next()){
+            for (; genIterator.More(); genIterator.Next()){
                 TopoDS_Face gennedFace = TopoDS::Face(genIterator.Value());
                 GeneratedBuilder.Generated(gennedFace);
             }
@@ -297,9 +306,10 @@ void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, c
             AddTextToLabel(Modified, "Modified faces");
             TNaming_Builder ModifiedBuilder(Modified);
 
-            for (std::vector<TopoDS_Face>::iterator it = TData.ModifiedFaces.begin(); it != TData.ModifiedFaces.end(); ++it){
-                TopoDS_Face origFace = TopoDS::Face(*it[0]);
-                TopoDS_Face newFace = TopoDS::Face(*it[1]);
+            for (std::vector< std::vector<TopoDS_Face> >::const_iterator it = TData.ModifiedFaces.begin(); it != TData.ModifiedFaces.end(); ++it){
+                std::vector<TopoDS_Face> row = *it;
+                TopoDS_Face origFace = TopoDS::Face(row[0]);
+                TopoDS_Face newFace = TopoDS::Face(row[1]);
                 ModifiedBuilder.Modify(origFace, newFace);
             }
         }
@@ -444,29 +454,27 @@ TopoDS_Shape TopoNamingHelper::GetNodeShape(const std::string NodeTag) const{
 }
 
 TopoDS_Shape TopoNamingHelper::GetTipShape() const {
-    const TDF_Label& tipLabel = this->myRootNode.FindChild(this->myRootNode.NbChildren(), Standard_False);
-    //std::clog << "----------Dumping tipLabel\n";
-    //std::clog << tipLabel;
-    //std::clog << "----------Returning label with entry: ";
-    //tipLabel.EntryDump(std::clog);
-    //std::clog << std::endl;
-    Handle(TNaming_NamedShape) tipNS;
-    tipLabel.FindAttribute(TNaming_NamedShape::GetID(), tipNS);
-    //if (tipNS->IsEmpty()){
-        //std::clog << "----------tipNS is empty...\n";
-    //}
-    //else{
-        //std::clog << "----------tipNS is not empty!!!\n";
-    //}
-    TopoDS_Shape tipShape = TNaming_Tool::GetShape(tipNS);
-    //const TopoDS_Shape& tipShape = tipNS->Get();
-    //if (tipShape.IsNull()){
-        //std::clog << "----------tipShape is null (in TopoNamingHElper)...\n";
-    //}
-    //else{
-        //std::clog << "----------tipShape is not null (in TopoNamingHelper)!!!!\n";
-    //}
+    const TDF_Label& tipLabel = this->GetTipNode();
+    TopoDS_Shape tipShape = this->GetChildShape(tipLabel, 0);
     return tipShape;
+}
+
+TDF_Label TopoNamingHelper::GetTipNode() const{
+    TDF_Label tipLabel = this->myRootNode.FindChild(this->myRootNode.NbChildren(), Standard_False);
+    return tipLabel;
+}
+
+TopoDS_Shape TopoNamingHelper::GetChildShape(const TDF_Label& ParentLabel, const int& n) const{
+    Handle(TNaming_NamedShape) OutNS;
+    if (n > 0){
+        TDF_Label ChildLabel = ParentLabel.FindChild(n, false);
+        ChildLabel.FindAttribute(TNaming_NamedShape::GetID(), OutNS);
+    }
+    else if(n == 0){
+        ParentLabel.FindAttribute(TNaming_NamedShape::GetID(), OutNS);
+    }
+    TopoDS_Shape OutShape = TNaming_Tool::GetShape(OutNS);
+    return OutShape;
 }
 
 std::string TopoNamingHelper::GetLatestFilletBase() const{
@@ -483,7 +491,7 @@ bool TopoNamingHelper::HasNodes() const{
 }
 
 void TopoNamingHelper::AddTextToLabel(const TDF_Label& Label, const char *str, const std::string& name){
-    if (!Label.IsAttribute(TCollection_AsciiString::GetID())){
+    if (!Label.IsAttribute(TDataStd_AsciiString::GetID())){
         // Join name and str
         std::ostringstream stream;
         stream << "Name: " << name << ", " << str;
