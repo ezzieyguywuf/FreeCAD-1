@@ -74,6 +74,8 @@ public:
 
     // Added for Topo Naming stuff
     // set and get the TopoDS_Shape. _Shape should be private...
+    // NOTE: if you are calling this function and are using topological naming, make sure
+    // you make appropriate calls to the TopoNamingHelper methods as well.
     void setShape(const TopoDS_Shape& sh);
     const TopoDS_Shape& getShape() const;
 
@@ -92,7 +94,7 @@ public:
     // Any Part::Feature that uses TopoShape will need a createXXX and updateXXX method
     // within TopoShape.
     void createBox(const BoxData& BData);
-    bool updateBox(const BoxData& BData);
+    void updateBox(const BoxData& BData);
 
     // Print out a concise description of the topo tree
     std::string DumpTopoHistory() const;

@@ -474,6 +474,7 @@ TopoDS_Shape TopoNamingHelper::GetChildShape(const TDF_Label& ParentLabel, const
         ParentLabel.FindAttribute(TNaming_NamedShape::GetID(), OutNS);
     }
     TopoDS_Shape OutShape = TNaming_Tool::GetShape(OutNS);
+    std::clog << "Outshape.IsNull() = " << OutShape.IsNull() <<"\n";
     return OutShape;
 }
 

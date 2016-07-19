@@ -84,6 +84,7 @@ App::DocumentObjectExecReturn *Box::execute(void)
         else{
             NewBoxShape.updateBox(BData);
         }
+        this->Shape.setValue(NewBoxShape);
     }
     catch (Standard_Failure) {
         Handle_Standard_Failure e = Standard_Failure::Caught();

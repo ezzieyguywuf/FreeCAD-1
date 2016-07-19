@@ -486,12 +486,6 @@ void TopoShape::setShape(const TopoDS_Shape& shape){
         //TopoDS_Shape setShape(shape);
         //BRepBuilderAPI_Copy mkCopy(shape);
         this->_Shape = shape;;
-        //Base::Console().Message("-----NOTE!! Evolution = brandnew?!\n");
-        // Since the TopoDS_Shape can't carry a history with it, start the TNaming all over.
-        // TODO: Check to make sure this isn't used incorrectly?
-        TopoNamingHelper newTopoNamer;
-        this->_TopoNamer = newTopoNamer;
-        this->_TopoNamer.TrackGeneratedShape(shape);
     }
 }
 
@@ -583,22 +577,26 @@ BRepFilletAPI_MakeFillet TopoShape::makeTopoShapeFillet(const std::vector<Fillet
 
 void TopoShape::createBox(const BoxData& BData){
     TopoData TData;
-    BRepPrimAPI_MakeBox mkBox(BData.Height, BData.Length, BData.Width);
+    BRepPrimAPI_MakeBox mkBox(BData.Length, BData.Width, BData.Height);
     // NOTE: The order here matters, as updateBox depends on it
     TData.GeneratedFaces = this->getBoxFaces(mkBox);
     this->_TopoNamer.TrackGeneratedShape(mkBox.Shape(), TData);
+    this->setShape(mkBox.Shape());
 }
 
-bool TopoShape::updateBox(const BoxData& BData){
+void TopoShape::updateBox(const BoxData& BData){
     // TODO Do I need to check to ensure the Topo History is for a Box?
     TopoData TData;
-    BRepPrimAPI_MakeBox mkBox(BData.Height, BData.Length, BData.Width);
+    BRepPrimAPI_MakeBox mkBox(BData.Length, BData.Width, BData.Height);
 
     TopoDS_Face origFace, newFace;
     std::vector<TopoDS_Face> newFaces = this->getBoxFacesVector(mkBox);
 
-    for (int i=1; i<=6; i++){
-        origFace = TopoDS::Face(_TopoNamer.GetChildShape(_TopoNamer.GetTipNode(), i));
+    std::clog << "-----Dumping history in updateBox" << std::endl;
+    std::clog << this->_TopoNamer.DeepDump() << std::endl;
+    for (int i=0; i<=5; i++){
+        TopoDS_Shape origShape = _TopoNamer.GetChildShape(_TopoNamer.GetTipNode(), (i+1));
+        origFace = TopoDS::Face(origShape);
         newFace  = newFaces[i];
 
         if (!_TopoNamer.CompareTwoFaceTopologies(origFace, newFace)){
@@ -607,6 +605,7 @@ bool TopoShape::updateBox(const BoxData& BData){
     }
 
     this->_TopoNamer.TrackModifiedShape(mkBox.Shape(), TData);
+    this->setShape(mkBox.Shape());
 }
 
 std::string TopoShape::selectEdge(const int edgeID){
