@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+#include <TNaming_Builder.hxx>
+
 #include <TDF_Data.hxx>
 #include <TDF_Label.hxx>
 #include <TDF_TagSource.hxx>
@@ -59,6 +61,10 @@ class TopoNamingHelper{
         TopoDS_Shape GetTipShape() const;
         // Return the TDF_Label at the very tip of the Data Framework
         TDF_Label GetTipNode() const;
+        // Get the Nth child node in the root tree
+        TDF_Label GetNode(const int& n) const;
+        // get the Nth child node from the Parent label.
+        TDF_Label GetNode(const TDF_Label& parent, const int& n) const;
         // Get TopoDS_Shape stored in the nth node under the passed Label
         TopoDS_Shape GetChildShape(const TDF_Label& ParentLabel, const int& n) const;
         // Does the Topo tree have additional nodes aside from the Selection one created
@@ -83,13 +89,23 @@ class TopoNamingHelper{
         // Write out a BREP file of the TopoDS_Shape at aLabel. The file will be named
         // "<NameBase>_<numb>.brep"
         void WriteShape(const TDF_Label aLabel, const std::string NameBase, const int numb) const;
+        void WriteShape(const TopoDS_Shape aShape, const std::string NameBase, const int numb) const;
         // Write out a BREP file of the TopoDS_Shape at the label with the address
         // <NodeTag>. if <Deep> is true, also write out for all children, with
         // <NameBase>_1.brep, <NameBase>_2.brep etc... as the filename.
         void WriteNode(const std::string NodeTag, const std::string NameBase, const bool Deep) const;
+        TopoDS_Shape GetGeneratedShape(const TDF_Label& parent, const int& node);
+        TopoDS_Shape GetLatestShape(const TDF_Label& Node);
+        //TopoDS_Shape GetModifiedNewShape(const TDF_Label& parent, const int& node);
 
     private:
-        bool CheckIfSelectionExists(const TDF_Label aNode, const TopoDS_Shape aShape) const;
+        bool CheckIfSelectionExists(const TDF_Label aNode, const TopoDS_Face aFace) const;
+        void MakeGeneratedNode(const TDF_Label& Parent, const TopoDS_Face& aFace);
+        void MakeGeneratedNodes(const TDF_Label& Parent, const std::vector<TopoDS_Face>& Faces);
+        void MakeModifiedNode(const TDF_Label& Parent, const std::vector<TopoDS_Face>& aPair);
+        void MakeModifiedNodes(const TDF_Label& Parent, const std::vector< std::vector<TopoDS_Face> >& aPairs);
+        void MakeDeletedNode(const TDF_Label& Parent, const TopoDS_Face& aFace);
+        void MakeDeletedNodes(const TDF_Label& Parent, const std::vector<TopoDS_Face>& Faces);
         //bool NodesAreEqual(const TDF_Label& Node1, const TDF_Label& Node2) const;
         Handle(TDF_Data) myDataFramework = new TDF_Data();
         TDF_Label myRootNode = myDataFramework->Root();

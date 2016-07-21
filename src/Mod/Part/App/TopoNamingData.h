@@ -12,9 +12,9 @@
 //};
 
 struct TopoData{
-    TopTools_ListOfShape GeneratedFaces;
+    std::vector<TopoDS_Face> GeneratedFaces;
     std::vector< std::vector<TopoDS_Face> > ModifiedFaces;
-    TopTools_ListOfShape DeletedFaces;
+    std::vector<TopoDS_Face> DeletedFaces;
 };
 
 struct BoxData{

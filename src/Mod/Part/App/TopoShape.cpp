@@ -578,8 +578,9 @@ BRepFilletAPI_MakeFillet TopoShape::makeTopoShapeFillet(const std::vector<Fillet
 void TopoShape::createBox(const BoxData& BData){
     TopoData TData;
     BRepPrimAPI_MakeBox mkBox(BData.Length, BData.Width, BData.Height);
-    // NOTE: The order here matters, as updateBox depends on it
-    TData.GeneratedFaces = this->getBoxFaces(mkBox);
+    // NOTE: The order here matters, as updateBox depends on it. That's why we use
+    // `getBoxFacesVector` so that we always get the Faces in the same order.
+    TData.GeneratedFaces = this->getBoxFacesVector(mkBox);
     this->_TopoNamer.TrackGeneratedShape(mkBox.Shape(), TData);
     this->setShape(mkBox.Shape());
 }
@@ -592,10 +593,10 @@ void TopoShape::updateBox(const BoxData& BData){
     TopoDS_Face origFace, newFace;
     std::vector<TopoDS_Face> newFaces = this->getBoxFacesVector(mkBox);
 
-    std::clog << "-----Dumping history in updateBox" << std::endl;
-    std::clog << this->_TopoNamer.DeepDump() << std::endl;
     for (int i=0; i<=5; i++){
-        TopoDS_Shape origShape = _TopoNamer.GetChildShape(_TopoNamer.GetTipNode(), (i+1));
+        // Tag 0:2:i+1 should hold the original face. GetLatestShape returns the latest
+        // modification of this face in the Topological History
+        TopoDS_Shape origShape = _TopoNamer.GetLatestShape(_TopoNamer.GetNode(_TopoNamer.GetNode(_TopoNamer.GetNode(2), 1), (i+1)));
         origFace = TopoDS::Face(origShape);
         newFace  = newFaces[i];
 
@@ -603,6 +604,8 @@ void TopoShape::updateBox(const BoxData& BData){
             TData.ModifiedFaces.push_back({origFace, newFace});
         }
     }
+    std::clog << "-----Dumping TopoHistory after update" << std::endl;
+    std::clog << _TopoNamer.DeepDump() << std::endl;
 
     this->_TopoNamer.TrackModifiedShape(mkBox.Shape(), TData);
     this->setShape(mkBox.Shape());

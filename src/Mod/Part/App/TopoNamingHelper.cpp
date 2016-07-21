@@ -71,7 +71,7 @@ void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, c
     TopExp::MapShapes(GeneratedShape, TopAbs_FACE, mapOfFaces);
     for (int i=1; i <= mapOfFaces.Extent(); i++){
         TopoDS_Face curFace = TopoDS::Face(mapOfFaces.FindKey(i));
-        FaceData.GeneratedFaces.Append(curFace);
+        FaceData.GeneratedFaces.push_back(curFace);
     }
     this->TrackGeneratedShape(GeneratedShape, FaceData, name);
 }
@@ -82,7 +82,6 @@ void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, c
     //DeepDump(outputStream);
     //Base::Console().Message(outputStream.str().c_str());
     // Declare variables
-    TNaming_Builder* MyBuilderPtr;
     TDF_Label curLabel;
 
     // create a new node under Root
@@ -91,24 +90,12 @@ void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, c
     AddTextToLabel(LabelRoot, "Generated Shape node", name);
 
     // add the generated shape to the LabelRoot
-    MyBuilderPtr = new TNaming_Builder(LabelRoot);
-    MyBuilderPtr->Generated(GeneratedShape);
+    TNaming_Builder GeneratedBuilder(LabelRoot);
+    GeneratedBuilder.Generated(GeneratedShape);
+    this->MakeGeneratedNodes(LabelRoot, TData.GeneratedFaces);
 
-    // Now iterate over each face and add as a child to the new node we created
-        // Create a new sub-node for the Face
-    TopTools_ListIteratorOfListOfShape genIterator(TData.GeneratedFaces);
-    for (; genIterator.More(); genIterator.Next()){
-        TopoDS_Face curFace = TopoDS::Face(genIterator.Value());
-        curLabel = TDF_TagSource::NewChild(LabelRoot);
-        // add Face to the sub-node
-        delete MyBuilderPtr;
-        MyBuilderPtr = new TNaming_Builder(curLabel);
-        MyBuilderPtr->Generated(curFace);
-    }
-    //std::ostringstream outputStream2;
-    //DeepDump(outputStream2);
-    ////std::clog << "----------Data Framework Dump Below\n";
-    //Base::Console().Message(outputStream2.str().c_str());
+    std::clog << "----------Data Framework Dump Below from TopoNamingHelper\n";
+    std::clog << this->DeepDump();
 }
 
 void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
@@ -284,46 +271,31 @@ void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, c
     TDF_Tool::Label(myDataFramework, OrigShapeNodeTag.c_str(), OrigNode);
 
     if (!OrigNode.IsNull()){
-        // create new node for modified shape
+        // create new node for modified shape and sub-nodes. Even if there are no
+        // Modified/Generated/Deleted Faces, we'll still create the node so we know what's
+        // where.
         TDF_Label NewNode = TDF_TagSource::NewChild(myRootNode);
+
+        // Add descriptive data for debugging purposes
         AddTextToLabel(NewNode, "Modified Node");
 
         // Create subnodes for appropriate Topo Data and Builders, but only if necessary
-        if (TData.GeneratedFaces.Size() > 0){
+        if (TData.GeneratedFaces.size() > 0){
             TDF_Label Generated = TDF_TagSource::NewChild(NewNode);
             AddTextToLabel(Generated, "Generated faces");
-            TNaming_Builder GeneratedBuilder(Generated);
-
-            TopTools_ListIteratorOfListOfShape genIterator(TData.GeneratedFaces);
-            for (; genIterator.More(); genIterator.Next()){
-                TopoDS_Face gennedFace = TopoDS::Face(genIterator.Value());
-                GeneratedBuilder.Generated(gennedFace);
-            }
+            this->MakeGeneratedNodes(Generated, TData.GeneratedFaces);
         }
 
         if (TData.ModifiedFaces.size() > 0){
             TDF_Label Modified  = TDF_TagSource::NewChild(NewNode);
             AddTextToLabel(Modified, "Modified faces");
-            TNaming_Builder ModifiedBuilder(Modified);
-
-            for (std::vector< std::vector<TopoDS_Face> >::const_iterator it = TData.ModifiedFaces.begin(); it != TData.ModifiedFaces.end(); ++it){
-                std::vector<TopoDS_Face> row = *it;
-                TopoDS_Face origFace = TopoDS::Face(row[0]);
-                TopoDS_Face newFace = TopoDS::Face(row[1]);
-                ModifiedBuilder.Modify(origFace, newFace);
-            }
+            this->MakeModifiedNodes(Modified, TData.ModifiedFaces);
         }
 
-        if (TData.DeletedFaces.Size() > 0){
+        if (TData.DeletedFaces.size() > 0){
             TDF_Label Deleted   = TDF_TagSource::NewChild(NewNode);
             AddTextToLabel(Deleted, "Deleted faces");
-            TNaming_Builder DeletedBuilder(Deleted);
-
-            TopTools_ListIteratorOfListOfShape delIterator(TData.DeletedFaces);
-            for (; delIterator.More(); delIterator.Next()){
-                TopoDS_Face deletedFace = TopoDS::Face(delIterator.Value());
-                DeletedBuilder.Delete(deletedFace);
-            }
+            this->MakeDeletedNodes(Deleted, TData.DeletedFaces);
         }
 
     }
@@ -460,8 +432,16 @@ TopoDS_Shape TopoNamingHelper::GetTipShape() const {
 }
 
 TDF_Label TopoNamingHelper::GetTipNode() const{
-    TDF_Label tipLabel = this->myRootNode.FindChild(this->myRootNode.NbChildren(), Standard_False);
-    return tipLabel;
+    return this->GetNode(myRootNode, this->myRootNode.NbChildren());
+}
+
+TDF_Label TopoNamingHelper::GetNode(const int& n) const{
+    return this->GetNode(myRootNode, n);
+}
+
+TDF_Label TopoNamingHelper::GetNode(const TDF_Label& parent, const int& n) const{
+    TDF_Label outLabel = parent.FindChild(n, Standard_False);
+    return outLabel;
 }
 
 TopoDS_Shape TopoNamingHelper::GetChildShape(const TDF_Label& ParentLabel, const int& n) const{
@@ -565,7 +545,7 @@ bool TopoNamingHelper::CompareTwoFaceTopologies(const TopoDS_Shape& face1, const
         for (int j=1; j<= Edges2.Extent(); j++){
             TopoDS_Edge Edge2 = TopoDS::Edge(Edges2.FindKey(j));
             if (BRepTools::Compare(Edge1, Edge2)){
-                std::clog << "----------Found match!" << std::endl;
+                //std::clog << "----------Found match!" << std::endl;
                 match = true;
                 break;
             }
@@ -581,7 +561,7 @@ bool TopoNamingHelper::CompareTwoFaceTopologies(const TopoDS_Shape& face1, const
             return false;
         }
     }
-    std::clog << "----------All edges match!" << std::endl;
+    //std::clog << "----------All edges match!" << std::endl;
 
     //if (face2.IsEqual(face1)){
         //std::clog << "----------for i = " << i << " and j = "<<j << ", Faces ARE equal" << std::endl;
@@ -699,10 +679,14 @@ void TopoNamingHelper::WriteShape(const TDF_Label aLabel, const std::string Name
     Handle(TNaming_NamedShape) WriteNS;
     aLabel.FindAttribute(TNaming_NamedShape::GetID(), WriteNS);
     TopoDS_Shape ShapeToWrite = WriteNS->Get();
+    this->WriteShape(ShapeToWrite, NameBase, numb);
+}
+
+void TopoNamingHelper::WriteShape(const TopoDS_Shape aShape, const std::string NameBase, const int numb) const{
     std::ostringstream outname;
     outname << NameBase << "_" << numb << ".brep";
     std::clog << "----------writing " << outname.str() << std::endl;
-    BRepTools::Write(ShapeToWrite, outname.str().c_str());
+    BRepTools::Write(aShape, outname.str().c_str());
 }
 
 void TopoNamingHelper::WriteNode(const std::string NodeTag, const std::string NameBase, const bool Deep) const{
@@ -721,5 +705,53 @@ void TopoNamingHelper::WriteNode(const std::string NodeTag, const std::string Na
     }
     else{
         throw std::runtime_error("That Node does not appear to exist on the Data Framework");
+    }
+}
+
+TopoDS_Shape TopoNamingHelper::GetGeneratedShape(const TDF_Label& parent, const int& node){
+    // The Generated node should always be the first one...
+    std::clog << "Trying to get node = "<< node << std::endl;
+    return this->GetChildShape(this->GetNode(parent, 1), node);
+}
+
+TopoDS_Shape TopoNamingHelper::GetLatestShape(const TDF_Label& Node){
+    Handle(TNaming_NamedShape) ShapeNS;
+    Node.FindAttribute(TNaming_NamedShape::GetID(), ShapeNS);
+    return TNaming_Tool::CurrentShape(ShapeNS);
+}
+
+//-------------------- Private Methods --------------------
+void TopoNamingHelper::MakeGeneratedNode(const TDF_Label& Parent, const TopoDS_Face& aFace){
+    TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
+    TNaming_Builder Builder(childLabel);
+    Builder.Generated(aFace);
+}
+
+void TopoNamingHelper::MakeGeneratedNodes(const TDF_Label& Parent, const std::vector<TopoDS_Face>& Faces){
+    TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
+    TNaming_Builder Builder(childLabel);
+    this->AddTextToLabel(childLabel, "Generated Faces");
+    for (auto& aFace : Faces){
+        this->MakeGeneratedNode(childLabel, aFace);
+    }
+}
+void TopoNamingHelper::MakeModifiedNode(const TDF_Label& Parent, const std::vector<TopoDS_Face>& aPair){
+    TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
+    TNaming_Builder Builder(childLabel);
+    Builder.Modify(aPair[0], aPair[1]);
+}
+void TopoNamingHelper::MakeModifiedNodes(const TDF_Label& Parent, const std::vector< std::vector<TopoDS_Face> >& aPairs){
+    for (auto& aPair: aPairs){
+        this->MakeModifiedNode(Parent, aPair);
+    }
+}
+void TopoNamingHelper::MakeDeletedNode(const TDF_Label& Parent, const TopoDS_Face& aFace){
+    TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
+    TNaming_Builder Builder(childLabel);
+    Builder.Delete(aFace);
+}
+void TopoNamingHelper::MakeDeletedNodes(const TDF_Label& Parent, const std::vector<TopoDS_Face>& Faces){
+    for (auto& aFace : Faces){
+        this->MakeDeletedNode(Parent, aFace);
     }
 }
