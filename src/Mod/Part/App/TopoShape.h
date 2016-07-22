@@ -77,7 +77,7 @@ public:
     // NOTE: if you are calling this function and are using topological naming, make sure
     // you make appropriate calls to the TopoNamingHelper methods as well.
     void setShape(const TopoDS_Shape& sh);
-    const TopoDS_Shape& getShape() const;
+    TopoDS_Shape getShape() const;
 
     // setShape always takes a TopoShape and optionally an OCC child of
     // BRepBuilderAPI_MakeShape. The _TopoHelper is copied from the TopoShape, so it's
@@ -95,6 +95,8 @@ public:
     // within TopoShape.
     void createBox(const BoxData& BData);
     void updateBox(const BoxData& BData);
+    void createFillet(const TopoShape& BaseShape);
+    BRepFilletAPI_MakeFillet updateFillet(const TopoShape& BaseShape, const std::vector<FilletElement>& FDatas);
 
     // Print out a concise description of the topo tree
     std::string DumpTopoHistory() const;

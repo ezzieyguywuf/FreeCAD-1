@@ -63,7 +63,9 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
 #if defined(__GNUC__) && defined (FC_OS_LINUX)
         Base::SignalException se;
 #endif
+
         TopoShape FilletShape = this->Shape.getShape();
+
         if (FilletShape.hasTopoNamingNodes()){
             Base::Console().Message("----- Found topo naming nodes...\n");
             // If there are nodes, this means an edge (or more) has already been selected.
@@ -81,30 +83,31 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
             // If there are no nodes, then no fillets have been made yet. Let's use the
             // Base shape as the topo basis, i.e. no topological history except for
             // 'Generated'
-            FilletShape = TopoShape(base->Shape.getValue());
+            FilletShape.createFillet(base->Shape.getValue());
         }
         //Base::Console().Message(FilletShape.DumpTopoHistory().c_str());
 
-        std::vector<FilletElement> values = Edges.getValues();
-        for (std::vector<FilletElement>::iterator it = values.begin(); it != values.end(); ++it) {
-            int id = it->edgeid;
-            std::string edgetag = it->edgetag;
+        std::vector<FilletElement> fdatas = Edges.getValues();
+        for (auto&& fdata : fdatas) {
+            int id = fdata.edgeid;
+            std::string edgetag = fdata.edgetag;
             std::ostringstream outstream;
             outstream << "edgetag = " << edgetag << "\n";
             Base::Console().Message(outstream.str().c_str());
             if (edgetag.empty()){
                 Base::Console().Message("Retrieving edgetag?\n");
                 edgetag = FilletShape.selectEdge(id);
-                Edges.setValue(it->edgeid, it->radius1, it->radius2, edgetag);
+                Edges.setValue(id, fdata.radius1, fdata.radius2, edgetag);
             }
         }
 
-        // This is where the fillet operation is done now, in TopoShape_Fillet
-        BRepFilletAPI_MakeFillet mkFillet = FilletShape.makeTopoShapeFillet(Edges.getValues());
+        std::clog << "getting mkFillet" << std::endl;
+        BRepFilletAPI_MakeFillet mkFillet = FilletShape.updateFillet(base->Shape.getValue(), Edges.getValues());
 
         if (!mkFillet.IsDone())
             return new App::DocumentObjectExecReturn("Resulting shape is null");
 
+        std::clog << "doing bottom matter" << std::endl;
         TopoDS_Shape shape = mkFillet.Shape();
         ShapeHistory history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
         //this->Shape.setValue(shape);
@@ -116,6 +119,7 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         prop.setContainer(this);
         prop.touch();
 
+        std::clog << "returning" << std::endl;
         return App::DocumentObject::StdReturn;
     }
     catch (Standard_Failure) {

@@ -13,8 +13,13 @@
 
 struct TopoData{
     std::vector<TopoDS_Face> GeneratedFaces;
-    std::vector< std::vector<TopoDS_Face> > ModifiedFaces;
+    std::vector< std::pair<TopoDS_Face, TopoDS_Face> > ModifiedFaces;
     std::vector<TopoDS_Face> DeletedFaces;
+};
+
+struct FilletData : TopoData{
+    std::vector< std::pair<TopoDS_Edge, TopoDS_Face> > GeneratedFacesFromEdge;
+    std::vector< std::pair<TopoDS_Vertex, TopoDS_Face> > GeneratedFacesFromVertex;
 };
 
 struct BoxData{
