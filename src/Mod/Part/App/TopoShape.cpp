@@ -671,26 +671,28 @@ BRepFilletAPI_MakeFillet TopoShape::updateFillet(const TopoShape& BaseShape, con
         TopoDS_Edge edge = TopoDS::Edge(edges.FindKey(i));
         TopTools_ListOfShape generated = mkFillet.Generated(edge);
         TopTools_ListIteratorOfListOfShape genIt(generated);
-        for (; getIt.More(); genIt.Next()){
-            TopoDS_Face genFace = TopoDS::Face(getIt.Value());
+        for (; genIt.More(); genIt.Next()){
+            TopoDS_Face genFace = TopoDS::Face(genIt.Value());
             TFData.GeneratedFacesFromEdge.push_back({edge, genFace});
         }
     }
 
     TopTools_IndexedMapOfShape vertexes;
     TopExp::MapShapes(BaseShape.getShape(), TopAbs_VERTEX, vertexes);
-    for (int i=1; i<=vertexes.Extent()){
+    for (int i=1; i<=vertexes.Extent(); i++){
         TopoDS_Vertex vertex = TopoDS::Vertex(vertexes.FindKey(i));
         TopTools_ListOfShape generated = mkFillet.Generated(vertex);
-        TopTools_ListIteratorOfListOfShape getIt(generated);
-        for (; getIt.More(); genIt.Next()){
-            TopoDS_Face genFace = TopoDS::Face(getIt.Value());
+        TopTools_ListIteratorOfListOfShape genIt(generated);
+        for (; genIt.More(); genIt.Next()){
+            TopoDS_Face genFace = TopoDS::Face(genIt.Value());
             TFData.GeneratedFacesFromVertex.push_back({vertex, genFace});
         }
     }
 
     this->_TopoNamer.TrackGeneratedShape(this->_TopoNamer.GetNode(3), mkFillet.Shape(), TFData, "Filleted Shape");
     this->setShape(mkFillet.Shape());
+    std::clog << "-----Dumping topohistory after updateFillet" << std::endl;
+    std::clog << this->_TopoNamer.DeepDump() << std::endl;
     return mkFillet;
 }
 

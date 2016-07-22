@@ -104,8 +104,10 @@ TDF_Label TopoNamingHelper::TrackGeneratedShape(const TDF_Label& parent, const T
 
 TDF_Label TopoNamingHelper::TrackGeneratedShape(const TDF_Label& parent, const TopoDS_Shape& GeneratedShape,
                                                 const FilletData& FData, const std::string& name){
-    TDF_Label LabelRoot = this->TrackGeneratedShape(parent, GeneratedShape, FData, name);
-    this->MakeModifiedNodes(LabelRoot, FData.GeneratedFacesFromEdge);
+    TDF_Label LabelRoot = this->TrackGeneratedShape(parent, GeneratedShape, TopoData(FData), name);
+    this->MakeGeneratedFromEdgeNodes(LabelRoot, FData.GeneratedFacesFromEdge);
+    this->MakeGeneratedFromVertexNodes(LabelRoot, FData.GeneratedFacesFromVertex);
+    return LabelRoot;
 }
 
 //void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
@@ -783,13 +785,27 @@ void TopoNamingHelper::MakeGeneratedFromEdgeNodes(const TDF_Label& Parent, const
     }
 }
 
+void TopoNamingHelper::MakeGeneratedFromVertexNode(const TDF_Label& Parent, const std::pair<TopoDS_Vertex, TopoDS_Face>& aPair){
+    TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
+    TNaming_Builder Builder(childLabel);
+    Builder.Generated(std::get<0>(aPair), std::get<1>(aPair));
+}
+
+void TopoNamingHelper::MakeGeneratedFromVertexNodes(const TDF_Label& Parent, const std::vector< std::pair<TopoDS_Vertex, TopoDS_Face> >& Pairs){
+    TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
+    this->AddTextToLabel(childLabel, "Faces generated from Vertexes");
+    for (auto&& aPair : Pairs){
+        this->MakeGeneratedFromVertexNode(Parent, aPair);
+    }
+}
+
 void TopoNamingHelper::MakeModifiedNode(const TDF_Label& Parent, const std::pair<TopoDS_Face, TopoDS_Face>& aPair){
     TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
     TNaming_Builder Builder(childLabel);
     Builder.Modify(std::get<0>(aPair), std::get<1>(aPair));
 }
 void TopoNamingHelper::MakeModifiedNodes(const TDF_Label& Parent, const std::vector< std::pair<TopoDS_Face, TopoDS_Face> >& aPairs){
-    for (auto& aPair: aPairs){
+    for (auto&& aPair: aPairs){
         this->MakeModifiedNode(Parent, aPair);
     }
 }
@@ -799,7 +815,7 @@ void TopoNamingHelper::MakeDeletedNode(const TDF_Label& Parent, const TopoDS_Fac
     Builder.Delete(aFace);
 }
 void TopoNamingHelper::MakeDeletedNodes(const TDF_Label& Parent, const std::vector<TopoDS_Face>& Faces){
-    for (auto& aFace : Faces){
+    for (auto&& aFace : Faces){
         this->MakeDeletedNode(Parent, aFace);
     }
 }

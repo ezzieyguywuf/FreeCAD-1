@@ -11,6 +11,7 @@
 #include <TDF_TagSource.hxx>
 
 #include <TopoDS_Shape.hxx>
+#include <TopoDS_Vertex.hxx>
 
 #include <TopTools_Array1OfListOfShape.hxx>
 #include <TopTools_ListOfShape.hxx>
@@ -109,6 +110,8 @@ class TopoNamingHelper{
         void MakeGeneratedNodes(const TDF_Label& Parent, const std::vector<TopoDS_Face>& Faces);
         void MakeGeneratedFromEdgeNode(const TDF_Label& Parent, const std::pair<TopoDS_Edge, TopoDS_Face>& aPair);
         void MakeGeneratedFromEdgeNodes(const TDF_Label& Parent, const std::vector< std::pair<TopoDS_Edge, TopoDS_Face> >& Pairs);
+        void MakeGeneratedFromVertexNode(const TDF_Label& Parent, const std::pair<TopoDS_Vertex, TopoDS_Face>& aPair);
+        void MakeGeneratedFromVertexNodes(const TDF_Label& Parent, const std::vector< std::pair<TopoDS_Vertex, TopoDS_Face> >& Pairs);
         void MakeModifiedNode(const TDF_Label& Parent, const std::pair<TopoDS_Face, TopoDS_Face>& aPair);
         void MakeModifiedNodes(const TDF_Label& Parent, const std::vector< std::pair<TopoDS_Face, TopoDS_Face> >& aPairs);
         void MakeDeletedNode(const TDF_Label& Parent, const TopoDS_Face& aFace);
