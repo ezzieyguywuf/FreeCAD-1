@@ -781,7 +781,7 @@ void TopoNamingHelper::MakeGeneratedFromEdgeNodes(const TDF_Label& Parent, const
     TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
     this->AddTextToLabel(childLabel, "Faces Generated from Edges");
     for (auto&& aPair : Pairs){
-        this->MakeGeneratedFromEdgeNode(Parent, aPair);
+        this->MakeGeneratedFromEdgeNode(childLabel, aPair);
     }
 }
 
@@ -795,7 +795,7 @@ void TopoNamingHelper::MakeGeneratedFromVertexNodes(const TDF_Label& Parent, con
     TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
     this->AddTextToLabel(childLabel, "Faces generated from Vertexes");
     for (auto&& aPair : Pairs){
-        this->MakeGeneratedFromVertexNode(Parent, aPair);
+        this->MakeGeneratedFromVertexNode(childLabel, aPair);
     }
 }
 
