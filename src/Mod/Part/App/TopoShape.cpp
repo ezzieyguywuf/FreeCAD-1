@@ -624,7 +624,6 @@ void TopoShape::createFillet(const TopoShape& BaseShape){
     // TODO need to handle possible seam edges
     TopExp::MapShapes(BaseShape.getShape(), TopAbs_FACE, faces);
     for (int i=1; i <= faces.Extent(); i++){
-        std::clog << "Trying to get face i=" << i << std::endl;
         TopoDS_Face face = TopoDS::Face(faces.FindKey(i));
         TData.GeneratedFaces.push_back(face);
     }
@@ -641,7 +640,6 @@ BRepFilletAPI_MakeFillet TopoShape::updateFillet(const TopoShape& BaseShape, con
     BRepFilletAPI_MakeFillet mkFillet(BaseShape.getShape());
     
     for (auto&& FData: FDatas){
-        std::clog << "Getting selected edge" << std::endl;
         TopoDS_Edge edge = this->_TopoNamer.GetSelectedEdge(FData.edgetag);
         mkFillet.Add(FData.radius1, FData.radius2, edge);
     }
@@ -672,11 +670,25 @@ BRepFilletAPI_MakeFillet TopoShape::updateFillet(const TopoShape& BaseShape, con
     for (int i=1; i<=edges.Extent(); i++){
         TopoDS_Edge edge = TopoDS::Edge(edges.FindKey(i));
         TopTools_ListOfShape generated = mkFillet.Generated(edge);
+        TopTools_ListIteratorOfListOfShape genIt(generated);
+        for (; getIt.More(); genIt.Next()){
+            TopoDS_Face genFace = TopoDS::Face(getIt.Value());
+            TFData.GeneratedFacesFromEdge.push_back({edge, genFace});
+        }
     }
 
+    TopTools_IndexedMapOfShape vertexes;
+    TopExp::MapShapes(BaseShape.getShape(), TopAbs_VERTEX, vertexes);
+    for (int i=1; i<=vertexes.Extent()){
+        TopoDS_Vertex vertex = TopoDS::Vertex(vertexes.FindKey(i));
+        TopTools_ListOfShape generated = mkFillet.Generated(vertex);
+        TopTools_ListIteratorOfListOfShape getIt(generated);
+        for (; getIt.More(); genIt.Next()){
+            TopoDS_Face genFace = TopoDS::Face(getIt.Value());
+            TFData.GeneratedFacesFromVertex.push_back({vertex, genFace});
+        }
+    }
 
-    std::clog << "tracking generated shape" << std::endl;
-    std::clog << this->_TopoNamer.DeepDump() << std::endl;
     this->_TopoNamer.TrackGeneratedShape(this->_TopoNamer.GetNode(3), mkFillet.Shape(), TFData, "Filleted Shape");
     this->setShape(mkFillet.Shape());
     return mkFillet;

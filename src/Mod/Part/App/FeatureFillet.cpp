@@ -92,22 +92,17 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
             int id = fdata.edgeid;
             std::string edgetag = fdata.edgetag;
             std::ostringstream outstream;
-            outstream << "edgetag = " << edgetag << "\n";
-            Base::Console().Message(outstream.str().c_str());
             if (edgetag.empty()){
-                Base::Console().Message("Retrieving edgetag?\n");
                 edgetag = FilletShape.selectEdge(id);
                 Edges.setValue(id, fdata.radius1, fdata.radius2, edgetag);
             }
         }
 
-        std::clog << "getting mkFillet" << std::endl;
         BRepFilletAPI_MakeFillet mkFillet = FilletShape.updateFillet(base->Shape.getValue(), Edges.getValues());
 
         if (!mkFillet.IsDone())
             return new App::DocumentObjectExecReturn("Resulting shape is null");
 
-        std::clog << "doing bottom matter" << std::endl;
         TopoDS_Shape shape = mkFillet.Shape();
         ShapeHistory history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
         //this->Shape.setValue(shape);
@@ -119,7 +114,6 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         prop.setContainer(this);
         prop.touch();
 
-        std::clog << "returning" << std::endl;
         return App::DocumentObject::StdReturn;
     }
     catch (Standard_Failure) {

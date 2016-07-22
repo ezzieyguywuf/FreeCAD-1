@@ -78,8 +78,8 @@ void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, c
     this->TrackGeneratedShape(parent, GeneratedShape, TData, name);
 }
 
-void TopoNamingHelper::TrackGeneratedShape(const TDF_Label& parent, const TopoDS_Shape& GeneratedShape,
-                                           const TopoData& TData, const std::string& name){
+TDF_Label TopoNamingHelper::TrackGeneratedShape(const TDF_Label& parent, const TopoDS_Shape& GeneratedShape,
+                                                const TopoData& TData, const std::string& name){
     //std::clog << "----------Tracking Generated Shape\n";
     //std::ostringstream outputStream;
     //DeepDump(outputStream);
@@ -99,6 +99,13 @@ void TopoNamingHelper::TrackGeneratedShape(const TDF_Label& parent, const TopoDS
 
     //std::clog << "----------Data Framework Dump Below from TopoNamingHelper\n";
     //std::clog << this->DeepDump();
+    return LabelRoot;
+}
+
+TDF_Label TopoNamingHelper::TrackGeneratedShape(const TDF_Label& parent, const TopoDS_Shape& GeneratedShape,
+                                                const FilletData& FData, const std::string& name){
+    TDF_Label LabelRoot = this->TrackGeneratedShape(parent, GeneratedShape, FData, name);
+    this->MakeModifiedNodes(LabelRoot, FData.GeneratedFacesFromEdge);
 }
 
 //void TopoNamingHelper::TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser){
@@ -477,6 +484,14 @@ bool TopoNamingHelper::HasNodes() const{
     return out;
 }
 
+bool TopoNamingHelper::TreesEquivalent(const TDF_Label& Node1, const TDF_Label& Node2) const{
+    bool out;
+    TDF_ChildIterator tree1(Node1, Standard_True);
+    TDF_ChildIterator tree2(Node2, Standard_True);
+    for (tree1; tree1.More(); tree1.Next()){
+    }
+}
+
 void TopoNamingHelper::AddNode(const std::string& Name){
     TDF_Label label = TDF_TagSource::NewChild(this->myRootNode);
     this->AddTextToLabel(label, Name);
@@ -748,12 +763,26 @@ void TopoNamingHelper::MakeGeneratedNode(const TDF_Label& Parent, const TopoDS_F
 
 void TopoNamingHelper::MakeGeneratedNodes(const TDF_Label& Parent, const std::vector<TopoDS_Face>& Faces){
     TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
-    TNaming_Builder Builder(childLabel);
     this->AddTextToLabel(childLabel, "Generated Faces");
-    for (auto& aFace : Faces){
+    for (auto&& aFace : Faces){
         this->MakeGeneratedNode(childLabel, aFace);
     }
 }
+
+void TopoNamingHelper::MakeGeneratedFromEdgeNode(const TDF_Label& Parent, const std::pair<TopoDS_Edge, TopoDS_Face>& aPair){
+    TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
+    TNaming_Builder Builder(childLabel);
+    Builder.Generated(std::get<0>(aPair), std::get<1>(aPair));
+}
+
+void TopoNamingHelper::MakeGeneratedFromEdgeNodes(const TDF_Label& Parent, const std::vector< std::pair<TopoDS_Edge, TopoDS_Face> >& Pairs){
+    TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
+    this->AddTextToLabel(childLabel, "Faces Generated from Edges");
+    for (auto&& aPair : Pairs){
+        this->MakeGeneratedFromEdgeNode(Parent, aPair);
+    }
+}
+
 void TopoNamingHelper::MakeModifiedNode(const TDF_Label& Parent, const std::pair<TopoDS_Face, TopoDS_Face>& aPair){
     TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
     TNaming_Builder Builder(childLabel);

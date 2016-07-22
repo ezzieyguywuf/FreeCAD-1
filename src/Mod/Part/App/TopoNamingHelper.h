@@ -32,7 +32,8 @@ class TopoNamingHelper{
         // Make changes to the Data Framework to track Topological Changes
         void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name);
         void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name);
-        void TrackGeneratedShape(const TDF_Label& parent, const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name);
+        TDF_Label TrackGeneratedShape(const TDF_Label& parent, const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name);
+        TDF_Label TrackGeneratedShape(const TDF_Label& parent, const TopoDS_Shape& GeneratedShape, const FilletData& FData, const std::string& name);
         //void TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser);
         void TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
         void TrackModifiedShape(const TopoDS_Shape& NewShape, const TopoData& TData, const std::string& name);
@@ -71,6 +72,8 @@ class TopoNamingHelper{
         // Does the Topo tree have additional nodes aside from the Selection one created
         // at initialization?
         bool HasNodes() const;
+        // Are the two nodes equivalent?
+        bool TreesEquivalent(const TDF_Label& Node1, const TDF_Label& Node2) const;
         void AddNode(const std::string& Name="");
 
         // Non-Member Class functions
@@ -104,6 +107,8 @@ class TopoNamingHelper{
         bool CheckIfSelectionExists(const TDF_Label aNode, const TopoDS_Face aFace) const;
         void MakeGeneratedNode(const TDF_Label& Parent, const TopoDS_Face& aFace);
         void MakeGeneratedNodes(const TDF_Label& Parent, const std::vector<TopoDS_Face>& Faces);
+        void MakeGeneratedFromEdgeNode(const TDF_Label& Parent, const std::pair<TopoDS_Edge, TopoDS_Face>& aPair);
+        void MakeGeneratedFromEdgeNodes(const TDF_Label& Parent, const std::vector< std::pair<TopoDS_Edge, TopoDS_Face> >& Pairs);
         void MakeModifiedNode(const TDF_Label& Parent, const std::pair<TopoDS_Face, TopoDS_Face>& aPair);
         void MakeModifiedNodes(const TDF_Label& Parent, const std::vector< std::pair<TopoDS_Face, TopoDS_Face> >& aPairs);
         void MakeDeletedNode(const TDF_Label& Parent, const TopoDS_Face& aFace);
