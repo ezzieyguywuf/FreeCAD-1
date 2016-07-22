@@ -89,14 +89,13 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
 
         std::vector<FilletElement> fdatas = Edges.getValues();
         for (auto&& fdata : fdatas) {
-            int id = fdata.edgeid;
             std::string edgetag = fdata.edgetag;
-            std::ostringstream outstream;
             if (edgetag.empty()){
-                edgetag = FilletShape.selectEdge(id);
-                Edges.setValue(id, fdata.radius1, fdata.radius2, edgetag);
+                int id = fdata.edgeid;
+                fdata.edgetag = FilletShape.selectEdge(id);
             }
         }
+        Edges.setValues(fdatas);
 
         BRepFilletAPI_MakeFillet mkFillet = FilletShape.updateFillet(base->Shape.getValue(), Edges.getValues());
 

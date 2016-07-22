@@ -640,6 +640,7 @@ BRepFilletAPI_MakeFillet TopoShape::updateFillet(const TopoShape& BaseShape, con
     BRepFilletAPI_MakeFillet mkFillet(BaseShape.getShape());
     
     for (auto&& FData: FDatas){
+        std::clog << "-----Adding an edge to fillet" << std::endl;
         TopoDS_Edge edge = this->_TopoNamer.GetSelectedEdge(FData.edgetag);
         mkFillet.Add(FData.radius1, FData.radius2, edge);
     }
