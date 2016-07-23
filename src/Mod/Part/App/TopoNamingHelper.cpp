@@ -791,30 +791,30 @@ TDF_Label TopoNamingHelper::LabelFromTag(const std::string& tag) const{
     return outLabel;
 }
 
-void TopoNamingHelper::AppendNode(const TDF_Label& Parent, const TDF_Label& Target){
-    TDF_Label NewNode = TDF_TagSource::NewChild(Parent);
-    if (Target.IsAttribute(TNaming_NamedShape::GetID())){
-        std::clog << "Tag " << this->GetTag(Target) << " in Target has a TNaming_NamedShape..." << std::endl;
+void TopoNamingHelper::AppendNode(const TDF_Label& TargetParent, const TDF_Label& SourceParent){
+    TDF_Label NewNode = TDF_TagSource::NewChild(TargetParent);
+    if (SourceParent.IsAttribute(TNaming_NamedShape::GetID())){
+        std::clog << "Tag " << this->GetTag(SourceParent) << " in Target has a TNaming_NamedShape..." << std::endl;
         TNaming_Builder Builder(NewNode);
-        Handle(TNaming_NamedShape) TargetNS;
-        Target.FindAttribute(TNaming_NamedShape::GetID(), TargetNS);
-        switch (TargetNS->Evolution()){
+        Handle(TNaming_NamedShape) SourceNS;
+        TargetParent.FindAttribute(TNaming_NamedShape::GetID(), SourceNS);
+        switch (SourceNS->Evolution()){
             case TNaming_PRIMITIVE:{
-                TopoDS_Shape NewShape = TNaming_Tool::GetShape(TargetNS);
+                TopoDS_Shape NewShape = TNaming_Tool::GetShape(SourceNS);
                 Builder.Generated(NewShape);
                 break;}
             case TNaming_GENERATED:{
-                TopoDS_Shape OldShape = TNaming_Tool::OriginalShape(TargetNS);
-                TopoDS_Shape NewShape = TNaming_Tool::GetShape(TargetNS);
+                TopoDS_Shape OldShape = TNaming_Tool::OriginalShape(SourceNS);
+                TopoDS_Shape NewShape = TNaming_Tool::GetShape(SourceNS);
                 Builder.Generated(OldShape, NewShape);
                 break;}
             case TNaming_MODIFY   :{
-                TopoDS_Shape OldShape = TNaming_Tool::OriginalShape(TargetNS);
-                TopoDS_Shape NewShape = TNaming_Tool::GetShape(TargetNS);
+                TopoDS_Shape OldShape = TNaming_Tool::OriginalShape(SourceNS);
+                TopoDS_Shape NewShape = TNaming_Tool::GetShape(SourceNS);
                 Builder.Modify(OldShape, NewShape);
                 break;}
             case TNaming_DELETE   :{
-                TopoDS_Shape OldShape = TNaming_Tool::OriginalShape(TargetNS);
+                TopoDS_Shape OldShape = TNaming_Tool::OriginalShape(SourceNS);
                 Builder.Delete(OldShape);
                 break;}
             default:{
@@ -822,12 +822,12 @@ void TopoNamingHelper::AppendNode(const TDF_Label& Parent, const TDF_Label& Targ
         }
     }
     else{
-        std::clog << "Tag " << this->GetTag(Target) << " in Target DOES NOT have a TNaming_NamedShape..." << std::endl;
+        std::clog << "Tag " << this->GetTag(SourceParent) << " in SourceParent DOES NOT have a TNaming_NamedShape..." << std::endl;
     }
-    if (Target.IsAttribute(TDataStd_AsciiString::GetID())){
-        this->AddTextToLabel(NewNode, this->GetTextFromLabel(Target));
+    if (SourceParent.IsAttribute(TDataStd_AsciiString::GetID())){
+        this->AddTextToLabel(NewNode, this->GetTextFromLabel(SourceParent));
     }
-    for (TDF_ChildIterator it(Target, false); it.More(); it.Next()){
+    for (TDF_ChildIterator it(SourceParent, false); it.More(); it.Next()){
         this->AppendNode(NewNode, it.Value());
     }
 }
