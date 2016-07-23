@@ -382,7 +382,7 @@ bool TopoNamingHelper::AppendTopoHistory(const std::string& BaseRoot, const Topo
 }
 
 TopoDS_Edge TopoNamingHelper::GetSelectedEdge(const std::string NodeTag) const{
-    std::clog << "----------Retrieving edge for tag: " << NodeTag <<  std::endl;
+    //std::clog << "----------Retrieving edge for tag: " << NodeTag <<  std::endl;
     TDF_Label EdgeNode = this->LabelFromTag(NodeTag);
     TDF_LabelMap MyMap;
 
@@ -390,10 +390,7 @@ TopoDS_Edge TopoNamingHelper::GetSelectedEdge(const std::string NodeTag) const{
         //MyMap.Add(EdgeNode);
         TNaming_Selector MySelector(EdgeNode);
         bool solved = MySelector.Solve(MyMap);
-        if (solved){
-            std::clog << "----------Selection solve was succesfull!" << std::endl;
-        }
-        else{
+        if (!solved){
             std::clog << "----------selection solve was not succesful......" << std::endl;
         }
         //Handle(TNaming_NamedShape) EdgeNS = MySelector.NamedShape();
@@ -772,7 +769,6 @@ TopoDS_Shape TopoNamingHelper::GetLatestShape(const std::string& tag){
     TDF_Label Node = this->LabelFromTag(tag);
     Handle(TNaming_NamedShape) ShapeNS;
     Node.FindAttribute(TNaming_NamedShape::GetID(), ShapeNS);
-    std::clog << "----------ShapeNS.IsNull =" << ShapeNS.IsNull() << std::endl;
     return TNaming_Tool::CurrentShape(ShapeNS);
 }
 
