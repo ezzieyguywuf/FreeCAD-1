@@ -112,7 +112,8 @@ class TopoNamingHelper{
         // <NameBase>_1.brep, <NameBase>_2.brep etc... as the filename.
         void WriteNode(const std::string NodeTag, const std::string NameBase, const bool Deep) const;
         TDF_Label LabelFromTag(const std::string& tag) const;
-        void AppendNode(const TDF_Label& Parent, const TDF_Label& Target, const int& depth=0);
+        //void AppendNode(const TDF_Label& Parent, const TDF_Label& Target, const int& depth=0);
+        void AppendNode(const TDF_Label& Parent, const TDF_Label& Target);
 
         // These are used for adding the respective types of Nodes to a parent Node
         void MakeGeneratedNode(const TDF_Label& Parent, const TopoDS_Face& aFace);
