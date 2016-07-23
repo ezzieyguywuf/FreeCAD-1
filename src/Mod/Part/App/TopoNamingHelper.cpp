@@ -475,6 +475,12 @@ std::string TopoNamingHelper::GetNode(const std::string& tag, const int& n) cons
     return outtag.ToCString();
 }
 
+std::string TopoNamingHelper::GetTag(const TDF_Label& Label){
+    TCollection_AsciiString outtag;
+    TDF_Tool::Entry(Label, outtag);
+    return outtag.ToCString();
+}
+
 TopoDS_Shape TopoNamingHelper::GetChildShape(const TDF_Label& ParentLabel, const int& n) const{
     Handle(TNaming_NamedShape) OutNS;
     if (n > 0){
@@ -789,8 +795,8 @@ TDF_Label TopoNamingHelper::LabelFromTag(const std::string& tag) const{
 
 void TopoNamingHelper::AppendNode(const TDF_Label& Parent, const TDF_Label& Target){
     TDF_Label NewNode = TDF_TagSource::NewChild(Parent);
-    TNaming_Builder Builder(NewNode);
     if (Target.IsAttribute(TNaming_NamedShape::GetID())){
+        TNaming_Builder Builder(NewNode);
         Handle(TNaming_NamedShape) TargetNS;
         Target.FindAttribute(TNaming_NamedShape::GetID(), TargetNS);
         switch (TargetNS->Evolution()){
