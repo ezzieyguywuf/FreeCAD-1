@@ -817,6 +817,7 @@ void TopoNamingHelper::AppendNode(const TDF_Label& Parent, const TDF_Label& Targ
         }
     }
     if (Target.IsAttribute(TDataStd_AsciiString::GetID())){
+        this->AddTextToLabel(NewNode, this->GetTextFromLabel(Target));
     }
     for (TDF_ChildIterator it(Target, false); it.More(); it.Next()){
         this->AppendNode(NewNode, it.Value());
