@@ -70,21 +70,22 @@ void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, c
         TopoDS_Face curFace = TopoDS::Face(mapOfFaces.FindKey(i));
         FaceData.GeneratedFaces.push_back(curFace);
     }
-    this->TrackGeneratedShape(GeneratedShape, FaceData, name);
+    this->TrackGeneratedShape("0", GeneratedShape, FaceData, name);
 }
 
 void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name){
-    TDF_Label parent = TDF_TagSource::NewChild(myRootNode);
-    this->TrackGeneratedShape(parent, GeneratedShape, TData, name);
+    this->TrackGeneratedShape("0", GeneratedShape, TData, name);
 }
 
-TDF_Label TopoNamingHelper::TrackGeneratedShape(const TDF_Label& parent, const TopoDS_Shape& GeneratedShape,
+TDF_Label TopoNamingHelper::TrackGeneratedShape(const std::string& parent_tag, const TopoDS_Shape& GeneratedShape,
                                                 const TopoData& TData, const std::string& name){
     //std::clog << "----------Tracking Generated Shape\n";
     //std::ostringstream outputStream;
     //DeepDump(outputStream);
     //Base::Console().Message(outputStream.str().c_str());
     // Declare variables
+    TDF_Label parent;
+    TDF_Tool::Label(myDataFramework, parent_tag.c_str(), parent);
     TDF_Label curLabel;
 
     // create a new node under Parent
@@ -102,9 +103,9 @@ TDF_Label TopoNamingHelper::TrackGeneratedShape(const TDF_Label& parent, const T
     return LabelRoot;
 }
 
-TDF_Label TopoNamingHelper::TrackGeneratedShape(const TDF_Label& parent, const TopoDS_Shape& GeneratedShape,
+TDF_Label TopoNamingHelper::TrackGeneratedShape(const std::string& parent_tag, const TopoDS_Shape& GeneratedShape,
                                                 const FilletData& FData, const std::string& name){
-    TDF_Label LabelRoot = this->TrackGeneratedShape(parent, GeneratedShape, TopoData(FData), name);
+    TDF_Label LabelRoot = this->TrackGeneratedShape(parent_tag, GeneratedShape, TopoData(FData), name);
     this->MakeGeneratedFromEdgeNodes(LabelRoot, FData.GeneratedFacesFromEdge);
     this->MakeGeneratedFromVertexNodes(LabelRoot, FData.GeneratedFacesFromVertex);
     return LabelRoot;
@@ -439,24 +440,28 @@ TopoDS_Shape TopoNamingHelper::GetNodeShape(const std::string NodeTag) const{
 }
 
 TopoDS_Shape TopoNamingHelper::GetTipShape() const {
-    const TDF_Label& tipLabel = this->GetTipNode();
+    const std::string& tipTag = this->GetTipNode();
+    TDF_Label tipLabel;
+    TDF_Tool::Label(myDataFramework, tipTag.c_str(), tipLabel);
     TopoDS_Shape tipShape = this->GetChildShape(tipLabel, 0);
     return tipShape;
 }
 
-TDF_Label TopoNamingHelper::GetTipNode() const{
-    return this->GetNode(myRootNode, this->myRootNode.NbChildren());
+std::string TopoNamingHelper::GetTipNode() const{
+    return this->GetNode(this->myRootNode.NbChildren());
 }
 
-TDF_Label TopoNamingHelper::GetNode(const int& n) const{
-    return this->GetNode(myRootNode, n);
+std::string TopoNamingHelper::GetNode(const int& n) const{
+    return this->GetNode("0", n);
 }
 
-TDF_Label TopoNamingHelper::GetNode(const TDF_Label& parent, const int& n) const{
-    std::clog << "getting node" << std::endl;
+std::string TopoNamingHelper::GetNode(const std::string& tag, const int& n) const{
+    TDF_Label parent;
+    TDF_Tool::Label(myDataFramework, tag.c_str(), parent);
     TDF_Label outLabel = parent.FindChild(n, Standard_False);
-    std::clog << "returning node, outLabel.IsNull() = " << outLabel.IsNull() << std::endl;
-    return outLabel;
+    TCollection_AsciiString outtag;
+    TDF_Tool::Entry(outLabel, outtag);
+    return outtag.ToCString();
 }
 
 TopoDS_Shape TopoNamingHelper::GetChildShape(const TDF_Label& ParentLabel, const int& n) const{
@@ -486,13 +491,13 @@ bool TopoNamingHelper::HasNodes() const{
     return out;
 }
 
-bool TopoNamingHelper::TreesEquivalent(const TDF_Label& Node1, const TDF_Label& Node2) const{
-    bool out;
-    TDF_ChildIterator tree1(Node1, Standard_True);
-    TDF_ChildIterator tree2(Node2, Standard_True);
-    for (tree1; tree1.More(); tree1.Next()){
-    }
-}
+//bool TopoNamingHelper::TreesEquivalent(const TDF_Label& Node1, const TDF_Label& Node2) const{
+    //bool out;
+    //TDF_ChildIterator tree1(Node1, Standard_True);
+    //TDF_ChildIterator tree2(Node2, Standard_True);
+    //for (tree1; tree1.More(); tree1.Next()){
+    //}
+//}
 
 void TopoNamingHelper::AddNode(const std::string& Name){
     TDF_Label label = TDF_TagSource::NewChild(this->myRootNode);
@@ -744,15 +749,18 @@ void TopoNamingHelper::WriteNode(const std::string NodeTag, const std::string Na
     }
 }
 
-TopoDS_Shape TopoNamingHelper::GetGeneratedShape(const TDF_Label& parent, const int& node){
-    // The Generated node should always be the first one...
-    std::clog << "Trying to get node = "<< node << std::endl;
-    return this->GetChildShape(this->GetNode(parent, 1), node);
-}
+//TopoDS_Shape TopoNamingHelper::GetGeneratedShape(const TDF_Label& parent, const int& node){
+    //// The Generated node should always be the first one...
+    //std::clog << "Trying to get node = "<< node << std::endl;
+    //return this->GetChildShape(this->GetNode(parent, 1), node);
+//}
 
-TopoDS_Shape TopoNamingHelper::GetLatestShape(const TDF_Label& Node){
+TopoDS_Shape TopoNamingHelper::GetLatestShape(const std::string& tag){
+    TDF_Label Node;
+    TDF_Tool::Label(myDataFramework, tag.c_str(), Node);
     Handle(TNaming_NamedShape) ShapeNS;
     Node.FindAttribute(TNaming_NamedShape::GetID(), ShapeNS);
+    std::clog << "----------ShapeNS.IsNull =" << ShapeNS.IsNull() << std::endl;
     return TNaming_Tool::CurrentShape(ShapeNS);
 }
 

@@ -33,8 +33,8 @@ class TopoNamingHelper{
         // Make changes to the Data Framework to track Topological Changes
         void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name);
         void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name);
-        TDF_Label TrackGeneratedShape(const TDF_Label& parent, const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name);
-        TDF_Label TrackGeneratedShape(const TDF_Label& parent, const TopoDS_Shape& GeneratedShape, const FilletData& FData, const std::string& name);
+        TDF_Label TrackGeneratedShape(const std::string& parent_tag, const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name);
+        TDF_Label TrackGeneratedShape(const std::string& parent_tag, const TopoDS_Shape& GeneratedShape, const FilletData& FData, const std::string& name);
         //void TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser);
         void TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
         void TrackModifiedShape(const TopoDS_Shape& NewShape, const TopoData& TData, const std::string& name);
@@ -45,8 +45,6 @@ class TopoNamingHelper{
 
         // Various helper functions
 
-        // This helps make the DeepDump output more legible
-        void AddTextToLabel(const TDF_Label& Label, const std::string& name, const std::string& extra="");
         // Returns the edge at the NodeTag, i.e. "0:2"
         TopoDS_Edge GetSelectedEdge(const std::string NodeTag) const;
         // Returns the Context Shape for selected edge located at NodeTag: TODO does this
@@ -62,20 +60,22 @@ class TopoNamingHelper{
         // Return the TopoDS_Shape at the very tip of the Data Framework. TODO do we need
         // to check to make sure the latest operation actually stored a TopoDS_Shape?
         TopoDS_Shape GetTipShape() const;
-        // Return the TDF_Label at the very tip of the Data Framework
-        TDF_Label GetTipNode() const;
-        // Get the Nth child node in the root tree
-        TDF_Label GetNode(const int& n) const;
-        // get the Nth child node from the Parent label.
-        TDF_Label GetNode(const TDF_Label& parent, const int& n) const;
-        // Get TopoDS_Shape stored in the nth node under the passed Label
-        TopoDS_Shape GetChildShape(const TDF_Label& ParentLabel, const int& n) const;
+        // Return the tag to the TDF_Label at the very tip of the Data Framework
+        std::string GetTipNode() const;
+        // Get the tag to the Nth child node in the root tree
+        std::string GetNode(const int& n) const;
+        // get the tag to the Nth child node from the Parent label.
+        std::string GetNode(const std::string& tag, const int& n) const;
         // Does the Topo tree have additional nodes aside from the Selection one created
         // at initialization?
         bool HasNodes() const;
-        // Are the two nodes equivalent?
-        bool TreesEquivalent(const TDF_Label& Node1, const TDF_Label& Node2) const;
+        //// Are the two nodes equivalent?
+        //bool TreesEquivalent(const TDF_Label& Node1, const TDF_Label& Node2) const;
         void AddNode(const std::string& Name="");
+
+        //TopoDS_Shape GetGeneratedShape(const TDF_Label& parent, const int& node);
+        TopoDS_Shape GetLatestShape(const std::string& tag);
+        //TopoDS_Shape GetModifiedNewShape(const TDF_Label& parent, const int& node);
 
         // Non-Member Class functions
         static bool CompareTwoFaceTopologies(const TopoDS_Shape& face1, const TopoDS_Shape& face2);
@@ -93,6 +93,13 @@ class TopoNamingHelper{
         void DeepDump(std::stringstream& stream) const;
         // Dump the whole Data Framework and attributes too
         std::string DFDump() const;
+
+    private:
+        // This helps make the DeepDump output more legible
+        void AddTextToLabel(const TDF_Label& Label, const std::string& name, const std::string& extra="");
+        bool CheckIfSelectionExists(const TDF_Label aNode, const TopoDS_Face aFace) const;
+        // Get TopoDS_Shape stored in the nth node under the passed Label
+        TopoDS_Shape GetChildShape(const TDF_Label& ParentLabel, const int& n) const;
         // Write out a BREP file of the TopoDS_Shape at aLabel. The file will be named
         // "<NameBase>_<numb>.brep"
         void WriteShape(const TDF_Label aLabel, const std::string NameBase, const int numb) const;
@@ -100,12 +107,8 @@ class TopoNamingHelper{
         // <NodeTag>. if <Deep> is true, also write out for all children, with
         // <NameBase>_1.brep, <NameBase>_2.brep etc... as the filename.
         void WriteNode(const std::string NodeTag, const std::string NameBase, const bool Deep) const;
-        TopoDS_Shape GetGeneratedShape(const TDF_Label& parent, const int& node);
-        TopoDS_Shape GetLatestShape(const TDF_Label& Node);
-        //TopoDS_Shape GetModifiedNewShape(const TDF_Label& parent, const int& node);
 
-    private:
-        bool CheckIfSelectionExists(const TDF_Label aNode, const TopoDS_Face aFace) const;
+        // These are used for adding the respective types of Nodes to a parent Node
         void MakeGeneratedNode(const TDF_Label& Parent, const TopoDS_Face& aFace);
         void MakeGeneratedNodes(const TDF_Label& Parent, const std::vector<TopoDS_Face>& Faces);
         void MakeGeneratedFromEdgeNode(const TDF_Label& Parent, const std::pair<TopoDS_Edge, TopoDS_Face>& aPair);
