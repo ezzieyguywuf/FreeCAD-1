@@ -43,14 +43,14 @@ class TopoNamingHelper{
         void TrackModifiedFilletBaseShape(const TopoDS_Shape& NewBaseShape);
         std::string SelectEdge(const TopoDS_Edge& anEdge, const TopoDS_Shape& aShape);
         std::vector<std::string> SelectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape& aShape);
-        // NOTE: This function is very fragile right now. It assumes that InputData is
+        // NOTE: This function is very fragile right now. It assumes that SourceData is
         // the same as BaseRoot plus zero or more evolution nodes. It simply adds to
         // BaseRoot any nodes that it doesn't have. It doesn't check anything else!!!
-        // Also, the 'Tip Node' of 'InputData's TDF_Data framework MUST be a 'blank' label
+        // Also, the 'Tip Node' of 'SourceData's TDF_Data framework MUST be a 'blank' label
         // (i.e. does not old a TNaming_NamedShape attribute) that contains the history of
         // the shape. The 'Tip Node' should not be used for e.g. the BaseShape history for
         // a Fillet Feature
-        bool AppendTopoHistory(const std::string& TargetRoot, const TopoNamingHelper& InputData);
+        bool AppendTopoHistory(const std::string& TargetRoot, const TopoNamingHelper& SourceData);
 
         // Various helper functions
 
