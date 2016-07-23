@@ -361,9 +361,9 @@ std::vector<std::string> TopoNamingHelper::SelectEdges(const std::vector<TopoDS_
     }
     return outputLabels;
 }
-bool TopoNamingHelper::AppendTopoHistory(const std::string& BaseRoot, const TopoNamingHelper& InputData, const std::string& InputTargetNode){
+bool TopoNamingHelper::AppendTopoHistory(const std::string& BaseRoot, const TopoNamingHelper& InputData){
     TDF_Label BaseNode  = this->LabelFromTag(BaseRoot);
-    TDF_Label BaseInput = InputData.LabelFromTag(InputTargetNode);
+    TDF_Label BaseInput = InputData.LabelFromTag(InputData.GetTipNode());
     if (BaseInput.NbChildren() - BaseNode.NbChildren() <= 0){
         // Note, should NOT be less than 0
         return false;

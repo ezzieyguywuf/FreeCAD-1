@@ -46,7 +46,11 @@ class TopoNamingHelper{
         // NOTE: This function is very fragile right now. It assumes that InputData is
         // the same as BaseRoot plus zero or more evolution nodes. It simply adds to
         // BaseRoot any nodes that it doesn't have. It doesn't check anything else!!!
-        bool AppendTopoHistory(const std::string& BaseRoot, const TopoNamingHelper& InputData, const std::string& InputTargetNode);
+        // Also, the 'Tip Node' of 'InputData's TDF_Data framework MUST be a 'blank' label
+        // (i.e. does not old a TNaming_NamedShape attribute) that contains the history of
+        // the shape. The 'Tip Node' should not be used for e.g. the BaseShape history for
+        // a Fillet Feature
+        bool AppendTopoHistory(const std::string& BaseRoot, const TopoNamingHelper& InputData);
 
         // Various helper functions
 
