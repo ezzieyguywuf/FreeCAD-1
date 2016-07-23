@@ -777,7 +777,8 @@ TopoDS_Shape TopoNamingHelper::GetLatestShape(const std::string& tag){
 
 //-------------------- Private Methods --------------------
 TDF_Label TopoNamingHelper::LabelFromTag(const std::string& tag) const{
-    TDF_Label outLabel = this->LabelFromTag(tag);
+    TDF_Label outLabel;
+    TDF_Tool::Label(myDataFramework, tag.c_str(), outLabel);
     return outLabel;
 }
 
