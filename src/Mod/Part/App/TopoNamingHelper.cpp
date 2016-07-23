@@ -287,7 +287,7 @@ void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, c
         // create new node for modified shape and sub-nodes. Even if there are no
         // Modified/Generated/Deleted Faces, we'll still create the node so we know what's
         // where.
-        TDF_Label NewNode = TDF_TagSource::NewChild(myRootNode);
+        TDF_Label NewNode = TDF_TagSource::NewChild(OrigNode);
 
         // Add descriptive data for debugging purposes
         AddTextToLabel(NewNode, name);
