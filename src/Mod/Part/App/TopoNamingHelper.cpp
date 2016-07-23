@@ -361,21 +361,21 @@ std::vector<std::string> TopoNamingHelper::SelectEdges(const std::vector<TopoDS_
     }
     return outputLabels;
 }
-bool TopoNamingHelper::AppendTopoHistory(const std::string& BaseRoot, const TopoNamingHelper& InputData){
-    TDF_Label BaseNode  = this->LabelFromTag(BaseRoot);
+bool TopoNamingHelper::AppendTopoHistory(const std::string& TargetRoot, const TopoNamingHelper& InputData){
+    TDF_Label TargetNode  = this->LabelFromTag(BaseRoot);
     TDF_Label BaseInput = InputData.LabelFromTag(InputData.GetTipNode());
-    if (BaseInput.NbChildren() - BaseNode.NbChildren() <= 0){
+    if (BaseInput.NbChildren() - TargetNode.NbChildren() <= 0){
         // Note, should NOT be less than 0
         return false;
     }
     else{
         // Loop over every node in the InputData that is not in the BaseRoot
-        for (int i = (BaseNode.NbChildren() + 1); i <= BaseInput.NbChildren(); i++){
+        for (int i = (TargetNode.NbChildren() + 1); i <= BaseInput.NbChildren(); i++){
             // This is the new node to add
-            TDF_Label NewNode = BaseInput.FindChild(i, false);
+            TDF_Label SourceNode = BaseInput.FindChild(i, false);
             // This method should recursiviely append all children from NewNode into
-            // BaseNode...
-            this->AppendNode(BaseNode, NewNode);
+            // TargetNode...
+            this->AppendNode(TargetNode, SourceNode);
         }
     }
     return true;
@@ -794,6 +794,7 @@ TDF_Label TopoNamingHelper::LabelFromTag(const std::string& tag) const{
 void TopoNamingHelper::AppendNode(const TDF_Label& Parent, const TDF_Label& Target){
     TDF_Label NewNode = TDF_TagSource::NewChild(Parent);
     if (Target.IsAttribute(TNaming_NamedShape::GetID())){
+        std::clog << "Tag " << this->GetTag(Target) << " in Target has a TNaming_NamedShape..." << std::endl;
         TNaming_Builder Builder(NewNode);
         Handle(TNaming_NamedShape) TargetNS;
         Target.FindAttribute(TNaming_NamedShape::GetID(), TargetNS);
@@ -819,6 +820,9 @@ void TopoNamingHelper::AppendNode(const TDF_Label& Parent, const TDF_Label& Targ
             default:{
                 std::runtime_error("Do not recognize this TNaming Evolution..."); }
         }
+    }
+    else{
+        std::clog << "Tag " << this->GetTag(Target) << " in Target DOES NOT have a TNaming_NamedShape..." << std::endl;
     }
     if (Target.IsAttribute(TDataStd_AsciiString::GetID())){
         this->AddTextToLabel(NewNode, this->GetTextFromLabel(Target));

@@ -50,7 +50,7 @@ class TopoNamingHelper{
         // (i.e. does not old a TNaming_NamedShape attribute) that contains the history of
         // the shape. The 'Tip Node' should not be used for e.g. the BaseShape history for
         // a Fillet Feature
-        bool AppendTopoHistory(const std::string& BaseRoot, const TopoNamingHelper& InputData);
+        bool AppendTopoHistory(const std::string& TargetRoot, const TopoNamingHelper& InputData);
 
         // Various helper functions
 
