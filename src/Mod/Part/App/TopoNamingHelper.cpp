@@ -534,15 +534,15 @@ void TopoNamingHelper::AddTextToLabel(const TDF_Label& Label, const std::string&
 
 std::string TopoNamingHelper::GetTextFromLabel(const TDF_Label& Label){
     std::ostringstream out;
-    if (curLabel.IsAttribute(TDataStd_AsciiString::GetID())){
+    if (Label.IsAttribute(TDataStd_AsciiString::GetID())){
         Handle(TDataStd_AsciiString) data;
-        curLabel.FindAttribute(TDataStd_AsciiString::GetID(), data);
+        Label.FindAttribute(TDataStd_AsciiString::GetID(), data);
         data->Get().Print(out);
     }
     else{
         out << "";
     }
-    return out.str()
+    return out.str();
 }
 
 bool TopoNamingHelper::CompareTwoEdgeTopologies(const TopoDS_Edge& edge1, const TopoDS_Edge& edge2, int numCheckPoints){
