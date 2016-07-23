@@ -84,6 +84,7 @@ TDF_Label TopoNamingHelper::TrackGeneratedShape(const std::string& parent_tag, c
     //DeepDump(outputStream);
     //Base::Console().Message(outputStream.str().c_str());
     // Declare variables
+    std::clog << "----------parent_tag = " << parent_tag << std::endl;
     TDF_Label parent = this->LabelFromTag(parent_tag);
     TDF_Label curLabel;
 
