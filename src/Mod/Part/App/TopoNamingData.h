@@ -13,6 +13,7 @@
 //};
 
 struct TopoData{
+    TopoDS_Shape OldShape;
     TopoDS_Shape NewShape;
     std::vector<TopoDS_Face> GeneratedFaces;
     std::vector< std::pair<TopoDS_Face, TopoDS_Face> > ModifiedFaces;

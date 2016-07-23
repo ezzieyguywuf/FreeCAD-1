@@ -285,7 +285,6 @@ void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag,
     // NOTE: This method assumes that the NewShape has NOT been translated. If it has, the
     // behaviour of the topological naming algorithm is not defined, it will probably fail
     TDF_Label OrigNode = this->LabelFromTag(OrigShapeNodeTag);
-    TopoDS_Shape OrigShape = this->GetNodeShape(OrigShapeNodeTag);
 
     if (!OrigNode.IsNull()){
         // create new node for modified shape and sub-nodes. Even if there are no
@@ -295,7 +294,7 @@ void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag,
 
         // Add the NewShape as a modification of the original shape
         TNaming_Builder Builder(NewNode);
-        Builder.Modify(OrigShape, TData.NewShape);
+        Builder.Modify(TData.OldShape, TData.NewShape);
         
         // Add descriptive data for debugging purposes
         AddTextToLabel(NewNode, name);
