@@ -368,14 +368,13 @@ bool TopoNamingHelper::AppendTopoHistory(const std::string& BaseRoot, const Topo
         return false;
     }
     else{
+        // Loop over every node in the InputData that is not in the BaseRoot
         for (int i = (BaseNode.NbChildren() + 1); i <= BaseInput.NbChildren(); i++){
+            // This is the new node to add
             TDF_Label NewNode = BaseInput.FindChild(i, false);
+            // This method should recursiviely append all children from NewNode into
+            // BaseNode...
             this->AppendNode(BaseNode, NewNode);
-            int BaseDepth = NewNode.Depth();
-            TDF_ChildIterator childIter(NewNode, true);
-            for (; childIter.More(); childIter.Next()){
-                TDF_Label curNode = childIter.Value();
-            }
         }
     }
     return true;
@@ -810,6 +809,9 @@ void TopoNamingHelper::AppendNode(const TDF_Label& Parent, const TDF_Label& Targ
             default:{
                 std::runtime_error("Do not recognize this TNaming Evolution..."); }
         }
+    }
+    for (TDF_ChildIterator it(Target, false); it.More(); it.Next()){
+        this->AppendNode(NewNode, it.Value());
     }
 }
 
