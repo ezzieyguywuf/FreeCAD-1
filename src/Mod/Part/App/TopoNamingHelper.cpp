@@ -61,23 +61,26 @@ void TopoNamingHelper::operator = (const TopoNamingHelper& helper){
     this->mySelectionNode = helper.mySelectionNode;
 }
 
-void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name){
-    TopoData FaceData;
+//void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name){
+    //TopoData FaceData;
+    //FaceData.NewShape = GeneratedShape;
 
-    TopTools_IndexedMapOfShape mapOfFaces;
-    TopExp::MapShapes(GeneratedShape, TopAbs_FACE, mapOfFaces);
-    for (int i=1; i <= mapOfFaces.Extent(); i++){
-        TopoDS_Face curFace = TopoDS::Face(mapOfFaces.FindKey(i));
-        FaceData.GeneratedFaces.push_back(curFace);
-    }
-    this->TrackGeneratedShape("0", GeneratedShape, FaceData, name);
-}
+    //TopTools_IndexedMapOfShape mapOfFaces;
+    //TopExp::MapShapes(GeneratedShape, TopAbs_FACE, mapOfFaces);
+    //for (int i=1; i <= mapOfFaces.Extent(); i++){
+        //TopoDS_Face curFace = TopoDS::Face(mapOfFaces.FindKey(i));
+        //FaceData.GeneratedFaces.push_back(curFace);
+    //}
+    //this->TrackGeneratedShape("0", FaceData, name);
+//}
 
-void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name){
-    this->TrackGeneratedShape("0", GeneratedShape, TData, name);
-}
+//void TopoNamingHelper::TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name){
+    //TopoDS_Shape NewShape = GeneratedShape;
+    //TData.NewShape = NewShape;
+    //this->TrackGeneratedShape("0", TData, name);
+//}
 
-TDF_Label TopoNamingHelper::TrackGeneratedShape(const std::string& parent_tag, const TopoDS_Shape& GeneratedShape,
+TDF_Label TopoNamingHelper::TrackGeneratedShape(const std::string& parent_tag,
                                                 const TopoData& TData, const std::string& name){
     //std::clog << "----------Tracking Generated Shape\n";
     //std::ostringstream outputStream;
@@ -95,7 +98,7 @@ TDF_Label TopoNamingHelper::TrackGeneratedShape(const std::string& parent_tag, c
 
     // add the generated shape to the LabelRoot
     TNaming_Builder GeneratedBuilder(LabelRoot);
-    GeneratedBuilder.Generated(GeneratedShape);
+    GeneratedBuilder.Generated(TData.NewShape);
     this->MakeGeneratedNodes(LabelRoot, TData.GeneratedFaces);
 
     //std::clog << "----------Data Framework Dump Below from TopoNamingHelper\n";
@@ -103,9 +106,9 @@ TDF_Label TopoNamingHelper::TrackGeneratedShape(const std::string& parent_tag, c
     return LabelRoot;
 }
 
-TDF_Label TopoNamingHelper::TrackGeneratedShape(const std::string& parent_tag, const TopoDS_Shape& GeneratedShape,
+TDF_Label TopoNamingHelper::TrackGeneratedShape(const std::string& parent_tag,
                                                 const FilletData& FData, const std::string& name){
-    TDF_Label LabelRoot = this->TrackGeneratedShape(parent_tag, GeneratedShape, TopoData(FData), name);
+    TDF_Label LabelRoot = this->TrackGeneratedShape(parent_tag, TopoData(FData), name);
     this->MakeGeneratedFromEdgeNodes(LabelRoot, FData.GeneratedFacesFromEdge);
     this->MakeGeneratedFromVertexNodes(LabelRoot, FData.GeneratedFacesFromVertex);
     return LabelRoot;
@@ -271,11 +274,11 @@ void TopoNamingHelper::TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepF
     //Base::Console().Message(outputStream.str().c_str());
 }
 
-void TopoNamingHelper::TrackModifiedShape(const TopoDS_Shape& NewShape, const TopoData& TData, const std::string& name){
-    std::ostringstream tipTagStream;
-    tipTagStream << "0:" << this->myRootNode.NbChildren();
-    this->TrackModifiedShape(tipTagStream.str(), NewShape, TData, name);
-}
+//void TopoNamingHelper::TrackModifiedShape(const TopoDS_Shape& NewShape, const TopoData& TData, const std::string& name){
+    //std::ostringstream tipTagStream;
+    //tipTagStream << "0:" << this->myRootNode.NbChildren();
+    //this->TrackModifiedShape(tipTagStream.str(), NewShape, TData, name);
+//}
 
 void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag,
                                           const TopoData& TData, const std::string& name){

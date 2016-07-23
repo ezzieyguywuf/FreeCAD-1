@@ -32,13 +32,13 @@ class TopoNamingHelper{
         // TODO Need to add methods for tracking a translation to a shape.
         // Make changes to the Data Framework to track Topological Changes
         // 
-        void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name);
-        void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name);
-        TDF_Label TrackGeneratedShape(const std::string& parent_tag, const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name);
-        TDF_Label TrackGeneratedShape(const std::string& parent_tag, const TopoDS_Shape& GeneratedShape, const FilletData& FData, const std::string& name);
+        //void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name);
+        //void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name);
+        TDF_Label TrackGeneratedShape(const std::string& parent_tag, const TopoData& TData, const std::string& name);
+        TDF_Label TrackGeneratedShape(const std::string& parent_tag, const FilletData& FData, const std::string& name);
         //void TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser);
         void TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
-        void TrackModifiedShape(const TopoDS_Shape& NewShape, const TopoData& TData, const std::string& name);
+        //void TrackModifiedShape(const TopoDS_Shape& NewShape, const TopoData& TData, const std::string& name);
         void TrackModifiedShape(const std::string& OrigShapeNodeTag, const TopoData& TData, const std::string& name);
         void TrackModifiedFilletBaseShape(const TopoDS_Shape& NewBaseShape);
         std::string SelectEdge(const TopoDS_Edge& anEdge, const TopoDS_Shape& aShape);
