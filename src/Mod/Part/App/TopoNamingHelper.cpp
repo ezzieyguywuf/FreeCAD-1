@@ -29,6 +29,8 @@
 #include <TNaming_UsedShapes.hxx>
 #include <TNaming_Tool.hxx>
 
+#include <Standard_PrimitiveType.hxx>
+
 #include <BRepTools.hxx>
 #include <BRep_Tool.hxx>
 
@@ -360,9 +362,25 @@ std::vector<std::string> TopoNamingHelper::SelectEdges(const std::vector<TopoDS_
     }
     return outputLabels;
 }
-bool TopoNamingHelper::AppendTopoHistory(const std::string& BaseRoot, const TopoNamingHelper& InputData,
-                                         const std::string& InputStartNode, const std::vector<std::string>& InputSkipNodes){
-    TDF_Label BaseNode = this->LabelFromTag(BaseRoot);
+bool TopoNamingHelper::AppendTopoHistory(const std::string& BaseRoot, const TopoNamingHelper& InputData, const std::string& InputTargetNode);
+    TDF_Label BaseNode  = this->LabelFromTag(BaseRoot);
+    TDF_Label BaseInput = InputData.LabelFromTag(InputTargetNode);
+    if (BaseInput.NbChildren() - BaseNode.NbChildren() <= 0){
+        // Note, should NOT be less than 0
+        return false;
+    }
+    else{
+        for (int i = (BaseInput.NbChildren() + 1); i <=InputData.NbChildren(); i++){
+            TDF_Label NewNode = BaseInput.FindChild(i, false);
+            this->AppendNode(BaseNode, NewNode);
+            int BaseDepth = NewNode.Depth();
+            TDF_ChildIterator childIter(NewNode, true);
+            for (; childIter.More(); childIter.Next()){
+                TDF_Label curNode = childIter.Value();
+            }
+        }
+    }
+    return true;
 }
 
 TopoDS_Edge TopoNamingHelper::GetSelectedEdge(const std::string NodeTag) const{
@@ -764,6 +782,36 @@ TopoDS_Shape TopoNamingHelper::GetLatestShape(const std::string& tag){
 TDF_Label TopoNamingHelper::LabelFromTag(const std::string& tag) const{
     TDF_Label outLabel = this->LabelFromTag(tag);
     return outLabel;
+}
+
+void TopoNamingHelper::AppendNode(const TDF_Label& Parent, const TDF_Label& Target){
+    TDF_Label NewNode = TDF_TagSource::NewChild(Parent);
+    TNaming_Builder(NewNode);
+    if (Target.IsAttribute(TNaming_NamedShape::GetID())){
+        Handle(TNaming_NamedShape) TargetNS;
+        Target.FindAttribute(TNaming_NamedShape::GetID(), TargetNS());
+        switch (TargetNS.Evolution()):
+            case TNaming_PRIMITIVE:{
+                TopoDS_Shape NewShape = TNaming_Tool::GetShape(TargetNS);
+                TNaming_Builder.Generated(NewShape);
+                break;}
+            case TNaming_GENERATED:{
+                TopoDS_Shape OldShape = TNaming_Tool::OriginalShape(TargetNS);
+                TopoDS_Shape NewShape = TNaming_Tool::GetShape(TargetNS);
+                TNaming_Builder.Generated(OldShape, NewShape);
+                break;}
+            case TNaming_MODIFY   :{
+                TopoDS_Shape OldShape = TNaming_Tool::OriginalShape(TargetNS);
+                TopoDS_Shape NewShape = TNaming_Tool::GetShape(TargetNS);
+                TNaming_Builder.Modify(OldShape, NewShape);
+                break;}
+            case TNaming_DELETE   :{
+                TopoDS_Shape OldShape = TNaming_Tool::OriginalShape(TargetNS);
+                TNaming_Builder.Delet(OldShape);
+                break;}
+            default:{
+                std::runtime_error("Do not recognize this TNaming Evolution..."); }
+    }
 }
 
 void TopoNamingHelper::MakeGeneratedNode(const TDF_Label& Parent, const TopoDS_Face& aFace){

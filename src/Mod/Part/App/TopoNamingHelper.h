@@ -43,8 +43,10 @@ class TopoNamingHelper{
         void TrackModifiedFilletBaseShape(const TopoDS_Shape& NewBaseShape);
         std::string SelectEdge(const TopoDS_Edge& anEdge, const TopoDS_Shape& aShape);
         std::vector<std::string> SelectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape& aShape);
-        bool AppendTopoHistory(const std::string& BaseRoot, const TopoNamingHelper& InputData,
-                               const std::string& InputStartNode, const std::vector<std::string>& InputSkipNodes);
+        // NOTE: This function is very fragile right now. It assumes that InputData is
+        // the same as BaseRoot plus zero or more evolution nodes. It simply adds to
+        // BaseRoot any nodes that it doesn't have. It doesn't check anything else!!!
+        bool AppendTopoHistory(const std::string& BaseRoot, const TopoNamingHelper& InputData, const std::string& InputTargetNode);
 
         // Various helper functions
 
@@ -110,6 +112,7 @@ class TopoNamingHelper{
         // <NameBase>_1.brep, <NameBase>_2.brep etc... as the filename.
         void WriteNode(const std::string NodeTag, const std::string NameBase, const bool Deep) const;
         TDF_Label LabelFromTag(const std::string& tag) const;
+        void AppendNode(const TDF_Label& Parent, const TDF_Label& Target, const int& depth=0);
 
         // These are used for adding the respective types of Nodes to a parent Node
         void MakeGeneratedNode(const TDF_Label& Parent, const TopoDS_Face& aFace);
