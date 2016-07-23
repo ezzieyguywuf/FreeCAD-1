@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <array>
+#include <TopoDS_Shape.hxx>
 
 //enum class BoxState{
     //length     = 1<<0,
@@ -12,6 +13,7 @@
 //};
 
 struct TopoData{
+    TopoDS_Shape NewShape;
     std::vector<TopoDS_Face> GeneratedFaces;
     std::vector< std::pair<TopoDS_Face, TopoDS_Face> > ModifiedFaces;
     std::vector<TopoDS_Face> DeletedFaces;

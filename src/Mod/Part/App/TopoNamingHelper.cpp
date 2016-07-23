@@ -277,11 +277,12 @@ void TopoNamingHelper::TrackModifiedShape(const TopoDS_Shape& NewShape, const To
     this->TrackModifiedShape(tipTagStream.str(), NewShape, TData, name);
 }
 
-void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, const TopoDS_Shape& NewShape,
+void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag,
                                           const TopoData& TData, const std::string& name){
     // NOTE: This method assumes that the NewShape has NOT been translated. If it has, the
     // behaviour of the topological naming algorithm is not defined, it will probably fail
     TDF_Label OrigNode = this->LabelFromTag(OrigShapeNodeTag);
+    TopoDS_Shape OrigShape = this->GetNodeShape(OrigShapeNodeTag);
 
     if (!OrigNode.IsNull()){
         // create new node for modified shape and sub-nodes. Even if there are no
@@ -289,6 +290,10 @@ void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, c
         // where.
         TDF_Label NewNode = TDF_TagSource::NewChild(OrigNode);
 
+        // Add the NewShape as a modification of the original shape
+        TNaming_Builder Builder(NewNode);
+        Builder.Modify(OrigShape, TData.NewShape);
+        
         // Add descriptive data for debugging purposes
         AddTextToLabel(NewNode, name);
 
@@ -364,6 +369,8 @@ std::vector<std::string> TopoNamingHelper::SelectEdges(const std::vector<TopoDS_
 bool TopoNamingHelper::AppendTopoHistory(const std::string& TargetRoot, const TopoNamingHelper& SourceData){
     TDF_Label TargetNode  = this->LabelFromTag(TargetRoot);
     TDF_Label BaseInput = SourceData.LabelFromTag(SourceData.GetTipNode());
+    std::clog << "----------Dumping SourceData in AppendTopoHistory" << std::endl;
+    std::clog << SourceData.DeepDump();
     if (BaseInput.NbChildren() - TargetNode.NbChildren() <= 0){
         // Note, should NOT be less than 0
         return false;
@@ -373,7 +380,7 @@ bool TopoNamingHelper::AppendTopoHistory(const std::string& TargetRoot, const To
         for (int i = (TargetNode.NbChildren() + 1); i <= BaseInput.NbChildren(); i++){
             // This is the new node to add
             TDF_Label SourceNode = BaseInput.FindChild(i, false);
-            // This method should recursiviely append all children from NewNode into
+            // This method should recursiviely append all children from SourceNode into
             // TargetNode...
             this->AppendNode(TargetNode, SourceNode);
         }
