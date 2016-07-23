@@ -76,7 +76,7 @@ class TopoNamingHelper{
         // get the tag to the Nth child node from the Parent label.
         std::string GetNode(const std::string& tag, const int& n) const;
         // Get the tag ("Entry" in occ parlance) of the given TDF_Label
-        std::string GetTag(const TDF_Label& Label);
+        std::string GetTag(const TDF_Label& Label) const;
         // Does the Topo tree have additional nodes aside from the Selection one created
         // at initialization?
         bool HasNodes() const;

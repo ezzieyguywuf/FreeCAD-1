@@ -470,12 +470,10 @@ std::string TopoNamingHelper::GetNode(const int& n) const{
 std::string TopoNamingHelper::GetNode(const std::string& tag, const int& n) const{
     TDF_Label parent = this->LabelFromTag(tag);
     TDF_Label outLabel = parent.FindChild(n, Standard_False);
-    TCollection_AsciiString outtag;
-    TDF_Tool::Entry(outLabel, outtag);
-    return outtag.ToCString();
+    return this->GetTag(outLabel);
 }
 
-std::string TopoNamingHelper::GetTag(const TDF_Label& Label){
+std::string TopoNamingHelper::GetTag(const TDF_Label& Label) const{
     TCollection_AsciiString outtag;
     TDF_Tool::Entry(Label, outtag);
     return outtag.ToCString();
