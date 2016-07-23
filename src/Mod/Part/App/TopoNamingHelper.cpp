@@ -84,8 +84,7 @@ TDF_Label TopoNamingHelper::TrackGeneratedShape(const std::string& parent_tag, c
     //DeepDump(outputStream);
     //Base::Console().Message(outputStream.str().c_str());
     // Declare variables
-    TDF_Label parent;
-    TDF_Tool::Label(myDataFramework, parent_tag.c_str(), parent);
+    TDF_Label parent = this->LabelFromTag(parent_tag);
     TDF_Label curLabel;
 
     // create a new node under Parent
@@ -281,8 +280,7 @@ void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag, c
                                           const TopoData& TData, const std::string& name){
     // NOTE: This method assumes that the NewShape has NOT been translated. If it has, the
     // behaviour of the topological naming algorithm is not defined, it will probably fail
-    TDF_Label OrigNode;
-    TDF_Tool::Label(myDataFramework, OrigShapeNodeTag.c_str(), OrigNode);
+    TDF_Label OrigNode = this->LabelFromTag(OrigShapeNodeTag);
 
     if (!OrigNode.IsNull()){
         // create new node for modified shape and sub-nodes. Even if there are no
@@ -362,11 +360,14 @@ std::vector<std::string> TopoNamingHelper::SelectEdges(const std::vector<TopoDS_
     }
     return outputLabels;
 }
+bool TopoNamingHelper::AppendTopoHistory(const std::string& BaseRoot, const TopoNamingHelper& InputData,
+                                         const std::string& InputStartNode, const std::vector<std::string>& InputSkipNodes){
+    TDF_Label BaseNode = this->LabelFromTag(BaseRoot);
+}
 
 TopoDS_Edge TopoNamingHelper::GetSelectedEdge(const std::string NodeTag) const{
     std::clog << "----------Retrieving edge for tag: " << NodeTag <<  std::endl;
-    TDF_Label EdgeNode;
-    TDF_Tool::Label(myDataFramework, NodeTag.c_str(), EdgeNode);
+    TDF_Label EdgeNode = this->LabelFromTag(NodeTag);
     TDF_LabelMap MyMap;
 
     if (!EdgeNode.IsNull()){
@@ -402,8 +403,7 @@ TopoDS_Shape TopoNamingHelper::GetNodeShape(const std::string NodeTag) const{
     std::ostringstream out;
     out << "----------GetNodeShape for NodeTag = " << NodeTag << std::endl;
     std::clog << out.str();
-    TDF_Label TargetNode;
-    TDF_Tool::Label(myDataFramework, NodeTag.c_str(), TargetNode);
+    TDF_Label TargetNode = this->LabelFromTag(NodeTag);
     //TDF_LabelMap MyMap;
 
     //TDF_ChildIterator TreeIterator(myRootNode, Standard_True);
@@ -441,8 +441,7 @@ TopoDS_Shape TopoNamingHelper::GetNodeShape(const std::string NodeTag) const{
 
 TopoDS_Shape TopoNamingHelper::GetTipShape() const {
     const std::string& tipTag = this->GetTipNode();
-    TDF_Label tipLabel;
-    TDF_Tool::Label(myDataFramework, tipTag.c_str(), tipLabel);
+    TDF_Label tipLabel = this->LabelFromTag(tipTag);
     TopoDS_Shape tipShape = this->GetChildShape(tipLabel, 0);
     return tipShape;
 }
@@ -456,8 +455,7 @@ std::string TopoNamingHelper::GetNode(const int& n) const{
 }
 
 std::string TopoNamingHelper::GetNode(const std::string& tag, const int& n) const{
-    TDF_Label parent;
-    TDF_Tool::Label(myDataFramework, tag.c_str(), parent);
+    TDF_Label parent = this->LabelFromTag(tag);
     TDF_Label outLabel = parent.FindChild(n, Standard_False);
     TCollection_AsciiString outtag;
     TDF_Tool::Entry(outLabel, outtag);
@@ -731,8 +729,7 @@ void TopoNamingHelper::WriteShape(const TDF_Label aLabel, const std::string Name
 }
 
 void TopoNamingHelper::WriteNode(const std::string NodeTag, const std::string NameBase, const bool Deep) const{
-    TDF_Label WriteNode;
-    TDF_Tool::Label(myDataFramework, NodeTag.c_str(), WriteNode);
+    TDF_Label WriteNode = this->LabelFromTag(NodeTag);
     if (!WriteNode.IsNull()){
         this->WriteShape(WriteNode, NameBase, 0);
         if (Deep){
@@ -756,8 +753,7 @@ void TopoNamingHelper::WriteNode(const std::string NodeTag, const std::string Na
 //}
 
 TopoDS_Shape TopoNamingHelper::GetLatestShape(const std::string& tag){
-    TDF_Label Node;
-    TDF_Tool::Label(myDataFramework, tag.c_str(), Node);
+    TDF_Label Node = this->LabelFromTag(tag);
     Handle(TNaming_NamedShape) ShapeNS;
     Node.FindAttribute(TNaming_NamedShape::GetID(), ShapeNS);
     std::clog << "----------ShapeNS.IsNull =" << ShapeNS.IsNull() << std::endl;
@@ -765,6 +761,11 @@ TopoDS_Shape TopoNamingHelper::GetLatestShape(const std::string& tag){
 }
 
 //-------------------- Private Methods --------------------
+TDF_Label TopoNamingHelper::LabelFromTag(const std::string& tag) const{
+    TDF_Label outLabel = this->LabelFromTag(tag);
+    return outLabel;
+}
+
 void TopoNamingHelper::MakeGeneratedNode(const TDF_Label& Parent, const TopoDS_Face& aFace){
     TDF_Label childLabel = TDF_TagSource::NewChild(Parent);
     TNaming_Builder Builder(childLabel);

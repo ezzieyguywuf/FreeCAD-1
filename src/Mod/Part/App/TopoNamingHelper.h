@@ -31,6 +31,7 @@ class TopoNamingHelper{
 
         // TODO Need to add methods for tracking a translation to a shape.
         // Make changes to the Data Framework to track Topological Changes
+        // 
         void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name);
         void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name);
         TDF_Label TrackGeneratedShape(const std::string& parent_tag, const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name);
@@ -42,6 +43,8 @@ class TopoNamingHelper{
         void TrackModifiedFilletBaseShape(const TopoDS_Shape& NewBaseShape);
         std::string SelectEdge(const TopoDS_Edge& anEdge, const TopoDS_Shape& aShape);
         std::vector<std::string> SelectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape& aShape);
+        bool AppendTopoHistory(const std::string& BaseRoot, const TopoNamingHelper& InputData,
+                               const std::string& InputStartNode, const std::vector<std::string>& InputSkipNodes);
 
         // Various helper functions
 
@@ -72,7 +75,6 @@ class TopoNamingHelper{
         //// Are the two nodes equivalent?
         //bool TreesEquivalent(const TDF_Label& Node1, const TDF_Label& Node2) const;
         void AddNode(const std::string& Name="");
-
         //TopoDS_Shape GetGeneratedShape(const TDF_Label& parent, const int& node);
         TopoDS_Shape GetLatestShape(const std::string& tag);
         //TopoDS_Shape GetModifiedNewShape(const TDF_Label& parent, const int& node);
@@ -107,6 +109,7 @@ class TopoNamingHelper{
         // <NodeTag>. if <Deep> is true, also write out for all children, with
         // <NameBase>_1.brep, <NameBase>_2.brep etc... as the filename.
         void WriteNode(const std::string NodeTag, const std::string NameBase, const bool Deep) const;
+        TDF_Label LabelFromTag(const std::string& tag) const;
 
         // These are used for adding the respective types of Nodes to a parent Node
         void MakeGeneratedNode(const TDF_Label& Parent, const TopoDS_Face& aFace);
@@ -120,6 +123,8 @@ class TopoNamingHelper{
         void MakeDeletedNode(const TDF_Label& Parent, const TopoDS_Face& aFace);
         void MakeDeletedNodes(const TDF_Label& Parent, const std::vector<TopoDS_Face>& Faces);
         //bool NodesAreEqual(const TDF_Label& Node1, const TDF_Label& Node2) const;
+        
+        // Finally, class member variables
         Handle(TDF_Data) myDataFramework = new TDF_Data();
         TDF_Label myRootNode = myDataFramework->Root();
         TDF_Label mySelectionNode;
