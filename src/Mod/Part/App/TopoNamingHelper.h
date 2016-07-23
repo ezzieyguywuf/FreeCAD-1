@@ -105,6 +105,7 @@ class TopoNamingHelper{
     private:
         // This helps make the DeepDump output more legible
         void AddTextToLabel(const TDF_Label& Label, const std::string& name, const std::string& extra="");
+        std::string GetTextFromLabel(const TDF_Label& Label);
         bool CheckIfSelectionExists(const TDF_Label aNode, const TopoDS_Face aFace) const;
         // Get TopoDS_Shape stored in the nth node under the passed Label
         TopoDS_Shape GetChildShape(const TDF_Label& ParentLabel, const int& n) const;
