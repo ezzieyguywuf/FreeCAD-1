@@ -532,7 +532,7 @@ void TopoNamingHelper::AddTextToLabel(const TDF_Label& Label, const std::string&
     }
 }
 
-std::string TopoNamingHelper::GetTextFromLabel(const TDF_Label& Label){
+std::string TopoNamingHelper::GetTextFromLabel(const TDF_Label& Label) const{
     std::ostringstream out;
     if (Label.IsAttribute(TDataStd_AsciiString::GetID())){
         Handle(TDataStd_AsciiString) data;
@@ -718,13 +718,8 @@ void TopoNamingHelper::DeepDump(std::stringstream& stream) const{
         TDF_Label curLabel = TreeIterator.Value();
         // add the Tag info
         curLabel.EntryDump(stream);
-        // If a AsciiString is present, add the data
-        if (curLabel.IsAttribute(TDataStd_AsciiString::GetID())){
-            Handle(TDataStd_AsciiString) date;
-            curLabel.FindAttribute(TDataStd_AsciiString::GetID(), date);
-            stream << " ";
-            date->Get().Print(stream);
-        }
+        // Add data from AsciiString attribute
+        stream << " " << this->GetTextFromLabel(curLabel);
         stream << "\n";
     }
 }
