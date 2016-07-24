@@ -576,29 +576,40 @@ BRepFilletAPI_MakeFillet TopoShape::makeTopoShapeFillet(const std::vector<Fillet
 }
 
 void TopoShape::createBox(const BoxData& BData){
+    // Node 2
+    this->_TopoNamer.AddNode("Tracked Shape");
     TopoData TData;
     BRepPrimAPI_MakeBox mkBox(BData.Length, BData.Width, BData.Height);
     // NOTE: The order here matters, as updateBox depends on it. That's why we use
     // `getBoxFacesVector` so that we always get the Faces in the same order.
+    TData.NewShape      = mkBox.Shape();
     TData.GeneratedFaces = this->getBoxFacesVector(mkBox);
-    this->_TopoNamer.TrackGeneratedShape(mkBox.Shape(), TData, "Generated Box Node");
+    this->_TopoNamer.TrackGeneratedShape("0:2", TData, "Generated Box Node");
     this->setShape(mkBox.Shape());
+    std::clog << "-----Dumpnig history after createBox" << std::endl;
+    std::clog << this->_TopoNamer.DeepDump();
 }
 
 void TopoShape::updateBox(const BoxData& BData){
     // TODO Do I need to check to ensure the Topo History is for a Box?
-    std::clog << "----dumping tree in updateBox" << std::endl;
-    std::clog << this->_TopoNamer.DeepDump() <<  std::endl;
+    //std::clog << "----dumping tree in updateBox" << std::endl;
+    //std::clog << this->_TopoNamer.DeepDump() <<  std::endl;
     TopoData TData;
     BRepPrimAPI_MakeBox mkBox(BData.Length, BData.Width, BData.Height);
+    TData.OldShape = this->getShape();
+    TData.NewShape = mkBox.Shape();
 
     TopoDS_Face origFace, newFace;
     std::vector<TopoDS_Face> newFaces = this->getBoxFacesVector(mkBox);
 
+    //std::clog << "-----Dumping history in update box" << std::endl;
+    //std::clog << this->_TopoNamer.DeepDump();
     for (int i=0; i<=5; i++){
-        // Tag 0:2:i+1 should hold the original face. GetLatestShape returns the latest
+        // Tag 0:2:1:1:i+1 should hold the original face. GetLatestShape returns the latest
         // modification of this face in the Topological History
-        TopoDS_Shape origShape = _TopoNamer.GetLatestShape(_TopoNamer.GetNode(_TopoNamer.GetNode(_TopoNamer.GetNode(2), 1), (i+1)));
+        std::ostringstream tag;
+        tag << "0:2:1:1:" << (i+1);
+        TopoDS_Shape origShape = _TopoNamer.GetLatestShape(tag.str());
         origFace = TopoDS::Face(origShape);
         newFace  = newFaces[i];
 
@@ -606,10 +617,10 @@ void TopoShape::updateBox(const BoxData& BData){
             TData.ModifiedFaces.push_back({origFace, newFace});
         }
     }
-    std::clog << "-----Dumping TopoHistory after update" << std::endl;
-    std::clog << _TopoNamer.DeepDump() << std::endl;
+    //std::clog << "-----Dumping TopoHistory after update" << std::endl;
+    //std::clog << _TopoNamer.DeepDump() << std::endl;
 
-    this->_TopoNamer.TrackModifiedShape(mkBox.Shape(), TData, "Modified Box Node");
+    this->_TopoNamer.TrackModifiedShape("0:2", TData, "Modified Box Node");
     this->setShape(mkBox.Shape());
 }
 
