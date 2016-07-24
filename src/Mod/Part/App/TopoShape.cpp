@@ -239,7 +239,8 @@ TopoShape::TopoShape(const TopoDS_Shape& shape)
     : _Shape(shape)
 {
     //Base::Console().Message("-----Instantiated TopoShape with TopoDS_Shape\n");
-    _TopoNamer.TrackGeneratedShape(shape, "Generated, source=TopoDS_Shape");
+    //TODO: Do I need to uncomment this and fix it?
+    //_TopoNamer.TrackGeneratedShape(shape, "Generated, source=TopoDS_Shape");
 }
 
 TopoShape::TopoShape(const TopoShape& shape)
@@ -504,7 +505,8 @@ void TopoShape::setShape(const TopoShape& shape){
 void TopoShape::addShape(const TopoShape& shape){
     //Base::Console().Message("-----addShape (TopoShape) called, dumping topo history\n");
     this->_Shape = shape._Shape;
-    this->_TopoNamer.TrackGeneratedShape(shape._Shape, "Added shape...(deprecated?)");
+    //TODO: do I need to uncomment this next line?
+    //this->_TopoNamer.TrackGeneratedShape(shape._Shape, "Added shape...(deprecated?)");
     //Base::Console().Message(this->DumpTopoHistory().c_str());
 }
 

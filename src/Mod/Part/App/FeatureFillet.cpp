@@ -99,18 +99,25 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         }
         Edges.setValues(fdatas);
 
+        ShapeHistory history;
         if (creating){
             BRepFilletAPI_MakeFillet mkFillet = FilletShape.createFillet(base->Shape.getValue(), Edges.getValues());
+            if (!mkFillet.IsDone())
+                return new App::DocumentObjectExecReturn("Resulting shape is null");
+
+            TopoDS_Shape shape = mkFillet.Shape();
+            history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
         }
         else{
             BRepFilletAPI_MakeFillet mkFillet = FilletShape.updateFillet(base->Shape.getValue(), Edges.getValues());
+            // TODO: somehow eliminate this code duplication.
+            if (!mkFillet.IsDone())
+                return new App::DocumentObjectExecReturn("Resulting shape is null");
+
+            TopoDS_Shape shape = mkFillet.Shape();
+            history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
         }
 
-        if (!mkFillet.IsDone())
-            return new App::DocumentObjectExecReturn("Resulting shape is null");
-
-        TopoDS_Shape shape = mkFillet.Shape();
-        ShapeHistory history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
         //this->Shape.setValue(shape);
         this->Shape.setValue(FilletShape);
 
