@@ -95,7 +95,8 @@ public:
     // within TopoShape.
     void createBox(const BoxData& BData);
     void updateBox(const BoxData& BData);
-    void createFillet(const TopoShape& BaseShape);
+    void createFilletBaseShape(const TopoShape& BaseShape);
+    BRepFilletAPI_MakeFillet createFillet(const TopoShape& BaseShape, const std::vector<FilletElement>& FDatas);
     BRepFilletAPI_MakeFillet updateFillet(const TopoShape& BaseShape, const std::vector<FilletElement>& FDatas);
 
     // Print out a concise description of the topo tree
