@@ -78,6 +78,7 @@ public:
     // you make appropriate calls to the TopoNamingHelper methods as well.
     void setShape(const TopoDS_Shape& sh);
     TopoDS_Shape getShape() const;
+    TopoNamingHelper getTopoHelper() const;
 
     // setShape always takes a TopoShape and optionally an OCC child of
     // BRepBuilderAPI_MakeShape. The _TopoHelper is copied from the TopoShape, so it's

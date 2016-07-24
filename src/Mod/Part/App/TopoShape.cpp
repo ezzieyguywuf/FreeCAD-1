@@ -482,6 +482,10 @@ TopoDS_Shape TopoShape::getShape() const{
     return outShape;
 }
 
+TopoNamingHelper TopoShape::getTopoHelper() const{
+    return this->_TopoNamer;
+}
+
 void TopoShape::setShape(const TopoDS_Shape& shape){
     if (!this->_Shape.IsEqual(shape)){
         //TopoDS_Shape setShape(shape);
