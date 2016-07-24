@@ -805,7 +805,6 @@ TDF_Label TopoNamingHelper::LabelFromTag(const std::string& tag) const{
 void TopoNamingHelper::AppendNode(const TDF_Label& TargetParent, const TDF_Label& SourceParent){
     TDF_Label NewNode = TDF_TagSource::NewChild(TargetParent);
     if (SourceParent.IsAttribute(TNaming_NamedShape::GetID())){
-        std::clog << "Tag " << this->GetTag(SourceParent) << " in Target has a TNaming_NamedShape..." << std::endl;
         TNaming_Builder Builder(NewNode);
         Handle(TNaming_NamedShape) SourceNS;
         SourceParent.FindAttribute(TNaming_NamedShape::GetID(), SourceNS);
