@@ -3004,3 +3004,51 @@ TopTools_ListOfShape TopoShape::getBoxFaces(BRepPrimAPI_MakeBox mkBox) const{
     OutFaces.Append(mkBox.BackFace());
     return OutFaces;
 }
+
+FilletData TopoShape::getFilletData(const TopoShape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet) const{
+    // Get the data we need for topo history
+    FilletData TFData;
+
+    TopTools_IndexedMapOfShape faces;
+    // TODO need to handle possible seam edges
+    // TODO need to pull BaseShape from topo tree
+    TopExp::MapShapes(BaseShape.getShape(), TopAbs_FACE, faces);
+    for (int i=1; i <= faces.Extent(); i++){
+        TopoDS_Face face = TopoDS::Face(faces.FindKey(i));
+        TopTools_ListOfShape modified = mkFillet.Modified(face);
+        if (modified.Extent() == 1){
+            TopoDS_Face newFace = TopoDS::Face(modified.First());
+            TFData.ModifiedFaces.push_back({face, newFace});
+        }
+        else if (modified.Extent() != 0){
+            throw std::runtime_error("Fillet should only produce a single modified face per face, or none");
+        }
+    }
+
+    TopTools_IndexedMapOfShape edges;
+    TopExp::MapShapes(BaseShape.getShape(), TopAbs_EDGE, edges);
+    for (int i=1; i<=edges.Extent(); i++){
+        TopoDS_Edge edge = TopoDS::Edge(edges.FindKey(i));
+        TopTools_ListOfShape generated = mkFillet.Generated(edge);
+        TopTools_ListIteratorOfListOfShape genIt(generated);
+        for (; genIt.More(); genIt.Next()){
+            TopoDS_Face genFace = TopoDS::Face(genIt.Value());
+            TFData.GeneratedFacesFromEdge.push_back({edge, genFace});
+        }
+    }
+
+    TopTools_IndexedMapOfShape vertexes;
+    TopExp::MapShapes(BaseShape.getShape(), TopAbs_VERTEX, vertexes);
+    for (int i=1; i<=vertexes.Extent(); i++){
+        TopoDS_Vertex vertex = TopoDS::Vertex(vertexes.FindKey(i));
+        TopTools_ListOfShape generated = mkFillet.Generated(vertex);
+        TopTools_ListIteratorOfListOfShape genIt(generated);
+        for (; genIt.More(); genIt.Next()){
+            TopoDS_Face genFace = TopoDS::Face(genIt.Value());
+            TFData.GeneratedFacesFromVertex.push_back({vertex, genFace});
+        }
+    }
+
+    TFData.NewShape = mkFillet.Shape();
+    return TFData;
+}

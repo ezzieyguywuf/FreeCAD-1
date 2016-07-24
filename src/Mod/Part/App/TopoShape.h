@@ -286,6 +286,7 @@ public:
         TopoNamingHelper _TopoNamer;
         std::vector<TopoDS_Face> getBoxFacesVector(BRepPrimAPI_MakeBox mkBox) const;
         TopTools_ListOfShape getBoxFaces(BRepPrimAPI_MakeBox mkBox) const;
+        FilletData getFilletData(const TopoShape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet) const;
 };
 
 } //namespace Part
