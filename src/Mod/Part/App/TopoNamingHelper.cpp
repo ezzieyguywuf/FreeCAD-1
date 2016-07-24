@@ -294,6 +294,8 @@ void TopoNamingHelper::TrackModifiedShape(const std::string& OrigShapeNodeTag,
 
         // Add the NewShape as a modification of the original shape
         TNaming_Builder Builder(NewNode);
+        std::clog << "OldShape.IsNull() == " << TData.OldShape.IsNull() << std::endl;
+        std::clog << "NewShape.IsNull() == " << TData.NewShape.IsNull() << std::endl;
         Builder.Modify(TData.OldShape, TData.NewShape);
         
         // Add descriptive data for debugging purposes
@@ -806,7 +808,7 @@ void TopoNamingHelper::AppendNode(const TDF_Label& TargetParent, const TDF_Label
         std::clog << "Tag " << this->GetTag(SourceParent) << " in Target has a TNaming_NamedShape..." << std::endl;
         TNaming_Builder Builder(NewNode);
         Handle(TNaming_NamedShape) SourceNS;
-        TargetParent.FindAttribute(TNaming_NamedShape::GetID(), SourceNS);
+        SourceParent.FindAttribute(TNaming_NamedShape::GetID(), SourceNS);
         switch (SourceNS->Evolution()){
             case TNaming_PRIMITIVE:{
                 TopoDS_Shape NewShape = TNaming_Tool::GetShape(SourceNS);
