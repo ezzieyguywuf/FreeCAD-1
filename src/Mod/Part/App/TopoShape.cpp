@@ -623,11 +623,16 @@ void TopoShape::updateBox(const BoxData& BData){
             TData.ModifiedFaces.push_back({origFace, newFace});
         }
     }
-    //std::clog << "-----Dumping TopoHistory after update" << std::endl;
-    //std::clog << _TopoNamer.DeepDump() << std::endl;
 
-    this->_TopoNamer.TrackModifiedShape("0:2", TData, "Modified Box Node");
-    this->setShape(mkBox.Shape());
+    if (TData.ModifiedFaces.size() > 0){
+        this->_TopoNamer.TrackModifiedShape("0:2", TData, "Modified Box Node");
+        this->setShape(mkBox.Shape());
+        std::clog << "-----Dumping TopoHistory after updateBox" << std::endl;
+        std::clog << _TopoNamer.DeepDump() << std::endl;
+    }
+    else{
+        std::clog << "-----Box is not different, no topo history written" << std::endl;
+    }
 }
 
 void TopoShape::createFilletBaseShape(const TopoShape& BaseShape){
