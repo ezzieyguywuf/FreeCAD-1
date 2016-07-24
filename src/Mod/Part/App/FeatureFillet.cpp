@@ -65,6 +65,7 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
 #endif
 
         TopoShape FilletShape = this->Shape.getShape();
+        bool creating = false;
 
         if (FilletShape.hasTopoNamingNodes()){
             Base::Console().Message("----- Found topo naming nodes...\n");
@@ -79,11 +80,12 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
             //FilletShape.modifyShape("0:2", base->Shape.getValue());
         }
         else{
+            creating = true;
             Base::Console().Message("----- Did not find topo naming nodes...\n");
             // If there are no nodes, then no fillets have been made yet. Let's use the
             // Base shape as the topo basis, i.e. no topological history except for
             // 'Generated'
-            FilletShape.createFillet(base->Shape.getValue());
+            FilletShape.createFilletBaseShape(base->Shape.getValue());
         }
         //Base::Console().Message(FilletShape.DumpTopoHistory().c_str());
 
@@ -97,7 +99,12 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         }
         Edges.setValues(fdatas);
 
-        BRepFilletAPI_MakeFillet mkFillet = FilletShape.updateFillet(base->Shape.getValue(), Edges.getValues());
+        if (creating){
+            BRepFilletAPI_MakeFillet mkFillet = FilletShape.createFillet(base->Shape.getValue(), Edges.getValues());
+        }
+        else{
+            BRepFilletAPI_MakeFillet mkFillet = FilletShape.updateFillet(base->Shape.getValue(), Edges.getValues());
+        }
 
         if (!mkFillet.IsDone())
             return new App::DocumentObjectExecReturn("Resulting shape is null");
