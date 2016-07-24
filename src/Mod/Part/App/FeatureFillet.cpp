@@ -101,7 +101,10 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
 
         ShapeHistory history;
         if (creating){
-            BRepFilletAPI_MakeFillet mkFillet = FilletShape.createFillet(base->Shape.getValue(), Edges.getValues());
+            std::clog << "---------------" << std::endl;
+            std::clog << "-----Creating fillet" << std::endl;
+            std::clog << "---------------" << std::endl;
+            BRepFilletAPI_MakeFillet mkFillet = FilletShape.createFillet(base->Shape.getShape(), Edges.getValues());
             if (!mkFillet.IsDone())
                 return new App::DocumentObjectExecReturn("Resulting shape is null");
 
@@ -109,7 +112,10 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
             history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
         }
         else{
-            BRepFilletAPI_MakeFillet mkFillet = FilletShape.updateFillet(base->Shape.getValue(), Edges.getValues());
+            std::clog << "---------------" << std::endl;
+            std::clog << "-----Updating fillet" << std::endl;
+            std::clog << "---------------" << std::endl;
+            BRepFilletAPI_MakeFillet mkFillet = FilletShape.updateFillet(base->Shape.getShape(), Edges.getValues());
             // TODO: somehow eliminate this code duplication.
             if (!mkFillet.IsDone())
                 return new App::DocumentObjectExecReturn("Resulting shape is null");
