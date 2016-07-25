@@ -641,19 +641,8 @@ void TopoShape::createFilletBaseShape(const TopoShape& BaseShape){
     // Node 3
     this->_TopoNamer.AddNode("FilletShapes");
 
-    // Collect and track appropriate data
-    TopoData TData;
-
-    TopTools_IndexedMapOfShape faces;
-    // TODO need to handle possible seam edges
-    TopExp::MapShapes(BaseShape.getShape(), TopAbs_FACE, faces);
-    for (int i=1; i <= faces.Extent(); i++){
-        TopoDS_Face face = TopoDS::Face(faces.FindKey(i));
-        TData.GeneratedFaces.push_back(face);
-    }
-
-    TData.NewShape = BaseShape.getShape();
-    this->_TopoNamer.TrackGeneratedShape(this->_TopoNamer.GetNode(2), TData, "Generated Base Shape");
+    // Copy topo history from BaseShape to this->_TopoNamer
+    this->_TopoNamer.AppendTopoHistory("0:2", BaseShape.getTopoHelper());
     this->setShape(BaseShape.getShape());
 }
 
@@ -681,8 +670,8 @@ BRepFilletAPI_MakeFillet TopoShape::createFillet(const TopoShape& BaseShape, con
 BRepFilletAPI_MakeFillet TopoShape::updateFillet(const TopoShape& BaseShape, const std::vector<FilletElement>& FDatas){
     // Update the BaseShape topo history as appropriate
     this->_TopoNamer.AppendTopoHistory("0:2", BaseShape.getTopoHelper());
-    //std::clog << "-----Dumping after Append" << std::endl;
-    //std::clog << this->_TopoNamer.DeepDump();
+    std::clog << "-----Dumping after Append" << std::endl;
+    std::clog << this->_TopoNamer.DeepDump() << std::endl;
     //std::clog << this->_TopoNamer.DFDump();
  
     // Make the fillets. NOTE: the edges should have already been 'selected' by
