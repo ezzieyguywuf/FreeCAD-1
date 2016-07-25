@@ -69,8 +69,13 @@ class TopoNamingHelper{
         // Return the TopoDS_Shape at the very tip of the Data Framework. TODO do we need
         // to check to make sure the latest operation actually stored a TopoDS_Shape?
         TopoDS_Shape GetTipShape() const;
+        // Return the TopoDS_Shape at the very tip of the Label located at ParentTag
+        TopoDS_Shape GetTipShape(const std::string& ParentTag) const;
         // Return the tag to the TDF_Label at the very tip of the Data Framework
         std::string GetTipNode() const;
+        // Return the tag to the TDF_Label at the very tip of the Label located at
+        // ParentTag
+        std::string GetTipNode(const std::string& ParentTag) const;
         // Get the tag to the Nth child node in the root tree
         std::string GetNode(const int& n) const;
         // get the tag to the Nth child node from the Parent label.

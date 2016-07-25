@@ -670,13 +670,12 @@ BRepFilletAPI_MakeFillet TopoShape::createFillet(const TopoShape& BaseShape, con
 BRepFilletAPI_MakeFillet TopoShape::updateFillet(const TopoShape& BaseShape, const std::vector<FilletElement>& FDatas){
     // Update the BaseShape topo history as appropriate
     this->_TopoNamer.AppendTopoHistory("0:2", BaseShape.getTopoHelper());
-    std::clog << "-----Dumping after Append" << std::endl;
-    std::clog << this->_TopoNamer.DeepDump() << std::endl;
     //std::clog << this->_TopoNamer.DFDump();
  
     // Make the fillets. NOTE: the edges should have already been 'selected' by
     // calling TopoShape::selectEdge(s) by the caller.
-    BRepFilletAPI_MakeFillet mkFillet(BaseShape.getShape());
+    TopoDS_Shape localBaseShape = this->_TopoNamer.GetTipShape("0:2");
+    BRepFilletAPI_MakeFillet mkFillet(localBaseShape);
 
     for (auto&& FData: FDatas){
         TopoDS_Edge edge = this->_TopoNamer.GetSelectedEdge(FData.edgetag);

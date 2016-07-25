@@ -66,6 +66,8 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
 
         TopoShape FilletShape = this->Shape.getShape();
         bool creating = false;
+        std::clog << "-----Dumpnig topo history in fillet base near top" << std::endl;
+        std::clog << FilletShape.getTopoHelper().DeepDump() << std::endl;
 
         if (FilletShape.hasTopoNamingNodes()){
             Base::Console().Message("----- Found topo naming nodes...\n");
@@ -85,7 +87,9 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
             // If there are no nodes, then no fillets have been made yet. Let's use the
             // Base shape as the topo basis, i.e. no topological history except for
             // 'Generated'
-            FilletShape.createFilletBaseShape(base->Shape.getValue());
+            FilletShape.createFilletBaseShape(base->Shape.getShape());
+            std::clog << "-----Dumpnig topo history in fillet base after createFilletBaseShape" << std::endl;
+            std::clog << FilletShape.getTopoHelper().DeepDump() << std::endl;
         }
         //Base::Console().Message(FilletShape.DumpTopoHistory().c_str());
 

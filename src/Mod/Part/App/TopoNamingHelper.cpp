@@ -389,8 +389,8 @@ bool TopoNamingHelper::AppendTopoHistory(const std::string& TargetRoot, const To
             this->AppendNode(TargetNode, SourceNode);
         }
     }
-    std::clog << "----------Dumping TargetData in AppendTopoHistory at end" << std::endl;
-    std::clog << this->DeepDump() << std::endl;
+    //std::clog << "----------Dumping TargetData in AppendTopoHistory at end" << std::endl;
+    //std::clog << this->DeepDump() << std::endl;
     return true;
 }
 
@@ -472,8 +472,20 @@ TopoDS_Shape TopoNamingHelper::GetTipShape() const {
     return tipShape;
 }
 
+TopoDS_Shape TopoNamingHelper::GetTipShape(const std::string& ParentTag) const {
+    const std::string& tipTag = this->GetTipNode(ParentTag);
+    TDF_Label tipLabel = this->LabelFromTag(tipTag);
+    TopoDS_Shape tipShape = this->GetChildShape(tipLabel, 0);
+    return tipShape;
+}
+
 std::string TopoNamingHelper::GetTipNode() const{
     return this->GetNode(this->myRootNode.NbChildren());
+}
+
+std::string TopoNamingHelper::GetTipNode(const std::string& ParentTag) const{
+    TDF_Label Label = this->LabelFromTag(ParentTag);
+    return this->GetNode(ParentTag, Label.NbChildren());
 }
 
 std::string TopoNamingHelper::GetNode(const int& n) const{
