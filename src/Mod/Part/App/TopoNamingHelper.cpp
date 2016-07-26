@@ -28,6 +28,7 @@
 #include <TNaming_NamedShape.hxx>
 #include <TNaming_UsedShapes.hxx>
 #include <TNaming_Tool.hxx>
+#include <TNaming_Naming.hxx>
 
 #include <BRepTools.hxx>
 #include <BRep_Tool.hxx>
@@ -55,7 +56,7 @@ TopoNamingHelper::~TopoNamingHelper(){
 }
 
 void TopoNamingHelper::operator = (const TopoNamingHelper& helper){
-    //std::clog << "----------Setting operator = TopoNaming stuff\n";
+    std::clog << "----------TopoNamingHelper = called" << std::endl;
     this->myDataFramework = helper.myDataFramework;
     this->myRootNode      = helper.myRootNode;
     this->mySelectionNode = helper.mySelectionNode;
@@ -395,16 +396,20 @@ bool TopoNamingHelper::AppendTopoHistory(const std::string& TargetRoot, const To
 }
 
 TopoDS_Edge TopoNamingHelper::GetSelectedEdge(const std::string NodeTag) const{
-    //std::clog << "----------Retrieving edge for tag: " << NodeTag <<  std::endl;
+    std::clog << "----------Retrieving edge for tag: " << NodeTag <<  std::endl;
     TDF_Label EdgeNode = this->LabelFromTag(NodeTag);
     TDF_LabelMap MyMap;
 
     if (!EdgeNode.IsNull()){
         //MyMap.Add(EdgeNode);
         TNaming_Selector MySelector(EdgeNode);
+        std::clog << "EdgeNode.hasTNaming = " << EdgeNode.IsAttribute(TNaming_Naming::GetID()) << std::endl;
         bool solved = MySelector.Solve(MyMap);
         if (!solved){
-            std::clog << "----------selection solve was not succesful......" << std::endl;
+            std::clog << "----------selection solve was NOT succesful......" << std::endl;
+        }
+        else{
+            std::clog << "----------selection solve WAS succesful......" << std::endl;
         }
         //Handle(TNaming_NamedShape) EdgeNS = MySelector.NamedShape();
         //EdgeNode.FindAttribute(TNaming_NamedShape::GetID(), EdgeNS);

@@ -92,6 +92,12 @@ void PropertyPartShape::setValue(const TopoDS_Shape& sh)
     hasSetValue();
 }
 
+void PropertyPartShape::setShape(const TopoShape& sh){
+    aboutToSetValue();
+    _Shape = sh;
+    hasSetValue();
+}
+
 const TopoDS_Shape& PropertyPartShape::getValue(void)const 
 {
     return _Shape._Shape;

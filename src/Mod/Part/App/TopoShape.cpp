@@ -238,7 +238,7 @@ TopoShape::~TopoShape()
 TopoShape::TopoShape(const TopoDS_Shape& shape)
     : _Shape(shape)
 {
-    //Base::Console().Message("-----Instantiated TopoShape with TopoDS_Shape\n");
+    std::clog << "!!!!! TopoDS_Shape initializer in TopoShape !!!!!" << std::endl;
     //TODO: Do I need to uncomment this and fix it?
     //_TopoNamer.TrackGeneratedShape(shape, "Generated, source=TopoDS_Shape");
 }

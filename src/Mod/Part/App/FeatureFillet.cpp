@@ -58,12 +58,15 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
     if (!link->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId()))
         return new App::DocumentObjectExecReturn("Linked object is not a Part object");
     Part::Feature *base = static_cast<Part::Feature*>(Base.getValue());
+    std::clog << "----- copying BaseShape" << std::endl;
+    TopoShape BaseShape = base->Shape.getShape();
 
     try {
 #if defined(__GNUC__) && defined (FC_OS_LINUX)
         Base::SignalException se;
 #endif
 
+        std::clog << "----- copying FilletShape" << std::endl;
         TopoShape FilletShape = this->Shape.getShape();
         bool creating = false;
         std::clog << "-----Dumpnig topo history in fillet base near top" << std::endl;
@@ -87,7 +90,7 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
             // If there are no nodes, then no fillets have been made yet. Let's use the
             // Base shape as the topo basis, i.e. no topological history except for
             // 'Generated'
-            FilletShape.createFilletBaseShape(base->Shape.getShape());
+            FilletShape.createFilletBaseShape(BaseShape);
             std::clog << "-----Dumpnig topo history in fillet base after createFilletBaseShape" << std::endl;
             std::clog << FilletShape.getTopoHelper().DeepDump() << std::endl;
         }
@@ -108,28 +111,28 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
             std::clog << "---------------" << std::endl;
             std::clog << "-----Creating fillet" << std::endl;
             std::clog << "---------------" << std::endl;
-            BRepFilletAPI_MakeFillet mkFillet = FilletShape.createFillet(base->Shape.getShape(), Edges.getValues());
+            BRepFilletAPI_MakeFillet mkFillet = FilletShape.createFillet(BaseShape, Edges.getValues());
             if (!mkFillet.IsDone())
                 return new App::DocumentObjectExecReturn("Resulting shape is null");
 
             TopoDS_Shape shape = mkFillet.Shape();
-            history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
+            history = buildHistory(mkFillet, TopAbs_FACE, shape, BaseShape.getShape());
         }
         else{
             std::clog << "---------------" << std::endl;
             std::clog << "-----Updating fillet" << std::endl;
             std::clog << "---------------" << std::endl;
-            BRepFilletAPI_MakeFillet mkFillet = FilletShape.updateFillet(base->Shape.getShape(), Edges.getValues());
+            BRepFilletAPI_MakeFillet mkFillet = FilletShape.updateFillet(BaseShape, Edges.getValues());
             // TODO: somehow eliminate this code duplication.
             if (!mkFillet.IsDone())
                 return new App::DocumentObjectExecReturn("Resulting shape is null");
 
             TopoDS_Shape shape = mkFillet.Shape();
-            history = buildHistory(mkFillet, TopAbs_FACE, shape, base->Shape.getValue());
+            history = buildHistory(mkFillet, TopAbs_FACE, shape, BaseShape.getShape());
         }
 
         //this->Shape.setValue(shape);
-        this->Shape.setValue(FilletShape);
+        this->Shape.setShape(FilletShape);
 
         // make sure the 'PropertyShapeHistory' is not safed in undo/redo (#0001889)
         PropertyShapeHistory prop;
