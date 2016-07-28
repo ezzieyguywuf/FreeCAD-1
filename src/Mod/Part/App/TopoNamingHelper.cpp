@@ -750,10 +750,35 @@ void TopoNamingHelper::DeepDump(std::stringstream& stream) const{
     TDF_ChildIterator TreeIterator(myRootNode, Standard_True);
     for(;TreeIterator.More(); TreeIterator.Next()){
         TDF_Label curLabel = TreeIterator.Value();
+        for (int i=2; i <= curLabel.Depth(); i++){
+            stream << "--";
+        }
         // add the Tag info
         curLabel.EntryDump(stream);
         // Add data from AsciiString attribute
         stream << " " << this->GetTextFromLabel(curLabel);
+        if (curLabel.IsAttribute(TNaming_NamedShape::GetID())){
+            stream << ", Evolution = ";
+            Handle(TNaming_NamedShape) curNS;
+            curLabel.FindAttribute(TNaming_NamedShape::GetID(), curNS);
+            switch (curNS->Evolution()) {
+                case TNaming_PRIMITIVE:{
+                    stream << "PRIMITIVE";
+                    break;}
+                case TNaming_GENERATED:{
+                    stream << "GENERATED";
+                    break;}
+                case TNaming_MODIFY   :{
+                    stream << "MODIFY";
+                    break;}
+                case TNaming_DELETE   :{
+                    stream << "DELETE";
+                    break;}
+                default:{
+                    stream << "???";
+                    break;}
+            }
+        }
         stream << "\n";
     }
 }
