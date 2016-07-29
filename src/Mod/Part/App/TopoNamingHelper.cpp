@@ -1,3 +1,19 @@
+/*********************************************************************************
+*   Copyright (C) 2016 Wolfgang E. Sanyer (ezzieyguywuf@gmail.com)               *
+*                                                                                *
+*   This program is free software: you can redistribute it and/or modify         *
+*   it under the terms of the GNU General Public License as published by         *
+*   the Free Software Foundation, either version 3 of the License, or            *
+*   (at your option) any later version.                                          *
+*                                                                                *
+*   This program is distributed in the hope that it will be useful,              *
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                *
+*   GNU General Public License for more details.                                 *
+*                                                                                *
+*   You should have received a copy of the GNU General Public License            *
+*   along with this program.  If not, see <http://www.gnu.org/licenses/>.        *
+******************************************************************************** */
 #include <vector>
 #include <type_traits>
 
@@ -428,23 +444,23 @@ bool TopoNamingHelper::CompareTwoFaceTopologies(const TopoDS_Shape& face1, const
         for (int j=1; j<= Edges2.Extent(); j++){
             TopoDS_Edge Edge2 = TopoDS::Edge(Edges2.FindKey(j));
             if (BRepTools::Compare(Edge1, Edge2)){
-                //std::clog << "----------Found match!" << std::endl;
+                //std::clog << "----------Found Edge match!" << std::endl;
                 match = true;
                 break;
             }
             if (CompareTwoEdgeTopologies(Edge1, Edge2)){
-                //std::clog << "----------Found match (my way)!" << std::endl;
+                //std::clog << "----------Found Edge match (my way)!" << std::endl;
                 match = true;
                 break;
             }
         }
         if (!match){
             // if any single edge does not match, then the faces cannot be equal.
-            //std::clog << "----------No match found..." << std::endl;
+            //std::clog << "----------No Edge matches found, returning false..." << std::endl;
             return false;
         }
     }
-    //std::clog << "----------All edges match!" << std::endl;
+    //std::clog << "----------All edges match!, continuing..." << std::endl;
 
     //if (face2.IsEqual(face1)){
         //std::clog << "----------for i = " << i << " and j = "<<j << ", Faces ARE equal" << std::endl;
@@ -488,8 +504,8 @@ bool TopoNamingHelper::CompareTwoFaceTopologies(const TopoDS_Shape& face1, const
         Handle(Geom_Plane) Plane1 = Handle(Geom_Plane)::DownCast(Surface1);
         if (Surface2->IsKind(STANDARD_TYPE(Geom_Plane))) {
             Handle(Geom_Plane) Plane2 = Handle(Geom_Plane)::DownCast(Surface2);
-            //gp_Dir p1Dir = Plane1->Axis().Direction();
-            //gp_Dir p2Dir = Plane2->Axis().Direction();
+            gp_Dir p1Dir = Plane1->Axis().Direction();
+            gp_Dir p2Dir = Plane2->Axis().Direction();
             Standard_Real p1A, p1B, p1C, p1D, p2A, p2B, p2C, p2D;
             Plane1->Coefficients(p1A, p1B, p1C, p1D);
             Plane2->Coefficients(p2A, p2B, p2C, p2D);
@@ -498,17 +514,20 @@ bool TopoNamingHelper::CompareTwoFaceTopologies(const TopoDS_Shape& face1, const
             //std::clog << "----------Plane1 Dir: (" << p1Dir.X() << ", " << p1Dir.Y() << ", " << p1Dir.Z() << ")" << std::endl;
             //std::clog << "----------Plane2 Dir: (" << p2Dir.X() << ", " << p2Dir.Y() << ", " << p2Dir.Z() << ")" << std::endl;
             if (p1A == p2A && p1B == p2B && p1C == p2C && p1D ==p2D) {
+                //std::clog << "----------Returning true, I guess all the points were equal" << std::endl;
                 return true;
             }
         }
         else{
+            //std::clog << "----------Returning false, I guess all the points were not equal" << std::endl;
             return false;
         }
     }
     else{
-        std::clog << "----------Don't know how to handle that geometry..." << std::endl;
+        //std::clog << "----------Don't know how to handle that geometry..." << std::endl;
     }
     // else if (IsKind(cylindrical something)
+    //std::clog << "----------fallback, returning false" << std::endl;
     return false;
 }
 
