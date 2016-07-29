@@ -4,6 +4,9 @@
 #include <vector>
 #include <array>
 #include <TopoDS_Shape.hxx>
+#include <TopoDS_Face.hxx>
+#include <TopoDS_Edge.hxx>
+#include <TopoDS_Vertex.hxx>
 
 //enum class BoxState{
     //length     = 1<<0,
@@ -13,17 +16,34 @@
 //};
 
 struct TopoData{
+    template <typename T>
+    struct TrackedData{
+        // Either all three of these are null, or ONLY ONE is non-null
+        T origShape;
+        // If ane of the 'orig' are non-null, this can be null or not. If they are all
+        // null, this MUST NOT be null.
+        TopoDS_Face newFace;
+        std::string text;
+    };
+
+    // OldShape for Modified or Generated or Deleted TNaming_Evolution
     TopoDS_Shape OldShape;
+    // NewShape for any evolution except Generated
     TopoDS_Shape NewShape;
-    std::vector<TopoDS_Face> GeneratedFaces;
-    std::vector< std::pair<TopoDS_Face, TopoDS_Face> > ModifiedFaces;
-    std::vector<TopoDS_Face> DeletedFaces;
+    std::string text;
+    std::vector<TrackedData<TopoDS_Face>> GeneratedFaces;
+    std::vector<TrackedData<TopoDS_Face>> ModifiedFaces;
+    std::vector<TrackedData<TopoDS_Face>> DeletedFaces;
+    std::vector< std::pair<std::string, gp_Trsf> > TranslatedFaces;
+    std::vector<TrackedData<TopoDS_Edge>> GeneratedFacesFromEdge;
+    std::vector<TrackedData<TopoDS_Vertex>> GeneratedFacesFromVertex;
+
 };
 
-struct FilletData : TopoData{
-    std::vector< std::pair<TopoDS_Edge, TopoDS_Face> > GeneratedFacesFromEdge;
-    std::vector< std::pair<TopoDS_Vertex, TopoDS_Face> > GeneratedFacesFromVertex;
-};
+//struct FilletData : TopoData{
+    //std::vector<TrackedData> GeneratedFacesFromEdge;
+    //std::vector<TrackedData> GeneratedFacesFromVertex;
+//};
 
 struct BoxData{
     BoxData(double height, double length, double width){

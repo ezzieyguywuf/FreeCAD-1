@@ -549,7 +549,7 @@ void TopoShape::setShape(const TopoShape& Shape, BRepAlgoAPI_Fuse& mkFuse){
 //}
 //
 BRepFilletAPI_MakeFillet TopoShape::makeTopoShapeFillet(const std::vector<FilletElement>& targetEdges){
-    //Base::Console().Message("-----makeTopoShapeFillet (TopoShape) called, dumpinghistory\n");
+    Base::Console().Message("-----makeTopoShapeFillet (TopoShape) called, dumpinghistory\n");
     //Base::Console().Message(this->DumpTopoHistory().c_str());
     TopoDS_Shape baseShape = this->_TopoNamer.GetTipShape();
     BRepFilletAPI_MakeFillet mkFillet(baseShape);
@@ -649,10 +649,19 @@ void TopoShape::createFilletBaseShape(const TopoShape& BaseShape){
 BRepFilletAPI_MakeFillet TopoShape::createFillet(const TopoShape& BaseShape, const std::vector<FilletElement>& FDatas){
     // Make the fillets. NOTE: the edges should have already been 'selected' by
     // calling TopoShape::selectEdge(s) by the caller.
+    std::clog << "-----createFillet has been called" << std::endl;
     BRepFilletAPI_MakeFillet mkFillet(BaseShape.getShape());
 
+    TopTools_IndexedMapOfShape Edges;
+    TopExp::MapShapes(BaseShape.getShape(), TopAbs_EDGE, Edges);
     for (auto&& FData: FDatas){
         TopoDS_Edge edge = this->_TopoNamer.GetSelectedEdge(FData.edgetag);
+        if (Edges.Contains(edge)){
+            std::clog << "-----Edge IS in BaseShape" << std::endl;
+        }
+        else{
+            std::clog << "-----Edge is NOT in BaseShape" << std::endl;
+        }
         mkFillet.Add(FData.radius1, FData.radius2, edge);
     }
 
@@ -669,6 +678,7 @@ BRepFilletAPI_MakeFillet TopoShape::createFillet(const TopoShape& BaseShape, con
 
 BRepFilletAPI_MakeFillet TopoShape::updateFillet(const TopoShape& BaseShape, const std::vector<FilletElement>& FDatas){
     // Update the BaseShape topo history as appropriate
+    std::clog << "-----updateFillet has been called" << std::endl;
     this->_TopoNamer.AppendTopoHistory("0:2", BaseShape.getTopoHelper());
     //std::clog << this->_TopoNamer.DFDump();
  
@@ -677,9 +687,19 @@ BRepFilletAPI_MakeFillet TopoShape::updateFillet(const TopoShape& BaseShape, con
     TopoDS_Shape localBaseShape = this->_TopoNamer.GetTipShape("0:2");
     BRepFilletAPI_MakeFillet mkFillet(localBaseShape);
 
+    TopTools_IndexedMapOfShape Edges;
+    TopExp::MapShapes(BaseShape.getShape(), TopAbs_EDGE, Edges);
+    this->_TopoNamer.WriteShape(localBaseShape, "10_01_updateFillet_BaseShape");
     for (auto&& FData: FDatas){
         TopoDS_Edge edge = this->_TopoNamer.GetSelectedEdge(FData.edgetag);
         mkFillet.Add(FData.radius1, FData.radius2, edge);
+        this->_TopoNamer.WriteShape(edge, "10_02_updateFillet_Edge");
+        if (Edges.Contains(edge)){
+            std::clog << "-----Edge IS in BaseShape" << std::endl;
+        }
+        else{
+            std::clog << "-----Edge is NOT in BaseShape" << std::endl;
+        }
     }
 
     mkFillet.Build();

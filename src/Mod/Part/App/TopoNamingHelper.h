@@ -5,6 +5,7 @@
 #include <string>
 
 #include <TNaming_Builder.hxx>
+#include <TNaming_Evolution.hxx>
 
 #include <TDF_Data.hxx>
 #include <TDF_Label.hxx>
@@ -16,9 +17,14 @@
 #include <TopTools_Array1OfListOfShape.hxx>
 #include <TopTools_ListOfShape.hxx>
 
+#include <TopLoc_Location.hxx>
+
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
 #include <BRepFilletAPI_MakeFillet.hxx>
+
+#include <Geom_Plane.hxx>
+
 #include "TopoNamingData.h"
 
 class TopoNamingHelper{
@@ -30,17 +36,9 @@ class TopoNamingHelper{
         void operator = (const TopoNamingHelper&);
 
         // TODO Need to add methods for tracking a translation to a shape.
+ 
         // Make changes to the Data Framework to track Topological Changes
-        // 
-        //void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const std::string& name);
-        //void TrackGeneratedShape(const TopoDS_Shape& GeneratedShape, const TopoData& TData, const std::string& name);
-        TDF_Label TrackGeneratedShape(const std::string& parent_tag, const TopoData& TData, const std::string& name);
-        TDF_Label TrackGeneratedShape(const std::string& parent_tag, const FilletData& FData, const std::string& name);
-        //void TrackFuseOperation(BRepAlgoAPI_Fuse& Fuser);
-        void TrackFilletOperation(const TopoDS_Shape& BaseShape, BRepFilletAPI_MakeFillet& mkFillet);
-        //void TrackModifiedShape(const TopoDS_Shape& NewShape, const TopoData& TData, const std::string& name);
-        void TrackModifiedShape(const std::string& OrigShapeNodeTag, const TopoData& TData, const std::string& name);
-        void TrackModifiedFilletBaseShape(const TopoDS_Shape& NewBaseShape);
+        void TrackShape(const TopoData& TData, const std::string& TargetTag);
         std::string SelectEdge(const TopoDS_Edge& anEdge, const TopoDS_Shape& aShape);
         std::vector<std::string> SelectEdges(const std::vector<TopoDS_Edge> Edges, const TopoDS_Shape& aShape);
         // NOTE: This function is very fragile right now. It assumes that SourceData is
@@ -62,10 +60,6 @@ class TopoNamingHelper{
         TopoDS_Shape GetSelectedBaseShape(const std::string NodeTag) const;
         // Return the TopoDS_Shape stored in the NodeTag, i.e. "0:4"
         TopoDS_Shape GetNodeShape(const std::string NodeTag) const;
-        // Intended to be used for a Data Framework that is keeping track of the evolution
-        // of a Filleted shape. If the Data Framework does not contain a Fillet node, this
-        // method may not work as expected
-        std::string GetLatestFilletBase() const;
         // Return the TopoDS_Shape at the very tip of the Data Framework. TODO do we need
         // to check to make sure the latest operation actually stored a TopoDS_Shape?
         TopoDS_Shape GetTipShape() const;
@@ -85,15 +79,14 @@ class TopoNamingHelper{
         // Does the Topo tree have additional nodes aside from the Selection one created
         // at initialization?
         bool HasNodes() const;
-        //// Are the two nodes equivalent?
-        //bool TreesEquivalent(const TDF_Label& Node1, const TDF_Label& Node2) const;
-        void AddNode(const std::string& Name="");
+        std::string AddNode(const std::string& Name="");
         //TopoDS_Shape GetGeneratedShape(const TDF_Label& parent, const int& node);
         TopoDS_Shape GetLatestShape(const std::string& tag);
         //TopoDS_Shape GetModifiedNewShape(const TDF_Label& parent, const int& node);
 
         // Non-Member Class functions
         static bool CompareTwoFaceTopologies(const TopoDS_Shape& face1, const TopoDS_Shape& face2);
+        static bool CheckIfFacIsDisplaced(const TopoDS_Face& face1, const TopoDS_Face& face2, gp_Trsf& deltaLoc);
         static bool CompareTwoEdgeTopologies(const TopoDS_Edge& edge1, const TopoDS_Edge& edge2, int numCheckPoints=10);
         static void WriteShape(const TopoDS_Shape& aShape, const std::string& NameBase, const int& numb=-1);
 
@@ -126,18 +119,12 @@ class TopoNamingHelper{
         TDF_Label LabelFromTag(const std::string& tag) const;
         //void AppendNode(const TDF_Label& Parent, const TDF_Label& Target, const int& depth=0);
         void AppendNode(const TDF_Label& TargetParent, const TDF_Label& SourceParent);
+        static bool GetPlaneFromFace(const TopoDS_Face& face, Handle(Geom_Plane)& plane);
 
-        // These are used for adding the respective types of Nodes to a parent Node
-        void MakeGeneratedNode(const TDF_Label& Parent, const TopoDS_Face& aFace);
-        void MakeGeneratedNodes(const TDF_Label& Parent, const std::vector<TopoDS_Face>& Faces);
-        void MakeGeneratedFromEdgeNode(const TDF_Label& Parent, const std::pair<TopoDS_Edge, TopoDS_Face>& aPair);
-        void MakeGeneratedFromEdgeNodes(const TDF_Label& Parent, const std::vector< std::pair<TopoDS_Edge, TopoDS_Face> >& Pairs);
-        void MakeGeneratedFromVertexNode(const TDF_Label& Parent, const std::pair<TopoDS_Vertex, TopoDS_Face>& aPair);
-        void MakeGeneratedFromVertexNodes(const TDF_Label& Parent, const std::vector< std::pair<TopoDS_Vertex, TopoDS_Face> >& Pairs);
-        void MakeModifiedNode(const TDF_Label& Parent, const std::pair<TopoDS_Face, TopoDS_Face>& aPair);
-        void MakeModifiedNodes(const TDF_Label& Parent, const std::vector< std::pair<TopoDS_Face, TopoDS_Face> >& aPairs);
-        void MakeDeletedNode(const TDF_Label& Parent, const TopoDS_Face& aFace);
-        void MakeDeletedNodes(const TDF_Label& Parent, const std::vector<TopoDS_Face>& Faces);
+        template <typename T>
+        void MakeNodes(const TDF_Label& Parent, const std::vector<TopoData::TrackedData<T>>& Datas, const TNaming_Evolution& evol);
+        void MakeTranslatedNode(const TDF_Label& Parent, const std::pair<std::string, gp_Trsf>& aPair);
+        void MakeTranslatedNodes(const TDF_Label& Parent, const std::vector< std::pair<std::string, gp_Trsf> >& Pairs);
         //bool NodesAreEqual(const TDF_Label& Node1, const TDF_Label& Node2) const;
         
         // Finally, class member variables
