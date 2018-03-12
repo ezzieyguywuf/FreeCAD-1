@@ -30,9 +30,21 @@ link_directories(
     "/home/wolfie/Program/FreeCAD_dev/OccWrapper/build/lib"
     )
 
+set(TopoMgrLibs
+    OccFaced
+    OccSolidd
+    OccShaped
+    OccCylinderd
+    PrimitiveSolidManagerd
+    OccSolidModifierd
+    OccModifiedSolidsd
+    OccSolidMakerd
+    )
+
 set(Part_LIBS 
     ${OCC_LIBRARIES}
     ${OCC_DEBUG_LIBRARIES}
+    ${TopoMgrLibs}
     FreeCADApp
 )
 
