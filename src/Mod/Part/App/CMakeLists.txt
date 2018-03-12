@@ -37,8 +37,11 @@ set(TopoMgrLibs
     OccCylinderd
     PrimitiveSolidManagerd
     OccSolidModifierd
+    OccModifiedSolidd
     OccModifiedSolidsd
     OccSolidMakerd
+    OccBoxd
+    OccCylinderd
     )
 
 set(Part_LIBS 
