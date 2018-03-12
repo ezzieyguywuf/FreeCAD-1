@@ -28,6 +28,11 @@
 #include <TopAbs_ShapeEnum.hxx>
 #include <App/DocumentObject.h>
 #include <App/PropertyGeo.h>
+
+// includes for topological management
+#include <OccSolid.h>
+#include <PrimitiveSolidManager.h>
+
 #include <map>
 #include <vector>
 
@@ -51,9 +56,12 @@ public:
     void setValue(const TopoShape&);
     /// set the part shape
     void setValue(const TopoDS_Shape&);
+    /// set the part Topological Manager
+    void setManager(const PrimitiveSolidManager& aManager);
     /// get the part shape
     const TopoDS_Shape& getValue(void) const;
     const TopoShape& getShape() const;
+    const PrimitiveSolidManager& getManager() const;
     const Data::ComplexGeoData* getComplexData() const;
     //@}
 
@@ -93,6 +101,7 @@ public:
 
 private:
     TopoShape _Shape;
+    PrimitiveSolidManager myManager;
 };
 
 struct PartExport ShapeHistory {

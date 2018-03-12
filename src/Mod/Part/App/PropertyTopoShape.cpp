@@ -91,6 +91,13 @@ void PropertyPartShape::setValue(const TopoDS_Shape& sh)
     hasSetValue();
 }
 
+void PropertyPartShape::setManager(const PrimitiveSolidManager& mgr)
+{
+    aboutToSetValue();
+    myManager = mgr;
+    hasSetValue();
+}
+
 const TopoDS_Shape& PropertyPartShape::getValue(void)const 
 {
     return _Shape.getShape();
@@ -99,6 +106,11 @@ const TopoDS_Shape& PropertyPartShape::getValue(void)const
 const TopoShape& PropertyPartShape::getShape() const
 {
     return this->_Shape;
+}
+
+const PrimitiveSolidManager& PropertyPartShape::getManager() const
+{
+    return this->myManager;
 }
 
 const Data::ComplexGeoData* PropertyPartShape::getComplexData() const
