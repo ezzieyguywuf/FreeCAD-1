@@ -20,9 +20,15 @@ include_directories(
     ${XercesC_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
     ${FREETYPE_INCLUDE_DIRS}
+    "/home/wolfie/Program/FreeCAD_dev/TopoManager/include"
+    "/home/wolfie/Program/FreeCAD_dev/OccWrapper/include"
 )
 
-link_directories(${OCC_LIBRARY_DIR})
+link_directories(
+    ${OCC_LIBRARY_DIR}
+    "/home/wolfie/Program/FreeCAD_dev/TopoManager/build/lib"
+    "/home/wolfie/Program/FreeCAD_dev/OccWrapper/build/lib"
+    )
 
 set(Part_LIBS 
     ${OCC_LIBRARIES}
