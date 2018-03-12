@@ -27,6 +27,8 @@
 
 #include <App/PropertyStandard.h>
 
+#include <OccBox.h>
+
 #include "PrimitiveFeature.h"
 
 namespace Part
@@ -56,6 +58,11 @@ protected:
     /// get called by the container when a property has changed
     virtual void onChanged (const App::Property* prop);
     //@}
+private:
+    Occ::Box myOccBox;
+    double prevH;
+    double prevL;
+    double prevW;
 };
 
 } //namespace Part

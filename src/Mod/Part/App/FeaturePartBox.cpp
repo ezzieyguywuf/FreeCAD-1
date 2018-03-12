@@ -27,6 +27,9 @@
 # include <Precision.hxx>
 #endif
 
+#include <OccSolidMaker.h>
+#include <OccModifiedSolid.h>
+
 
 #include <Base/Console.h>
 #include <Base/Reader.h>
@@ -44,6 +47,9 @@ Box::Box()
     ADD_PROPERTY_TYPE(Length,(10.0f),"Box",App::Prop_None,"The length of the box");
     ADD_PROPERTY_TYPE(Width ,(10.0f),"Box",App::Prop_None,"The width of the box");
     ADD_PROPERTY_TYPE(Height,(10.0f),"Box",App::Prop_None,"The height of the box");
+    prevL = 10;
+    prevW = 10;
+    prevH = 10;
 }
 
 short Box::mustExecute() const
@@ -74,12 +80,25 @@ App::DocumentObjectExecReturn *Box::execute(void)
         // Build a box using the dimension attributes
         BRepPrimAPI_MakeBox mkBox(L, W, H);
         TopoDS_Shape ResultShape = mkBox.Shape();
+        PrimitiveSolidManager aMgr = this->Shape.getManager();
+        if (aMgr.getSolid().isNull())
+            aMgr = PrimitiveSolidManager(Occ::SolidMaker::makeBox(L, W, H));
+        else
+        {
+            Occ::Box box1 = Occ::SolidMaker::makeBox(prevL, prevW, prevH);
+            Occ::Box box2 = Occ::SolidMaker::makeBox(L, W, H);
+            Occ::ModifiedSolid modified(box1, box2);
+            aMgr.updateSolid(modified);
+        }
         this->Shape.setValue(ResultShape);
         return Primitive::execute();
     }
     catch (Standard_Failure& e) {
         return new App::DocumentObjectExecReturn(e.GetMessageString());
     }
+    prevL = L;
+    prevW = W;
+    prevH = H;
 }
 
 /**
