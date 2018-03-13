@@ -35,6 +35,9 @@
 #include "FeatureFillet.h"
 #include <Base/Exception.h>
 
+#include <PrimitiveSolidManager.h>
+#include <OccEdge.h>
+#include <TopoDS.hxx>
 
 using namespace Part;
 
@@ -42,6 +45,7 @@ using namespace Part;
 PROPERTY_SOURCE(Part::Fillet, Part::FilletBase)
 
 Fillet::Fillet()
+    : converted(false)
 {
 }
 
@@ -58,19 +62,53 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
 #if defined(__GNUC__) && defined (FC_OS_LINUX)
         Base::SignalException se;
 #endif
-        BRepFilletAPI_MakeFillet mkFillet(base->Shape.getValue());
+        // Retrieve SolidManager
+        const PrimitiveSolidManager& mgr = base->Shape.getManager();
+
+        BRepFilletAPI_MakeFillet mkFillet(mgr.getSolid().getShape());
         TopTools_IndexedMapOfShape mapOfShape;
-        TopExp::MapShapes(base->Shape.getValue(), TopAbs_EDGE, mapOfShape);
+        TopExp::MapShapes(mgr.getSolid().getShape(), TopAbs_EDGE, mapOfShape);
 
         std::vector<FilletElement> values = Edges.getValues();
+        std::vector<FilletElement> newValues;
         for (std::vector<FilletElement>::iterator it = values.begin(); it != values.end(); ++it) {
             int id = it->edgeid;
+            std::cout << "retreived ID = " << id << std::endl;
             double radius1 = it->radius1;
             double radius2 = it->radius2;
-            const TopoDS_Edge& edge = TopoDS::Edge(mapOfShape.FindKey(id));
-            mkFillet.Add(radius1, radius2, edge);
-        }
 
+            // if mgr.getSolid is Null, that means mgr hasn't been initialized.
+            if (not converted)
+            {
+                // first, retrieve the "old school" Edge.
+                const TopoDS_Edge& edge = TopoDS::Edge(mapOfShape.FindKey(id));
+
+                // get the "Robust" ID of the desired edge
+                id = mgr.getEdgeIndex(Occ::Edge(edge));
+                std::cout << "setting id = " << id << std::endl;
+
+                // set the converted flag
+                converted = true;
+            }
+            else{
+                std::cout << "----- mgr was already initialized!!!" << std::endl;
+            }
+
+            // retrieve the desired Edge
+            Occ::Edge retreivedEdge = mgr.getEdgeByIndex(id);
+            // add to the mkFillet
+            mkFillet.Add(radius1, radius2, TopoDS::Edge(retreivedEdge.getShape()));
+
+            // store the values, including the "Robust" ID.
+            FilletElement newVal;
+            newVal.edgeid = id;
+            newVal.radius1 = radius1;
+            newVal.radius2 = radius2;
+            newValues.push_back(newVal);
+        }
+        Edges.setValues(newValues);
+
+        mkFillet.Build();
         TopoDS_Shape shape = mkFillet.Shape();
         if (shape.IsNull())
             return new App::DocumentObjectExecReturn("Resulting shape is null");

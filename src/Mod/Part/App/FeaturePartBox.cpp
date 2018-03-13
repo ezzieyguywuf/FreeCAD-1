@@ -47,9 +47,6 @@ Box::Box()
     ADD_PROPERTY_TYPE(Length,(10.0f),"Box",App::Prop_None,"The length of the box");
     ADD_PROPERTY_TYPE(Width ,(10.0f),"Box",App::Prop_None,"The width of the box");
     ADD_PROPERTY_TYPE(Height,(10.0f),"Box",App::Prop_None,"The height of the box");
-    prevL = 10;
-    prevW = 10;
-    prevH = 10;
 }
 
 short Box::mustExecute() const
@@ -82,23 +79,24 @@ App::DocumentObjectExecReturn *Box::execute(void)
         TopoDS_Shape ResultShape = mkBox.Shape();
         PrimitiveSolidManager aMgr = this->Shape.getManager();
         if (aMgr.getSolid().isNull())
-            aMgr = PrimitiveSolidManager(Occ::SolidMaker::makeBox(L, W, H));
+        {
+            myOccBox = Occ::SolidMaker::makeBox(L, W, H);
+            aMgr = PrimitiveSolidManager(myOccBox);
+        }
         else
         {
-            Occ::Box box1 = Occ::SolidMaker::makeBox(prevL, prevW, prevH);
-            Occ::Box box2 = Occ::SolidMaker::makeBox(L, W, H);
-            Occ::ModifiedSolid modified(box1, box2);
+            Occ::Box newOccBox = Occ::SolidMaker::makeBox(L, W, H);
+            Occ::ModifiedSolid modified(myOccBox, newOccBox);
             aMgr.updateSolid(modified);
+            myOccBox = newOccBox;
         }
-        this->Shape.setValue(ResultShape);
+        this->Shape.setValue(aMgr.getSolid().getShape());
+        this->Shape.setManager(aMgr);
         return Primitive::execute();
     }
     catch (Standard_Failure& e) {
         return new App::DocumentObjectExecReturn(e.GetMessageString());
     }
-    prevL = L;
-    prevW = W;
-    prevH = H;
 }
 
 /**

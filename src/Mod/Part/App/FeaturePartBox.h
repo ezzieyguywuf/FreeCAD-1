@@ -60,9 +60,6 @@ protected:
     //@}
 private:
     Occ::Box myOccBox;
-    double prevH;
-    double prevL;
-    double prevW;
 };
 
 } //namespace Part

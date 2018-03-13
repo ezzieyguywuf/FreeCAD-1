@@ -33,6 +33,7 @@ namespace Part
 class Fillet : public Part::FilletBase
 {
     PROPERTY_HEADER(Part::Fillet);
+    bool converted;
 
 public:
     Fillet();
