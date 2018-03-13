@@ -70,6 +70,10 @@
 #include <Base/Reader.h>
 #include <Base/Tools.h>
 
+#include <OccSolidMaker.h>
+#include <PrimitiveSolidManager.h>
+#include <OccModifiedSolid.h>
+
 #ifndef M_PI
 #define M_PI       3.14159265358979323846
 #endif
@@ -545,8 +549,22 @@ App::DocumentObjectExecReturn *Cylinder::execute(void)
         BRepPrimAPI_MakeCylinder mkCylr(Radius.getValue(),
                                         Height.getValue(),
                                         Angle.getValue()/180.0f*M_PI);
+        PrimitiveSolidManager aMgr = this->Shape.getManager();
+        if (aMgr.getSolid().isNull())
+        {
+            myOccCylinder = Occ::SolidMaker::makeCylinder(Radius.getValue(), Height.getValue());
+            aMgr = PrimitiveSolidManager(myOccCylinder);
+        }
+        else
+        {
+            Occ::Cylinder newCylinder = Occ::SolidMaker::makeCylinder(Radius.getValue(), Height.getValue());
+            Occ::ModifiedSolid modified(myOccCylinder, newCylinder);
+            aMgr.updateSolid(modified);
+            myOccCylinder = newCylinder;
+        }
         TopoDS_Shape ResultShape = mkCylr.Shape();
         this->Shape.setValue(ResultShape);
+        this->Shape.setManager(aMgr);
     }
     catch (Standard_Failure& e) {
 

@@ -28,6 +28,8 @@
 #include "PartFeature.h"
 #include "AttachExtension.h"
 
+#include <OccCylinder.h>
+
 namespace Part
 {
 
@@ -179,6 +181,7 @@ public:
 class PartExport Cylinder : public Primitive
 {
     PROPERTY_HEADER(Part::Cylinder);
+    Occ::Cylinder myOccCylinder;
 
 public:
     Cylinder();
