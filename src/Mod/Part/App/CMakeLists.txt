@@ -22,11 +22,7 @@ include_directories(
     ${FREETYPE_INCLUDE_DIRS}
 )
 
-link_directories(
-    ${OCC_LIBRARY_DIR}
-    "/home/wolfie/Program/CAD_dev/OccWrapper/build/lib"
-    "/home/wolfie/Program/CAD_dev/TopoManager/build/lib"
-    )
+link_directories(${OCC_LIBRARY_DIR})
 
 set(TopoMgrLibs
     OccEdged
