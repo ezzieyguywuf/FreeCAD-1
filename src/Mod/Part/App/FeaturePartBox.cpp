@@ -29,6 +29,7 @@
 
 #include <OccSolidMaker.h>
 #include <OccModifiedSolid.h>
+#include <PrimitiveSolidManager.h>
 
 
 #include <Base/Console.h>
@@ -77,21 +78,24 @@ App::DocumentObjectExecReturn *Box::execute(void)
         // Build a box using the dimension attributes
         BRepPrimAPI_MakeBox mkBox(L, W, H);
         TopoDS_Shape ResultShape = mkBox.Shape();
-        PrimitiveSolidManager aMgr = this->Shape.getManager();
-        if (aMgr.getSolid().isNull())
+        const ISolidManager& refIMgr(this->Shape.getManager());
+        const PrimitiveSolidManager& refMgr = 
+            static_cast<const PrimitiveSolidManager&>(refIMgr);
+        PrimitiveSolidManager* aMgr = new PrimitiveSolidManager(refMgr);
+        if (refMgr.getSolid().isNull())
         {
             myOccBox = Occ::SolidMaker::makeBox(L, W, H);
-            aMgr = PrimitiveSolidManager(myOccBox);
+            aMgr = new PrimitiveSolidManager(myOccBox);
         }
         else
         {
             Occ::Box newOccBox = Occ::SolidMaker::makeBox(L, W, H);
             Occ::ModifiedSolid modified(myOccBox, newOccBox);
-            aMgr.updateSolid(modified);
+            aMgr->updateSolid(modified);
             myOccBox = newOccBox;
         }
-        this->Shape.setValue(aMgr.getSolid().getShape());
-        this->Shape.setManager(aMgr);
+        this->Shape.setValue(aMgr->getSolid().getShape());
+        this->Shape.setManager(unique_ptr<ISolidManager>(aMgr));
         return Primitive::execute();
     }
     catch (Standard_Failure& e) {

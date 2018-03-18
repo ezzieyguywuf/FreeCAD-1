@@ -31,10 +31,13 @@
 
 // includes for topological management
 #include <OccSolid.h>
-#include <PrimitiveSolidManager.h>
+#include <ISolidManager.h>
 
 #include <map>
 #include <vector>
+#include <memory>
+
+using std::unique_ptr;
 
 namespace Part
 {
@@ -57,11 +60,11 @@ public:
     /// set the part shape
     void setValue(const TopoDS_Shape&);
     /// set the part Topological Manager
-    void setManager(const PrimitiveSolidManager& aManager);
+    void setManager(unique_ptr<ISolidManager> aManager);
     /// get the part shape
     const TopoDS_Shape& getValue(void) const;
     const TopoShape& getShape() const;
-    const PrimitiveSolidManager& getManager() const;
+    const ISolidManager& getManager() const;
     const Data::ComplexGeoData* getComplexData() const;
     //@}
 
@@ -101,7 +104,7 @@ public:
 
 private:
     TopoShape _Shape;
-    PrimitiveSolidManager myManager;
+    unique_ptr<ISolidManager> myManager;
 };
 
 struct PartExport ShapeHistory {

@@ -63,7 +63,7 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         Base::SignalException se;
 #endif
         // Retrieve SolidManager
-        const PrimitiveSolidManager& mgr = base->Shape.getManager();
+        const ISolidManager& mgr = base->Shape.getManager();
 
         BRepFilletAPI_MakeFillet mkFillet(mgr.getSolid().getShape());
         TopTools_IndexedMapOfShape mapOfShape;
