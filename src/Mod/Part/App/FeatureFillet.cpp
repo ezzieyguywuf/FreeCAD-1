@@ -95,9 +95,12 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
             }
 
             // retrieve the desired Edge
-            Occ::Edge retreivedEdge = mgr.getEdgeByIndex(id);
+            vector<Occ::Edge> retreivedEdges = mgr.getEdgeByIndex(id);
             // add to the mkFillet
-            mkFillet.Add(radius1, radius2, TopoDS::Edge(retreivedEdge.getShape()));
+            for (const Occ::Edge& retreivedEdge : retreivedEdges)
+            {
+                mkFillet.Add(radius1, radius2, TopoDS::Edge(retreivedEdge.getShape()));
+            }
 
             // store the values, including the "Robust" ID.
             FilletElement newVal;
