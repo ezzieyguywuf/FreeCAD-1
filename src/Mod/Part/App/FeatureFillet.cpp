@@ -65,6 +65,7 @@ App::DocumentObjectExecReturn *Fillet::execute(void)
         // Retrieve SolidManager
         const ISolidManager& mgr = base->Shape.getManager();
 
+        // Use the managed solid in Base to retreive edges
         BRepFilletAPI_MakeFillet mkFillet(mgr.getSolid().getShape());
         TopTools_IndexedMapOfShape mapOfShape;
         TopExp::MapShapes(mgr.getSolid().getShape(), TopAbs_EDGE, mapOfShape);

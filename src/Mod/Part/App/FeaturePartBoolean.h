@@ -27,6 +27,9 @@
 #include <App/PropertyLinks.h>
 #include "PartFeature.h"
 
+#include <OccBooleanSolid.h>
+#include <PrimitiveSolidManager.h>
+
 class BRepAlgoAPI_BooleanOperation;
 
 namespace Part
@@ -35,6 +38,9 @@ namespace Part
 class Boolean : public Part::Feature
 {
     PROPERTY_HEADER(Part::Boolean);
+    Occ::BooleanSolid myBooleanSolid;
+    PrimitiveSolidManager myBaseMgr;
+    PrimitiveSolidManager myToolMgr;
 
 public:
     Boolean();

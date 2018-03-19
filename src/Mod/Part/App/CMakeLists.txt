@@ -24,24 +24,9 @@ include_directories(
 
 link_directories(${OCC_LIBRARY_DIR})
 
-set(TopoMgrLibs
-    OccEdged
-    OccFaced
-    OccSolidd
-    OccShaped
-    OccCylinderd
-    PrimitiveSolidManagerd
-    OccSolidModifierd
-    OccModifiedSolidd
-    OccSolidMakerd
-    OccBoxd
-    OccCylinderd
-)
-
 set(Part_LIBS 
     ${OCC_LIBRARIES}
     ${OCC_DEBUG_LIBRARIES}
-    ${TopoMgrLibs}
     FreeCADApp
 )
 
@@ -403,7 +388,22 @@ SET(Part_Scripts
 )
 
 add_library(Part SHARED ${Part_SRCS})
-target_link_libraries(Part ${Part_LIBS})
+target_link_libraries(Part 
+    ${Part_LIBS}
+    OccShaped
+    OccEdged
+    OccFaced
+    OccSolidd
+    OccBoxd
+    OccCylinderd
+    OccModifiedSolidd
+    OccSolidModifierd
+    OccSolidMakerd
+    OccBooleanSolidd
+    ISolidManagerd
+    PrimitiveSolidManagerd
+    CompoundSolidManagerd
+)
 target_include_directories(Part PUBLIC  
     "/home/wolfie/Program/CAD_dev/OccWrapper/include"
     "/home/wolfie/Program/CAD_dev/TopoManager/include"

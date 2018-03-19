@@ -1058,7 +1058,10 @@ configure_file(LibraryVersions.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/LibraryVersio
 # == Global Compiler and Linker Settings =========================================
 
 include_directories(${CMAKE_BINARY_DIR}/src
-					${CMAKE_SOURCE_DIR}/src)
+		    ${CMAKE_SOURCE_DIR}/src
+                    )
+link_directories("/home/wolfie/Program/CAD_dev/OccWrapper/build/lib"
+                 "/home/wolfie/Program/CAD_dev/TopoManager/build/lib")
 
 # check for 64-bit platform
 IF(CMAKE_SIZEOF_VOID_P EQUAL 8)

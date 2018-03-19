@@ -34,6 +34,11 @@
 #include <App/Application.h>
 #include <Base/Parameter.h>
 
+#include <CompoundSolidManager.h>
+#include <OccSolidModifier.h>
+#include <OccBooleanSolid.h>
+#include <OccModifiedSolid.h>
+#include <TopoDS.hxx>
 
 using namespace Part;
 
@@ -122,8 +127,50 @@ App::DocumentObjectExecReturn *Boolean::execute(void)
                 // do nothing
             }
         }
+        std::clog << "----- PART BOOLEAN!!!!!!!" << std::endl;
+        //----------------------------------------
+        //--- Start TopoManager code--------------
+        //----------------------------------------
 
-        this->Shape.setValue(resShape);
+        // First, get our ISolidManager, and those of our base and tool
+        const ISolidManager& refIMgr(this->Shape.getManager());
+        const ISolidManager& newBaseMgr = base->Shape.getManager();
+        const ISolidManager& newToolMgr = tool->Shape.getManager();
+        CompoundSolidManager* aMgr;
+        if (refIMgr.getSolid().isNull())
+        {
+            // If null, that means the solid manager hasn't been initialized. We'll
+            // initialize it with a CompoundSolidManager
+            // TODO: this currently only works with fusion.
+            Occ::BooleanSolid occFusion = Occ::SolidModifier::makeFusion(newBaseMgr.getSolid(), newToolMgr.getSolid());
+            aMgr = new CompoundSolidManager(occFusion);
+            myBaseMgr = PrimitiveSolidManager(newBaseMgr.getSolid());
+            myToolMgr = PrimitiveSolidManager(newToolMgr.getSolid());
+        }
+        else
+        {
+            // If not null, we know it contains a CompoundSolidManager (since we put the
+            // manager there to begin with)
+            const CompoundSolidManager& refMgr = 
+                static_cast<const CompoundSolidManager&>(refIMgr);
+            aMgr = new CompoundSolidManager(refMgr);
+
+            // To update our CompoundSolidManager, we need the new solid as well as an
+            // Occ:::ModifiedSolid for each of our Base and Tool.
+            Occ::BooleanSolid newFusion = Occ::SolidModifier::makeFusion(newBaseMgr.getSolid(), newToolMgr.getSolid());
+            Occ::ModifiedSolid baseMod = ISolidManager::makeModifiedSolid(myBaseMgr, newBaseMgr);
+            Occ::ModifiedSolid toolMod = ISolidManager::makeModifiedSolid(myToolMgr, newToolMgr);
+            aMgr->updateSolid(newFusion, {baseMod, toolMod});
+
+            myBaseMgr = PrimitiveSolidManager(newBaseMgr.getSolid());
+            myToolMgr = PrimitiveSolidManager(newToolMgr.getSolid());
+        }
+
+        this->Shape.setValue(aMgr->getSolid().getShape());
+        this->Shape.setManager(unique_ptr<ISolidManager>(aMgr));
+        //----------------------------------------
+        //--- End TopoManager code----------------
+        //----------------------------------------
         this->History.setValues(history);
         return App::DocumentObject::StdReturn;
     }

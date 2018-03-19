@@ -78,17 +78,25 @@ App::DocumentObjectExecReturn *Box::execute(void)
         // Build a box using the dimension attributes
         BRepPrimAPI_MakeBox mkBox(L, W, H);
         TopoDS_Shape ResultShape = mkBox.Shape();
+
+        // First, get our ISolidManager
         const ISolidManager& refIMgr(this->Shape.getManager());
-        const PrimitiveSolidManager& refMgr = 
-            static_cast<const PrimitiveSolidManager&>(refIMgr);
-        PrimitiveSolidManager* aMgr = new PrimitiveSolidManager(refMgr);
-        if (refMgr.getSolid().isNull())
+        PrimitiveSolidManager* aMgr;
+        if (refIMgr.getSolid().isNull())
         {
+            // If null, that means the solid manager hasn't been initialized. We'll
+            // initialize it with a PrimitiveSolidManager
             myOccBox = Occ::SolidMaker::makeBox(L, W, H);
             aMgr = new PrimitiveSolidManager(myOccBox);
         }
         else
         {
+            // If not null, we know it contains a PrimitiveSolidManager (since we put the
+            // manager there to begin with)
+            const PrimitiveSolidManager& refMgr = 
+                static_cast<const PrimitiveSolidManager&>(refIMgr);
+            aMgr = new PrimitiveSolidManager(refMgr);
+
             Occ::Box newOccBox = Occ::SolidMaker::makeBox(L, W, H);
             Occ::ModifiedSolid modified(myOccBox, newOccBox);
             aMgr->updateSolid(modified);

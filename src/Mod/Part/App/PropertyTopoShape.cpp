@@ -67,9 +67,13 @@
 
 using namespace Part;
 
+#include <PrimitiveSolidManager.h>
 TYPESYSTEM_SOURCE(Part::PropertyPartShape , App::PropertyComplexGeoData);
 
+// We iniatilize myManager with a pointer to a PrimitiveSolidManager. This can eventually
+// point to any descendent of ISolidManager.
 PropertyPartShape::PropertyPartShape()
+    : _Shape(TopoDS_Shape()), myManager(new PrimitiveSolidManager())
 {
 }
 

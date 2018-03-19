@@ -15,32 +15,12 @@ include_directories(
     ${PYTHON_INCLUDE_DIRS}
     ${XercesC_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
-    "/home/wolfie/Program/CAD_dev/OccWrapper/include"
-    "/home/wolfie/Program/CAD_dev/TopoManager/include"
 )
-link_directories(${OCC_LIBRARY_DIR}
-    "/home/wolfie/Program/CAD_dev/OccWrapper/build/lib"
-    "/home/wolfie/Program/CAD_dev/TopoManager/build/lib"
-    )
-
-set(TopoMgrLibs
-    OccEdged
-    OccFaced
-    OccSolidd
-    OccShaped
-    OccCylinderd
-    PrimitiveSolidManagerd
-    OccSolidModifierd
-    OccModifiedSolidd
-    OccSolidMakerd
-    OccBoxd
-    OccCylinderd
-    )
+link_directories(${OCC_LIBRARY_DIR})
 
 set(PartGui_LIBS
     Part
     FreeCADGui
-    ${TopoMgrLibs}
 )
 
 if(MSVC)

@@ -549,24 +549,33 @@ App::DocumentObjectExecReturn *Cylinder::execute(void)
         BRepPrimAPI_MakeCylinder mkCylr(Radius.getValue(),
                                         Height.getValue(),
                                         Angle.getValue()/180.0f*M_PI);
+        // First, get our ISolidManager
         const ISolidManager& refIMgr(this->Shape.getManager());
-        const PrimitiveSolidManager& refMgr = 
-            static_cast<const PrimitiveSolidManager&>(refIMgr);
-        PrimitiveSolidManager* aMgr = new PrimitiveSolidManager(refMgr);
-        if (aMgr->getSolid().isNull())
+        PrimitiveSolidManager* aMgr;
+        if (refIMgr.getSolid().isNull())
         {
-            myOccCylinder = Occ::SolidMaker::makeCylinder(Radius.getValue(), Height.getValue());
+            // If null, that means the solid manager hasn't been initialized. We'll
+            // initialize it with a PrimitiveSolidManager.
+            // TODO: makeCylinder with angle.
+            myOccCylinder = Occ::SolidMaker::makeCylinder(Radius.getValue(), 
+                                                          Height.getValue());
             aMgr = new PrimitiveSolidManager(myOccCylinder);
         }
         else
         {
-            Occ::Cylinder newCylinder = Occ::SolidMaker::makeCylinder(Radius.getValue(), Height.getValue());
-            Occ::ModifiedSolid modified(myOccCylinder, newCylinder);
+            // If not null, we know it contains a PrimitiveSolidManager (since we put the
+            // manager there to begin with)
+            const PrimitiveSolidManager& refMgr = 
+                static_cast<const PrimitiveSolidManager&>(refIMgr);
+            aMgr = new PrimitiveSolidManager(refMgr);
+
+            Occ::Cylinder newOccCylinder = Occ::SolidMaker::makeCylinder(Radius.getValue(), 
+                                                                         Height.getValue());
+            Occ::ModifiedSolid modified(myOccCylinder, newOccCylinder);
             aMgr->updateSolid(modified);
-            myOccCylinder = newCylinder;
+            myOccCylinder = newOccCylinder;
         }
-        TopoDS_Shape ResultShape = mkCylr.Shape();
-        this->Shape.setValue(ResultShape);
+        this->Shape.setValue(aMgr->getSolid().getShape());
         this->Shape.setManager(unique_ptr<ISolidManager>(aMgr));
     }
     catch (Standard_Failure& e) {

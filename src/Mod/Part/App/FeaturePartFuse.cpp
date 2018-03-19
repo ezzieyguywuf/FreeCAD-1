@@ -191,6 +191,7 @@ App::DocumentObjectExecReturn *MultiFuse::execute(void)
                 }
             }
 
+            std::clog << "----- PART FUSE!!!!!!!!!!!" << std::endl;
             this->Shape.setValue(resShape);
 
 
