@@ -98,6 +98,10 @@ App::DocumentObjectExecReturn *Box::execute(void)
             aMgr = new PrimitiveSolidManager(refMgr);
 
             Occ::Box newOccBox = Occ::SolidMaker::makeBox(L, W, H);
+            // Don't forget to also translate it.
+            const Base::Vector3d& pos = this->Placement.getValue().getPosition();
+            newOccBox.translate(pos.x, pos.y, pos.z);
+
             Occ::ModifiedSolid modified(myOccBox, newOccBox);
             aMgr->updateSolid(modified);
             myOccBox = newOccBox;
@@ -228,6 +232,15 @@ void Box::onChanged(const App::Property* prop)
         if (!isRestoring()) {
             App::DocumentObjectExecReturn *ret = recompute();
             delete ret;
+        }
+    }
+    else if (prop == &this->Placement) {
+        const ISolidManager& refIMgr(this->Shape.getManager());
+        if (not (refIMgr.getSolid().isNull()))
+        {
+            // TODO: extend to rotation too
+            // TODO: generalize this solution so it's not specific to Box
+            //Primitive::mustExecute();
         }
     }
     else if (prop == &this->Shape) {

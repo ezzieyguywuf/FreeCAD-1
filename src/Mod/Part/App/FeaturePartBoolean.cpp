@@ -35,10 +35,12 @@
 #include <Base/Parameter.h>
 
 #include <CompoundSolidManager.h>
-#include <OccSolidModifier.h>
+#include <OccSolidMaker.h>
 #include <OccBooleanSolid.h>
 #include <OccModifiedSolid.h>
 #include <TopoDS.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
+#include <TopExp.hxx>
 
 using namespace Part;
 
@@ -136,16 +138,20 @@ App::DocumentObjectExecReturn *Boolean::execute(void)
         const ISolidManager& refIMgr(this->Shape.getManager());
         const ISolidManager& newBaseMgr = base->Shape.getManager();
         const ISolidManager& newToolMgr = tool->Shape.getManager();
+        TopoDS_Shape myBase = newBaseMgr.getSolid().getShape();
+        TopoDS_Shape myTool = newToolMgr.getSolid().getShape();
+        std::unique_ptr<BRepAlgoAPI_BooleanOperation> myBool(makeOperation(myBase, 
+                                                                           myTool));
+        myBool->Build();
         CompoundSolidManager* aMgr;
         if (refIMgr.getSolid().isNull())
         {
             // If null, that means the solid manager hasn't been initialized. We'll
             // initialize it with a CompoundSolidManager
-            // TODO: this currently only works with fusion.
-            Occ::BooleanSolid occFusion = Occ::SolidModifier::makeFusion(newBaseMgr.getSolid(), newToolMgr.getSolid());
-            aMgr = new CompoundSolidManager(occFusion);
-            myBaseMgr = PrimitiveSolidManager(newBaseMgr.getSolid());
-            myToolMgr = PrimitiveSolidManager(newToolMgr.getSolid());
+            Occ::BooleanSolid occBoolean = Occ::SolidMaker::makeBoolean(*myBool);
+            aMgr = new CompoundSolidManager(occBoolean);
+            myBaseMgr = PrimitiveSolidManager(myBool->Shape1());
+            myToolMgr = PrimitiveSolidManager(myBool->Shape2());
         }
         else
         {
@@ -157,10 +163,10 @@ App::DocumentObjectExecReturn *Boolean::execute(void)
 
             // To update our CompoundSolidManager, we need the new solid as well as an
             // Occ:::ModifiedSolid for each of our Base and Tool.
-            Occ::BooleanSolid newFusion = Occ::SolidModifier::makeFusion(newBaseMgr.getSolid(), newToolMgr.getSolid());
+            Occ::BooleanSolid newBoolean = Occ::SolidMaker::makeBoolean(*myBool);
             Occ::ModifiedSolid baseMod = ISolidManager::makeModifiedSolid(myBaseMgr, newBaseMgr);
             Occ::ModifiedSolid toolMod = ISolidManager::makeModifiedSolid(myToolMgr, newToolMgr);
-            aMgr->updateSolid(newFusion, {baseMod, toolMod});
+            aMgr->updateSolid(newBoolean, {baseMod, toolMod});
 
             myBaseMgr = PrimitiveSolidManager(newBaseMgr.getSolid());
             myToolMgr = PrimitiveSolidManager(newToolMgr.getSolid());
