@@ -390,19 +390,19 @@ SET(Part_Scripts
 add_library(Part SHARED ${Part_SRCS})
 target_link_libraries(Part 
     ${Part_LIBS}
-    OccShaped
-    OccEdged
-    OccFaced
-    OccSolidd
-    OccBoxd
-    OccCylinderd
-    OccModifiedSolidd
-    OccSolidModifierd
-    OccSolidMakerd
-    OccBooleanSolidd
-    ISolidManagerd
-    PrimitiveSolidManagerd
-    CompoundSolidManagerd
+    OccShape
+    OccEdge
+    OccFace
+    OccSolid
+    OccBox
+    OccCylinder
+    OccModifiedSolid
+    OccSolidModifier
+    OccSolidMaker
+    OccBooleanSolid
+    ISolidManager
+    PrimitiveSolidManager
+    CompoundSolidManager
 )
 target_include_directories(Part PUBLIC  
     "/home/wolfie/Program/CAD_dev/OccWrapper/include"
