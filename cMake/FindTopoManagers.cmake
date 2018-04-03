@@ -6,16 +6,16 @@
 
 set (TOPOMANAGERS_FOUND "NO")
 
-find_path(TOPOMANAGERS_INCLUDE_DIR OccShape.h
+find_path(TOPOMANAGERS_INCLUDE_DIR ISolidManager.h
     HINTS ${PROJECT_SOURCE_DIR}/../TopoManagers
     PATH_SUFFIXES include)
 
 find_library(TOPOMANAGERS_LIBRARY 
-    NAMES OccShape 
+    NAMES PrimitiveSolidManager 
     HINTS ${PROJECT_SOURCE_DIR}/../TopoManagers/build
     PATH_SUFFIXES lib)
 
-get_filename_component(TOPOMANAGERS_LIBRARIES_DIR ${TOPOMANAGERS_LIBRARY} DIRECTORY CACHE)
+get_filename_component(TOPOMANAGERS_LIBRARIES_DIR ${TOPOMANAGERS_LIBRARY} DIRECTORY)
 
 include(FindPackageHandleStandardArgs) # to handle standard args, provided by cMake (?)
 find_package_handle_standard_args(TopoManagers DEFAULT_MSG
