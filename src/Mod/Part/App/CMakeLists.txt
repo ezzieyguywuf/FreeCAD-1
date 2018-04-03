@@ -390,23 +390,12 @@ SET(Part_Scripts
 add_library(Part SHARED ${Part_SRCS})
 target_link_libraries(Part 
     ${Part_LIBS}
-    OccShape
-    OccEdge
-    OccFace
-    OccSolid
-    OccBox
-    OccCylinder
-    OccModifiedSolid
-    OccSolidModifier
-    OccSolidMaker
-    OccBooleanSolid
-    ISolidManager
-    PrimitiveSolidManager
-    CompoundSolidManager
+    ${OCCWRAPPER_LIBRARIES}
+    ${TOPOMANAGERS_LIBRARIES}
 )
 target_include_directories(Part PUBLIC  
-    "/home/wolfie/Program/CAD_dev/OccWrapper/include"
-    "/home/wolfie/Program/CAD_dev/TopoManager/include"
+    ${OCCWRAPPER_INCLUDE_DIRS}
+    ${TOPOMANAGERS_INCLUDE_DIRS}
 )
 
 
