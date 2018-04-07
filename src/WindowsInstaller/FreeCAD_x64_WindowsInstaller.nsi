@@ -98,6 +98,8 @@ section "FreeCAD (Required)"
 	file /r "..\..\doc\"
 	setOutPath $INSTDIR\data
 	file  /r /X CMakeFiles /X *.cmake /X *.dir /X *.vcproj /X CMakeLists.txt /X *.am "..\..\data\"
+	setOutPath $INSTDIR\Ext
+	file /r "..\..\Ext\"
 	setOutPath $INSTDIR
 	file  "vcredist_x64.exe"
 
@@ -133,6 +135,9 @@ section "FreeCAD (Required)"
 sectionEnd
 
 section "Add to PYTHONPATH" PythonPathSection
+	# Access the right location for 64-bit applications
+	SetRegView 64
+
 	# Set PYTHONPATH for FreeCAD
 	WriteRegStr HKLM "Software\Python\PythonCore\2.7\PythonPath\${FULLNAME}" "" "$INSTDIR\bin"
 sectionEnd
@@ -183,6 +188,7 @@ section "Uninstall"
 	RMDir /r "$INSTDIR\lib"
 	RMDir /r "$INSTDIR\doc"
 	RMDir /r "$INSTDIR\data"
+	RMDir /r "$INSTDIR\Ext"
 	RMDir /r "$INSTDIR\Mod"
 
 	# Always delete uninstaller as the last action
