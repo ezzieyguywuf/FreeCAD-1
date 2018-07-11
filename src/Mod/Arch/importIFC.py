@@ -184,7 +184,7 @@ def explore(filename=None):
 
     if not filename:
         from PySide import QtGui
-        filename = QtGui.QFileDialog.getOpenFileName(QtGui.qApp.activeWindow(),'IFC files','*.ifc')
+        filename = QtGui.QFileDialog.getOpenFileName(QtGui.QApplication.activeWindow(),'IFC files','*.ifc')
         if filename:
             filename = filename[0]
 
@@ -1099,7 +1099,7 @@ def export(exportList,filename):
 
         # getting generic data
         name = str(obj.Label.encode("utf8"))
-        description = str(obj.Description) if hasattr(obj,"Description") else ""
+        description = str(obj.Description.encode("utf8")) if hasattr(obj,"Description") else ""
 
         # getting uid
         uid = None
@@ -1227,7 +1227,7 @@ def export(exportList,filename):
                                 key = key.encode("utf8")
                             else:
                                 key = str(key)
-                            tp = tp.encode("utf8")
+                            #tp = tp.encode("utf8")
                             if tp in ["IfcLabel","IfcText","IfcIdentifier",'IfcDescriptiveMeasure']:
                                 val = val.encode("utf8")
                             elif tp == "IfcBoolean":

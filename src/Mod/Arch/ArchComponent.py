@@ -135,7 +135,7 @@ def removeFromComponent(compobject,subobject):
 
 
 class SelectionTaskPanel:
-    """A temp taks panel to wait for a selection"""
+    """A temporary TaskPanel to wait for a selection"""
     def __init__(self):
         self.baseform = QtGui.QLabel()
         self.baseform.setText(QtGui.QApplication.translate("Arch", "Please select a base object", None))
@@ -685,6 +685,9 @@ class Component:
         if not obj.Shape.Faces:
             return
         import Drawing,Part
+        fmax = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Arch").GetInt("MaxComputeAreas",20)
+        if len(obj.Shape.Faces) > fmax:
+            return
         a = 0
         fset = []
         for i,f in enumerate(obj.Shape.Faces):
@@ -938,7 +941,7 @@ class ArchSelectionObserver:
             del FreeCAD.ArchObserver
         elif object == self.watched.Name:
             if not element:
-                FreeCAD.Console.PrintMessage(translate("Arch","closing Sketch edit"))
+                FreeCAD.Console.PrintMessage(translate("Arch","Closing Sketch edit"))
                 if self.hide:
                     if self.origin:
                         self.origin.ViewObject.Transparency = 0

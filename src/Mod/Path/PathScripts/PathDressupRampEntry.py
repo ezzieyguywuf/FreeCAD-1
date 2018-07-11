@@ -302,7 +302,7 @@ class ObjectDressup:
            by going the path backwards until the original plunge end point is reached
         4. Continue with the original path
 
-        This method causes unecessarily many moves with tool down
+        This method causes many unnecessary moves with tool down.
         """
         outedges = []
         rampremaining = projectionlen
@@ -365,10 +365,10 @@ class ObjectDressup:
         1. Start from the original startpoint of the plunge
         2. Ramp down along the path that comes after the plunge until
            traveled half of the Z distance
-        3. Change direction and ramp backwards to the origianal plunge end point
+        3. Change direction and ramp backwards to the original plunge end point
         4. Continue with the original path
 
-        This method causes unecessarily many moves with tool down
+        This method causes many unnecessary moves with tool down.
         """
         outedges = []
         rampremaining = projectionlen
@@ -616,11 +616,11 @@ class CommandPathDressupRampEntry:
         # check that the selection contains exactly what we want
         selection = FreeCADGui.Selection.getSelection()
         if len(selection) != 1:
-            PathLog.error(translate("Please select one path object\n"))
+            PathLog.error(translate("Please select one path object")+"\n")
             return
         baseObject = selection[0]
         if not baseObject.isDerivedFrom("Path::Feature"):
-            PathLog.error(translate("The selected object is not a path\n"))
+            PathLog.error(translate("The selected object is not a path")+"\n")
             return
         if baseObject.isDerivedFrom("Path::FeatureCompoundPython"):
             PathLog.error(translate("Please select a Profile object"))

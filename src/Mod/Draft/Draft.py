@@ -101,7 +101,8 @@ def getParamType(param):
     elif param in ["constructiongroupname","textfont","patternFile","template",
                    "snapModes","FontFile","ClonePrefix","labeltype"]:
         return "string"
-    elif param in ["textheight","tolerance","gridSpacing","arrowsize","extlines","dimspacing"]:
+    elif param in ["textheight","tolerance","gridSpacing","arrowsize","extlines","dimspacing",
+                   "dimovershoot","extovershoot"]:
         return "float"
     elif param in ["selectBaseObjects","alwaysSnap","grid","fillmode","saveonexit","maxSnap",
                    "SvgLinesBlack","dxfStdSize","showSnapBar","hideSnapBar","alwaysShowGrid",
@@ -304,17 +305,24 @@ def dimSymbol(symbol=None,invert=False):
         marker.addChild(f)
         return marker
     elif symbol == 4:
-        marker = coin.SoSeparator()
-        v = coin.SoVertexProperty()
-        v.vertex.set1Value(0, -1.5,-1.5,0)
-        v.vertex.set1Value(1, 1.5,1.5,0)
-        l = coin.SoLineSet()
-        l.vertexProperty = v
-        marker.addChild(l)
-        return marker
+        return dimDash((-1.5,-1.5,0),(1.5,1.5,0))
     else:
         print("Draft.dimsymbol: Not implemented")
         return coin.SoSphere()
+
+def dimDash(p1, p2):
+    '''dimDash(p1, p2): returns pivy SoSeparator.
+    Used for making Tick-2, DimOvershoot, ExtOvershoot dashes.
+    '''
+    from pivy import coin
+    dash = coin.SoSeparator()
+    v = coin.SoVertexProperty()
+    v.vertex.set1Value(0, p1)
+    v.vertex.set1Value(1, p2)
+    l = coin.SoLineSet()
+    l.vertexProperty = v
+    dash.addChild(l)
+    return dash
 
 def shapify(obj):
     '''shapify(object): transforms a parametric shape object into
@@ -2169,6 +2177,18 @@ def getSVG(obj,scale=1,linewidth=0.35,fontsize=12,fillstyle="shape color",direct
             print("getSVG: arrow type not implemented")
         return svg
 
+    def getOvershoot(point,shootsize,color,linewidth,angle=0):
+        svg = '<line transform="rotate('+str(math.degrees(angle))
+        svg += ','+ str(point.x) + ',' + str(point.y) + ') '
+        svg += 'translate(' + str(point.x) + ',' + str(point.y) + ') '
+        svg += '" freecad:skip="1" '
+        svg += 'fill="none" stroke="'+ color +'" '
+        svg += 'style="stroke-dasharray:none;stroke-linecap:square;'
+        svg += 'stroke-width:'+ str(linewidth) +'" '
+        svg += 'x1="0" y1="0" '
+        svg += 'x2="'+ str(shootsize*-1) +'" y2="0" />\n'
+        return svg
+
     def getText(color,fontsize,fontname,angle,base,text,linespacing=0.5,align="center",flip=True):
         if not isinstance(text,list):
             text = text.split("\n")
@@ -2308,6 +2328,17 @@ def getSVG(obj,scale=1,linewidth=0.35,fontsize=12,fillstyle="shape color",direct
                 svg += 'freecad:basepoint2="'+str(p4.x)+' '+str(p4.y)+'" '
                 svg += 'freecad:dimpoint="'+str(p2.x)+' '+str(p2.y)+'"'
                 svg += '/>\n'
+
+                # drawing dimension and extension lines overshoots
+                if hasattr(obj.ViewObject,"DimOvershoot") and obj.ViewObject.DimOvershoot.Value:
+                    shootsize = obj.ViewObject.DimOvershoot.Value/pointratio
+                    svg += getOvershoot(p2,shootsize,stroke,linewidth,angle)
+                    svg += getOvershoot(p3,shootsize,stroke,linewidth,angle+math.pi)
+                if hasattr(obj.ViewObject,"ExtOvershoot") and obj.ViewObject.ExtOvershoot.Value:
+                    shootsize = obj.ViewObject.ExtOvershoot.Value/pointratio
+                    shootangle = -DraftVecUtils.angle(p1.sub(p2))
+                    svg += getOvershoot(p2,shootsize,stroke,linewidth,shootangle)
+                    svg += getOvershoot(p3,shootsize,stroke,linewidth,shootangle)
 
                 # drawing arrows
                 if hasattr(obj.ViewObject,"ArrowType"):
@@ -2875,7 +2906,7 @@ def makeSketch(objectslist,autoconstraints=False,addTo=None,
             def delObj(obj):
                 if obj.InList:
                     FreeCAD.Console.PrintWarning(translate("draft",
-                        "Cannot delete object {} with dependency\n".format(obj.Label)))
+                        "Cannot delete object {} with dependency".format(obj.Label))+"\n")
                 else:
                     doc.removeObject(obj.Name)
             try:
@@ -2889,7 +2920,7 @@ def makeSketch(objectslist,autoconstraints=False,addTo=None,
                     delObj(obj)
             except Exception as ex:
                 FreeCAD.Console.PrintWarning(translate("draft",
-                    "Failed to delete object {}: {}\n".format(obj.Label,ex)))
+                    "Failed to delete object {}: {}".format(obj.Label,ex))+"\n")
     if rotation:
         nobj.Placement.Rotation = rotation
     else:
@@ -3022,10 +3053,10 @@ def mirror(objlist,p1,p2):
     along an axis that passes through the two vectors p1 and p2.'''
 
     if not objlist:
-        FreeCAD.Console.PrintError(translate("draft","No object given\n"))
+        FreeCAD.Console.PrintError(translate("draft","No object given")+"\n")
         return
     if p1 == p2:
-        FreeCAD.Console.PrintError(translate("draft","The two points are coincident\n"))
+        FreeCAD.Console.PrintError(translate("draft","The two points are coincident")+"\n")
         return
     if not isinstance(objlist,list):
         objlist = [objlist]
@@ -3970,6 +4001,8 @@ class _ViewProviderDimension(_ViewProviderDraft):
         obj.addProperty("App::PropertyFloat","LineWidth","Draft",QT_TRANSLATE_NOOP("App::Property","Line width"))
         obj.addProperty("App::PropertyColor","LineColor","Draft",QT_TRANSLATE_NOOP("App::Property","Line color"))
         obj.addProperty("App::PropertyDistance","ExtLines","Draft",QT_TRANSLATE_NOOP("App::Property","Length of the extension lines"))
+        obj.addProperty("App::PropertyDistance","DimOvershoot","Draft",QT_TRANSLATE_NOOP("App::Property","The distance the dimension line is extended past the extension lines"))
+        obj.addProperty("App::PropertyDistance","ExtOvershoot","Draft",QT_TRANSLATE_NOOP("App::Property","Length of the extension line above the dimension line"))
         obj.addProperty("App::PropertyBool","FlipArrows","Draft",QT_TRANSLATE_NOOP("App::Property","Rotate the dimension arrows 180 degrees"))
         obj.addProperty("App::PropertyBool","FlipText","Draft",QT_TRANSLATE_NOOP("App::Property","Rotate the dimension text 180 degrees"))
         obj.addProperty("App::PropertyBool","ShowUnit","Draft",QT_TRANSLATE_NOOP("App::Property","Show the unit suffix"))
@@ -3983,6 +4016,8 @@ class _ViewProviderDimension(_ViewProviderDraft):
         obj.ArrowType = arrowtypes
         obj.ArrowType = arrowtypes[getParam("dimsymbol",0)]
         obj.ExtLines = getParam("extlines",0.3)
+        obj.DimOvershoot = getParam("dimovershoot",0)
+        obj.ExtOvershoot = getParam("extovershoot",0)
         obj.Decimals = getParam("dimPrecision",2)
         obj.ShowUnit = getParam("showUnit",True)
         _ViewProviderDraft.__init__(self,obj)
@@ -4014,7 +4049,13 @@ class _ViewProviderDimension(_ViewProviderDraft):
         self.trans1 = coin.SoTransform()
         self.coord2 = coin.SoCoordinate3()
         self.trans2 = coin.SoTransform()
+        self.transDimOvershoot1 = coin.SoTransform()
+        self.transDimOvershoot2 = coin.SoTransform()
+        self.transExtOvershoot1 = coin.SoTransform()
+        self.transExtOvershoot2 = coin.SoTransform()
         self.marks = coin.SoSeparator()
+        self.marksDimOvershoot = coin.SoSeparator()
+        self.marksExtOvershoot = coin.SoSeparator()
         self.drawstyle = coin.SoDrawStyle()
         self.line = coin.SoType.fromName("SoBrepEdgeSet").createInstance()
         self.coords = coin.SoCoordinate3()
@@ -4024,6 +4065,8 @@ class _ViewProviderDimension(_ViewProviderDraft):
         self.node.addChild(self.coords)
         self.node.addChild(self.line)
         self.node.addChild(self.marks)
+        self.node.addChild(self.marksDimOvershoot)
+        self.node.addChild(self.marksExtOvershoot)
         self.node.addChild(label)
         self.node3d = coin.SoGroup()
         self.node3d.addChild(self.color)
@@ -4031,6 +4074,8 @@ class _ViewProviderDimension(_ViewProviderDraft):
         self.node3d.addChild(self.coords)
         self.node3d.addChild(self.line)
         self.node3d.addChild(self.marks)
+        self.node3d.addChild(self.marksDimOvershoot)
+        self.node3d.addChild(self.marksExtOvershoot)
         self.node3d.addChild(label3d)
         vobj.addDisplayMode(self.node,"2D")
         vobj.addDisplayMode(self.node3d,"3D")
@@ -4039,6 +4084,8 @@ class _ViewProviderDimension(_ViewProviderDraft):
         self.onChanged(vobj,"FontName")
         self.onChanged(vobj,"ArrowType")
         self.onChanged(vobj,"LineColor")
+        self.onChanged(vobj,"DimOvershoot")
+        self.onChanged(vobj,"ExtOvershoot")
 
     def updateData(self, obj, prop):
         "called when the base object is changed"
@@ -4107,6 +4154,12 @@ class _ViewProviderDimension(_ViewProviderDraft):
             self.trans2.translation.setValue((self.p3.x,self.p3.y,self.p3.z))
             self.coord2.point.setValue((self.p3.x,self.p3.y,self.p3.z))
 
+            # calculate dimension and extension lines overshoots positions
+            self.transDimOvershoot1.translation.setValue((self.p2.x,self.p2.y,self.p2.z))
+            self.transDimOvershoot2.translation.setValue((self.p3.x,self.p3.y,self.p3.z))
+            self.transExtOvershoot1.translation.setValue((self.p2.x,self.p2.y,self.p2.z))
+            self.transExtOvershoot2.translation.setValue((self.p3.x,self.p3.y,self.p3.z))
+
             # calculate the text position and orientation
             if hasattr(obj,"Normal"):
                 if DraftVecUtils.isNull(obj.Normal):
@@ -4127,6 +4180,8 @@ class _ViewProviderDimension(_ViewProviderDraft):
             u.normalize()
             v1 = norm.cross(u)
             rot1 = FreeCAD.Placement(DraftVecUtils.getPlaneRotation(u,v1,norm)).Rotation.Q
+            self.transDimOvershoot1.rotation.setValue((rot1[0],rot1[1],rot1[2],rot1[3]))
+            self.transDimOvershoot2.rotation.setValue((rot1[0],rot1[1],rot1[2],rot1[3]))
             if hasattr(obj.ViewObject,"FlipArrows"):
                 if obj.ViewObject.FlipArrows:
                     u = u.negative()
@@ -4134,6 +4189,13 @@ class _ViewProviderDimension(_ViewProviderDraft):
             rot2 = FreeCAD.Placement(DraftVecUtils.getPlaneRotation(u,v2,norm)).Rotation.Q
             self.trans1.rotation.setValue((rot2[0],rot2[1],rot2[2],rot2[3]))
             self.trans2.rotation.setValue((rot2[0],rot2[1],rot2[2],rot2[3]))
+            if self.p1 != self.p2:
+                u3 = self.p1.sub(self.p2)
+                u3.normalize()
+                v3 = norm.cross(u3)
+                rot3 = FreeCAD.Placement(DraftVecUtils.getPlaneRotation(u3,v3,norm)).Rotation.Q
+                self.transExtOvershoot1.rotation.setValue((rot3[0],rot3[1],rot3[2],rot3[3]))
+                self.transExtOvershoot2.rotation.setValue((rot3[0],rot3[1],rot3[2],rot3[3]))
             if hasattr(obj.ViewObject,"TextSpacing"):
                 offset = DraftVecUtils.scaleTo(v1,obj.ViewObject.TextSpacing.Value)
             else:
@@ -4267,6 +4329,60 @@ class _ViewProviderDimension(_ViewProviderDraft):
                 self.node.insertChild(self.marks,2)
                 self.node3d.insertChild(self.marks,2)
                 vobj.Object.touch()
+        elif (prop == "DimOvershoot") and hasattr(vobj,"DimOvershoot"):
+            from pivy import coin
+
+            # set scale
+            s = vobj.DimOvershoot.Value
+            self.transDimOvershoot1.scaleFactor.setValue((s,s,s))
+            self.transDimOvershoot2.scaleFactor.setValue((s,s,s))
+
+            # remove existing nodes
+            self.node.removeChild(self.marksDimOvershoot)
+            self.node3d.removeChild(self.marksDimOvershoot)
+
+            # set new nodes
+            self.marksDimOvershoot = coin.SoSeparator()
+            if vobj.DimOvershoot.Value:
+                self.marksDimOvershoot.addChild(self.color)
+                s1 = coin.SoSeparator()
+                s1.addChild(self.transDimOvershoot1)
+                s1.addChild(dimDash((-1,0,0),(0,0,0)))
+                self.marksDimOvershoot.addChild(s1)
+                s2 = coin.SoSeparator()
+                s2.addChild(self.transDimOvershoot2)
+                s2.addChild(dimDash((0,0,0),(1,0,0)))
+                self.marksDimOvershoot.addChild(s2)
+            self.node.insertChild(self.marksDimOvershoot,2)
+            self.node3d.insertChild(self.marksDimOvershoot,2)
+            vobj.Object.touch()
+        elif (prop == "ExtOvershoot") and hasattr(vobj,"ExtOvershoot"):
+            from pivy import coin
+
+            # set scale
+            s = vobj.ExtOvershoot.Value
+            self.transExtOvershoot1.scaleFactor.setValue((s,s,s))
+            self.transExtOvershoot2.scaleFactor.setValue((s,s,s))
+
+            # remove existing nodes
+            self.node.removeChild(self.marksExtOvershoot)
+            self.node3d.removeChild(self.marksExtOvershoot)
+
+            # set new nodes
+            self.marksExtOvershoot = coin.SoSeparator()
+            if vobj.ExtOvershoot.Value:
+                self.marksExtOvershoot.addChild(self.color)
+                s1 = coin.SoSeparator()
+                s1.addChild(self.transExtOvershoot1)
+                s1.addChild(dimDash((0,0,0),(-1,0,0)))
+                self.marksExtOvershoot.addChild(s1)
+                s2 = coin.SoSeparator()
+                s2.addChild(self.transExtOvershoot2)
+                s2.addChild(dimDash((0,0,0),(-1,0,0)))
+                self.marksExtOvershoot.addChild(s2)
+            self.node.insertChild(self.marksExtOvershoot,2)
+            self.node3d.insertChild(self.marksExtOvershoot,2)
+            vobj.Object.touch()
         else:
             self.updateData(vobj.Object,"Start")
 
@@ -5002,6 +5118,7 @@ class _ViewProviderWire(_ViewProviderDraft):
         self.onChanged(obj,"EndArrow")
 
     def updateData(self, obj, prop):
+        from pivy import coin
         if prop == "Points":
             if obj.Points:
                 p = obj.Points[-1]
@@ -5011,16 +5128,13 @@ class _ViewProviderWire(_ViewProviderDraft):
                         v1 = obj.Points[-2].sub(obj.Points[-1])
                         if not DraftVecUtils.isNull(v1):
                             v1.normalize()
-                            import DraftGeomUtils
-                            v2 = DraftGeomUtils.getNormal(obj.Shape)
-                            if DraftVecUtils.isNull(v2):
-                                v2 = Vector(0,0,1)
-                            v3 = v1.cross(v2).negative()
-                            q = FreeCAD.Placement(DraftVecUtils.getPlaneRotation(v1,v3,v2)).Rotation.Q
-                            self.coords.rotation.setValue((q[0],q[1],q[2],q[3]))
+                            _rot = coin.SbRotation()
+                            _rot.setValue(coin.SbVec3f(1, 0, 0), coin.SbVec3f(v1[0], v1[1], v1[2]))
+                            self.coords.rotation.setValue(_rot)
         return
 
     def onChanged(self, vobj, prop):
+        from pivy import coin
         if prop in ["EndArrow","ArrowSize","ArrowType","Visibility"]:
             rn = vobj.RootNode
             if hasattr(self,"pt") and hasattr(vobj,"EndArrow"):
@@ -5042,6 +5156,9 @@ class _ViewProviderWire(_ViewProviderDraft):
                             self.pt.removeChild(self.symbol)
                         if rn.findChild(self.pt) != -1:
                             rn.removeChild(self.pt)
+        if prop in ["LineColor"]:
+            if hasattr(self, "pt"):
+                self.pt[0].rgb.setValue(vobj.LineColor[0],vobj.LineColor[1],vobj.LineColor[2])
         _ViewProviderDraft.onChanged(self,vobj,prop)
         return
 
@@ -6018,8 +6135,10 @@ class _ShapeString(_DraftObject):
             ff8 = obj.FontFile.encode('utf8')                  # 1947 accents in filepath
                                                                # TODO: change for Py3?? bytes?
                                                                # Part.makeWireString uses FontFile as char* string
-#            CharList = Part.makeWireString(obj.String,obj.FontFile,obj.Size,obj.Tracking)
-            CharList = Part.makeWireString(obj.String,ff8,obj.Size,obj.Tracking)
+            if sys.version_info.major < 3:
+                CharList = Part.makeWireString(obj.String,ff8,obj.Size,obj.Tracking)
+            else:
+                CharList = Part.makeWireString(obj.String,obj.FontFile,obj.Size,obj.Tracking)
             if len(CharList) == 0:
                 msg(translate("draft","ShapeString: string has no wires\n"), 'warning')
                 return
@@ -6027,8 +6146,10 @@ class _ShapeString(_DraftObject):
 
             # test a simple letter to know if we have a sticky font or not
             sticky = False
-#            testWire = Part.makeWireString("L",obj.FontFile,obj.Size,obj.Tracking)[0][0]
-            testWire = Part.makeWireString("L",ff8,obj.Size,obj.Tracking)[0][0]
+            if sys.version_info.major < 3:
+                testWire = Part.makeWireString("L",ff8,obj.Size,obj.Tracking)[0][0]
+            else:
+                testWire = Part.makeWireString("L",obj.FontFile,obj.Size,obj.Tracking)[0][0]
             if testWire.isClosed:
                 try:
                     testFace = Part.Face(testWire)
