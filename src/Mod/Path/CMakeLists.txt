@@ -23,10 +23,13 @@ SET(PathScripts_SRCS
     PathScripts/PathArray.py
     PathScripts/PathCircularHoleBase.py
     PathScripts/PathCircularHoleBaseGui.py
+    PathScripts/PathChamfer.py
+    PathScripts/PathChamferGui.py
     PathScripts/PathComment.py
     PathScripts/PathCopy.py
     PathScripts/PathCustom.py
     PathScripts/PathDressup.py
+    PathScripts/PathDressupAxisMap.py
     PathScripts/PathDressupDogbone.py
     PathScripts/PathDressupDragknife.py
     PathScripts/PathDressupHoldingTags.py
@@ -38,6 +41,7 @@ SET(PathScripts_SRCS
     PathScripts/PathDrilling.py
     PathScripts/PathDrillingGui.py
     PathScripts/PathEngrave.py
+    PathScripts/PathEngraveBase.py
     PathScripts/PathEngraveGui.py
     PathScripts/PathFixture.py
     PathScripts/PathGeom.py
@@ -56,6 +60,7 @@ SET(PathScripts_SRCS
     PathScripts/PathMillFaceGui.py
     PathScripts/PathOp.py
     PathScripts/PathOpGui.py
+    PathScripts/PathOpTools.py
     PathScripts/PathPocket.py
     PathScripts/PathPocketBase.py
     PathScripts/PathPocketBaseGui.py
@@ -84,6 +89,7 @@ SET(PathScripts_SRCS
     PathScripts/PathSurface.py
     PathScripts/PathSurfaceGui.py
     PathScripts/PathToolController.py
+    PathScripts/PathToolEdit.py
     PathScripts/PathToolLibraryManager.py
     PathScripts/PathUtil.py
     PathScripts/PathUtils.py
@@ -111,16 +117,15 @@ SET(PathScripts_post_SRCS
 
 SET(PathTests_SRCS
     PathTests/__init__.py
-    PathTests/boxtest.fcstd
     PathTests/PathTestUtils.py
-    PathTests/test_centroid_00.ngc
-    PathTests/test_linuxcnc_00.ngc
+    PathTests/TestPathChamfer.py
     PathTests/TestPathCore.py
     PathTests/TestPathDepthParams.py
     PathTests/TestPathDressupDogbone.py
     PathTests/TestPathDressupHoldingTags.py
     PathTests/TestPathGeom.py
     PathTests/TestPathLog.py
+    PathTests/TestPathOpTools.py
     PathTests/TestPathPost.py
     PathTests/TestPathSetupSheet.py
     PathTests/TestPathStock.py
@@ -128,11 +133,31 @@ SET(PathTests_SRCS
     PathTests/TestPathToolController.py
     PathTests/TestPathTooltable.py
     PathTests/TestPathUtil.py
+    PathTests/boxtest.fcstd
+    PathTests/test_centroid_00.ngc
+    PathTests/test_geomop.fcstd
+    PathTests/test_linuxcnc_00.ngc
+)
+
+SET(PathImages_Ops
+    Images/Ops/chamfer.svg
+)
+
+SET(PathImages_Tools
+    Images/Tools/drill.svg
+    Images/Tools/endmill.svg
+    Images/Tools/v-bit.svg
+)
+
+SET(Path_Images
+    ${PathImages_Ops}
+    ${PathImages_Tools}
 )
 
 SET(all_files
     ${PathScripts_SRCS}
     ${PathScripts_post_SRCS}
+    ${Path_Images}
 )
 
 ADD_CUSTOM_TARGET(PathScripts ALL
@@ -171,3 +196,18 @@ INSTALL(
     DESTINATION
         Mod/Path/PathScripts/post
 )
+
+INSTALL(
+    FILES
+        ${PathImages_Ops}
+    DESTINATION
+        Mod/Path/Images/Ops
+)
+
+INSTALL(
+    FILES
+        ${PathImages_Tools}
+    DESTINATION
+        Mod/Path/Images/Tools
+)
+

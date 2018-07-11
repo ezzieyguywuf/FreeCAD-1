@@ -593,7 +593,7 @@ void CmdPartDesignMoveTip::activated(int iMsg)
 
     App::DocumentObject* oldTip = body->Tip.getValue();
     if (oldTip == selFeature) { // it's not generally an error, so print only a console message
-        Base::Console().Message ("%s is already the tip of the body", selFeature->getNameInDocument () );
+        Base::Console().Message ("%s is already the tip of the body\n", selFeature->getNameInDocument () );
         return;
     }
 
@@ -609,7 +609,7 @@ void CmdPartDesignMoveTip::activated(int iMsg)
         doCommand(Gui,"Gui.activeDocument().show(\"%s\")", selFeature->getNameInDocument());
     }
 
-    // TOOD: Hide all datum features after the Tip feature? But the user might have already hidden some and wants to see
+    // TODO: Hide all datum features after the Tip feature? But the user might have already hidden some and wants to see
     // others, so we would have to remember their state somehow
     updateActive();
 }

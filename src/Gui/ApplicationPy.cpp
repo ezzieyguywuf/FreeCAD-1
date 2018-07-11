@@ -63,6 +63,7 @@
 #include <Base/Interpreter.h>
 #include <Base/Console.h>
 #include <CXX/Objects.hxx>
+#include <Inventor/MarkerBitmaps.h>
 
 using namespace Gui;
 
@@ -111,6 +112,13 @@ PyMethodDef Application::Methods[] = {
   {"getLocale",            (PyCFunction) Application::sGetLocale,     1,
    "getLocale() -> string\n\n"
    "Returns the locale currently used by FreeCAD"},
+  {"setLocale",            (PyCFunction) Application::sSetLocale,     1,
+   "getLocale(string) -> None\n\n"
+   "Sets the locale used by FreeCAD. You can set it by\n"
+   "top-level domain (e.g. \"de\") or the language name (e.g. \"German\")"},
+  {"supportedLocales", (PyCFunction) Application::sSupportedLocales,     1,
+   "supportedLocales() -> dict\n\n"
+   "Returns a dict of all supported languages/top-level domains"},
   {"createDialog",            (PyCFunction) Application::sCreateDialog,     1,
    "createDialog(string) -- Open a UI file"},
   {"addPreferencePage",       (PyCFunction) Application::sAddPreferencePage,1,
@@ -174,6 +182,9 @@ PyMethodDef Application::Methods[] = {
   {"createViewer",               (PyCFunction) Application::sCreateViewer,1,
    "createViewer([int]) -> View3DInventor/SplitView3DInventor\n\n"
    "shows and returns a viewer. If the integer argument is given and > 1: -> splitViewer"},
+
+  {"getMarkerIndex", (PyCFunction) Application::sGetMarkerIndex, 1,
+   "Get marker index according to marker size setting"},
 
   {NULL, NULL, 0, NULL}		/* Sentinel */
 };
@@ -622,6 +633,42 @@ PyObject* Application::sGetLocale(PyObject * /*self*/, PyObject *args,PyObject *
 #else
     return PyString_FromString(locale.c_str());
 #endif
+}
+
+PyObject* Application::sSetLocale(PyObject * /*self*/, PyObject *args,PyObject * /*kwd*/)
+{
+    char* name;
+    if (!PyArg_ParseTuple(args, "s", &name))
+        return NULL;
+
+    std::string cname(name);
+    TStringMap map = Translator::instance()->supportedLocales();
+    map["English"] = "en";
+    for (const auto& it : map) {
+        if (it.first == cname || it.second == cname) {
+            Translator::instance()->activateLanguage(it.first.c_str());
+            break;
+        }
+    }
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+PyObject* Application::sSupportedLocales(PyObject * /*self*/, PyObject *args,PyObject * /*kwd*/)
+{
+    if (!PyArg_ParseTuple(args, ""))
+        return NULL;
+
+    TStringMap map = Translator::instance()->supportedLocales();
+    Py::Dict dict;
+    dict.setItem(Py::String("English"), Py::String("en"));
+    for (const auto& it : map) {
+        Py::String key(it.first);
+        Py::String val(it.second);
+        dict.setItem(key, val);
+    }
+    return Py::new_reference_to(dict);
 }
 
 PyObject* Application::sCreateDialog(PyObject * /*self*/, PyObject *args,PyObject * /*kwd*/)
@@ -1180,4 +1227,28 @@ PyObject* Application::sCreateViewer(PyObject * /*self*/, PyObject *args,PyObjec
         }
     }
     return Py_None;
+}
+
+PyObject* Application::sGetMarkerIndex(PyObject * /*self*/, PyObject *args, PyObject * /*kwd*/)
+{
+    char *pstr=0;
+    if (!PyArg_ParseTuple(args, "s", &pstr))
+        return NULL;
+
+    PY_TRY {
+        ParameterGrp::handle const hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+
+        if (strcmp(pstr, "square") == 0)
+            return Py_BuildValue("i", Gui::Inventor::MarkerBitmaps::getMarkerIndex("DIAMOND_FILLED", hGrp->GetInt("MarkerSize", 9)));
+        else if (strcmp(pstr, "cross") == 0)
+            return Py_BuildValue("i", Gui::Inventor::MarkerBitmaps::getMarkerIndex("CROSS", hGrp->GetInt("MarkerSize", 9)));
+        else if (strcmp(pstr, "empty") == 0)
+            return Py_BuildValue("i", Gui::Inventor::MarkerBitmaps::getMarkerIndex("SQUARE_LINE", hGrp->GetInt("MarkerSize", 9)));
+        else if (strcmp(pstr, "quad") == 0)
+            return Py_BuildValue("i", Gui::Inventor::MarkerBitmaps::getMarkerIndex("SQUARE_FILLED", hGrp->GetInt("MarkerSize", 9)));
+        else if (strcmp(pstr, "circle") == 0)
+            return Py_BuildValue("i", Gui::Inventor::MarkerBitmaps::getMarkerIndex("CIRCLE_LINE", hGrp->GetInt("MarkerSize", 9)));
+        else
+            return Py_BuildValue("i", Gui::Inventor::MarkerBitmaps::getMarkerIndex("CIRCLE_FILLED", hGrp->GetInt("MarkerSize", 9)));
+    }PY_CATCH;
 }

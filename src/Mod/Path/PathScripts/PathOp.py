@@ -24,12 +24,12 @@
 
 import FreeCAD
 import Path
+import PathScripts.PathGeom as PathGeom
 import PathScripts.PathLog as PathLog
 import PathScripts.PathSetupSheet as PathSetupSheet
 import PathScripts.PathUtil as PathUtil
 import PathScripts.PathUtils as PathUtils
 
-from PathScripts.PathGeom import PathGeom
 from PathScripts.PathUtils import waiting_effects
 from PySide import QtCore
 
@@ -132,6 +132,10 @@ class ObjectOp(object):
             if FeatureNoFinalDepth & features:
                 obj.setEditorMode('FinalDepth', 2) # hide
             self.addOpValues(obj, ['start', 'final'])
+        else:
+            # StartDepth has become necessary for expressions on other properties
+            obj.addProperty("App::PropertyDistance", "StartDepth", "Depth", QtCore.QT_TRANSLATE_NOOP("PathOp", "Starting Depth internal use only for derived values"))
+            obj.setEditorMode('StartDepth', 1) # read-only
 
         if FeatureStepDown & features:
             obj.addProperty("App::PropertyDistance", "StepDown", "Depth", QtCore.QT_TRANSLATE_NOOP("PathOp", "Incremental Step Down of Tool"))
@@ -210,12 +214,18 @@ class ObjectOp(object):
     def opUpdateDepths(self, obj):
         '''opUpdateDepths(obj) ... overwrite to implement special depths calculation.
         Can safely be overwritten by subclass.'''
+        pass
      
     def opExecute(self, obj):
         '''opExecute(obj) ... called whenever the receiver needs to be recalculated.
         See documentation of execute() for a list of base functionality provided.
         Should be overwritten by subclasses.'''
         pass
+
+    def opRejectAddBase(self, obj, base, sub):
+        '''opRejectAddBase(base, sub) ... if op returns True the addition of the feature is prevented.
+        Should be overwritten by subclasses.'''
+        return False
 
     def onChanged(self, obj, prop):
         '''onChanged(obj, prop) ... base implementation of the FC notification framework.
@@ -257,6 +267,8 @@ class ObjectOp(object):
                 obj.OpFinalDepth =  0.0
             else:
                 obj.FinalDepth   =  0.0
+        else:
+            obj.StartDepth = 1.0
 
         if FeatureStepDown & features:
             if not self.applyExpression(obj, 'StepDown', job.SetupSheet.StepDownExpression):
@@ -354,6 +366,12 @@ class ObjectOp(object):
             # update start depth if requested and required
             if not PathGeom.isRoughly(obj.OpStartDepth.Value, zmax):
                 obj.OpStartDepth = zmax
+        else:
+            # every obj has a StartDepth
+            if obj.StartDepth.Value != zmax:
+                obj.StartDepth = zmax
+
+        self.opUpdateDepths(obj)
 
     @waiting_effects
     def execute(self, obj):
@@ -427,7 +445,7 @@ class ObjectOp(object):
         return result
 
     def addBase(self, obj, base, sub):
-        PathLog.track()
+        PathLog.track(obj, base, sub)
         base = PathUtil.getPublicObject(base)
 
         if self._setBaseAndStock(obj):
@@ -436,10 +454,14 @@ class ObjectOp(object):
             baselist = obj.Base
             if baselist is None:
                 baselist = []
-            item = (base, sub)
-            if item in baselist:
-                PathLog.notice(translate("Path", "This object already in the list")+"\n")
-            else:
-                baselist.append(item)
+            for p, el in baselist:
+                if p == base and sub in el:
+                    PathLog.notice((translate("Path", "Base object %s.%s already in the list")+"\n") % (base.Label, sub))
+                    return
+
+            if not self.opRejectAddBase(obj, base, sub):
+                baselist.append((base, sub))
                 obj.Base = baselist
+            else:
+                PathLog.notice((translate("Path", "Base object %s.%s rejected by operation")+"\n") % (base.Label, sub))
 

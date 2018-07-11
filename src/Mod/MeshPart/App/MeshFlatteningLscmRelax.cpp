@@ -203,19 +203,19 @@ void LscmRelax::relax(double weight)
                 K_g_triplets.push_back(trip(row_pos * 2 + 1, col_pos * 2,        K_m(j * 2 + 1,  k * 2)));
                 K_g_triplets.push_back(trip(row_pos * 2 + 1, col_pos * 2 + 1,    K_m(j * 2 + 1,  k * 2 + 1)));
                 K_g_triplets.push_back(trip(row_pos * 2,     col_pos * 2 + 1,    K_m(j * 2,      k * 2 + 1)));
-                // we don't have to fill all because the matrix is symetric.
+                // we don't have to fill all because the matrix is symmetric.
             }
         }
     }
     // FIXING SOME PINS:
     // - if there are no pins (or only one pin) selected solve the system without the nullspace solution.
-    // - if there are some pins selected, delete all colums, rows that refer to this pins
+    // - if there are some pins selected, delete all columns, rows that refer to this pins
     //          set the diagonal element of these pins to 1 + the rhs to zero
     //          (? is it possible to fix in the inner of the face? for sure for fem, but lscm could have some problems)
     //          (we also need some extra variables to see if the pins come from user)
     
     // fixing some points
-    // allthough only internal forces are applied there has to be locked
+    // although only internal forces are applied there has to be locked
     // at least 3 degrees of freedom to stop the mesh from pure rotation and pure translation
     // std::vector<long> fixed_dof;
     // fixed_dof.push_back(this->triangles(0, 0) * 2); //x0
@@ -539,7 +539,7 @@ void LscmRelax::set_q_l_m()
 void LscmRelax::set_fixed_pins()
 {
     // if less then one fixed pin is set find two by an automated algorithm and align them to y = 0
-    // if more then two pins are choosen find a leastsquare-plane and project the points on it
+    // if more then two pins are chosen find a leastsquare-plane and project the points on it
     // insert the points in the flat-vertices vector
     if (this->fixed_pins.size() == 0)
         this->fixed_pins.push_back(0);
@@ -645,7 +645,7 @@ void LscmRelax::rotate_by_min_bound_area()
     double phi;
     double min_phi = 0;
     double  min_area = 0;
-    bool x_dominant;
+    bool x_dominant = 0;
     // rotate vector by 90 degree and find min area
     for (int i = 0; i < n + 1; i++ )
     {
@@ -661,11 +661,11 @@ void LscmRelax::rotate_by_min_bound_area()
             min_phi = phi;
             x_dominant = x_distance > y_distance;
         }
-        Eigen::Matrix<double, 2, 2> rot;
-        min_phi += x_dominant * M_PI / 2;
-        rot << std::cos(min_phi), std::sin(min_phi), -std::sin(min_phi), std::cos(min_phi);
-        this->flat_vertices = rot * this->flat_vertices;
     }
+    Eigen::Matrix<double, 2, 2> rot;
+    min_phi += x_dominant * M_PI / 2;
+    rot << std::cos(min_phi), std::sin(min_phi), -std::sin(min_phi), std::cos(min_phi);
+    this->flat_vertices = rot * this->flat_vertices;
 }
 
 std::vector<long> LscmRelax::get_fem_fixed_pins()

@@ -99,9 +99,7 @@ QGVPage::QGVPage(ViewProviderPage *vp, QGraphicsScene* s, QWidget *parent)
 
     setScene(s);
 
-    setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);
-    //setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
-    //setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
+    setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
     setCacheMode(QGraphicsView::CacheBackground);
     //setTransformationAnchor(AnchorUnderMouse);
     //setTransformationAnchor(NoAnchor);
@@ -206,7 +204,8 @@ int QGVPage::addQView(QGIView *view)
     }
 
     view->setPos(viewPos);
-
+    view->updateView(true);
+    
     return 0;
 }
 

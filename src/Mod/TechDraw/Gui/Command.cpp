@@ -208,7 +208,7 @@ void CmdTechDrawNewPage::activated(int iMsg)
 
         //why is "Template" property set twice? -wf
         // once to set DrawSVGTemplate.Template to OS template file name
-        doCommand(Doc,"App.activeDocument().%s.Template = '%s'",TemplateName.c_str(), templateFileName.toStdString().c_str());
+        doCommand(Doc,"App.activeDocument().%s.Template = \"%s\"",TemplateName.c_str(), templateFileName.toUtf8().constData());
         // once to set Page.Template to DrawSVGTemplate.Name
         doCommand(Doc,"App.activeDocument().%s.Template = App.activeDocument().%s",PageName.c_str(),TemplateName.c_str());
         // consider renaming DrawSVGTemplate.Template property?
@@ -334,6 +334,7 @@ void CmdTechDrawNewViewSection::activated(int iMsg)
     TechDraw::DrawViewPart* dvp = static_cast<TechDraw::DrawViewPart*>(*baseObj.begin());
     std::string BaseName = dvp->getNameInDocument();
     std::string PageName = page->getNameInDocument();
+    double baseScale = dvp->getScale();
 
     Gui::WaitCursor wc;
     openCommand("Create view");
@@ -344,13 +345,13 @@ void CmdTechDrawNewViewSection::activated(int iMsg)
     App::DocumentObject *docObj = getDocument()->getObject(FeatName.c_str());
     TechDraw::DrawViewSection* dsv = dynamic_cast<TechDraw::DrawViewSection *>(docObj);
     if (!dsv) {
-        throw Base::Exception("CmdTechDrawNewViewSection DSV not found\n");
+        throw Base::Exception("CmdTechDrawNewViewSection DVS not found\n");
     }
     dsv->Source.setValues(dvp->Source.getValues());
     doCommand(Doc,"App.activeDocument().%s.BaseView = App.activeDocument().%s",FeatName.c_str(),BaseName.c_str());
-    doCommand(Doc,"App.activeDocument().%s.Scale = App.activeDocument().%s.Scale",FeatName.c_str(),BaseName.c_str());
     doCommand(Doc,"App.activeDocument().%s.ScaleType = App.activeDocument().%s.ScaleType",FeatName.c_str(),BaseName.c_str());
     doCommand(Doc,"App.activeDocument().%s.addView(App.activeDocument().%s)",PageName.c_str(),FeatName.c_str());
+    doCommand(Doc,"App.activeDocument().%s.Scale = %0.6f",FeatName.c_str(),baseScale);
     Gui::Control().showDialog(new TaskDlgSectionView(dvp,dsv));
 
     updateActive();
@@ -1033,7 +1034,7 @@ bool CmdTechDrawSpreadsheet::isActive(void)
 
 
 //===========================================================================
-// TechDraw_ExportPage
+// TechDraw_ExportPage (Svg)
 //===========================================================================
 
 DEF_STD_CMD_A(CmdTechDrawExportPage);
@@ -1076,6 +1077,57 @@ bool CmdTechDrawExportPage::isActive(void)
     return DrawGuiUtil::needPage(this);
 }
 
+//===========================================================================
+// TechDraw_ExportPage (Dxf)
+//===========================================================================
+
+DEF_STD_CMD_A(CmdTechDrawExportPageDxf);
+
+CmdTechDrawExportPageDxf::CmdTechDrawExportPageDxf()
+  : Command("TechDraw_ExportPageDxf")
+{
+    sGroup        = QT_TR_NOOP("File");
+    sMenuText     = QT_TR_NOOP("Export page as DXF");
+    sToolTipText  = QT_TR_NOOP("Export a page to a DXF file");
+    sWhatsThis    = "TechDraw_SaveDXF";
+    sStatusTip    = sToolTipText;
+    sPixmap       = "actions/techdraw-saveDXF";
+}
+
+void CmdTechDrawExportPageDxf::activated(int iMsg)
+{
+    Q_UNUSED(iMsg);
+    TechDraw::DrawPage* page = DrawGuiUtil::findPage(this);
+    if (!page) {
+        return;
+    }
+
+//WF? allow more than one TD Page per Dxf file??  1 TD page = 1 DXF file = 1 drawing?
+    QString defaultDir;
+    QString fileName = Gui::FileDialog::getSaveFileName(Gui::getMainWindow(),
+                                                   QString::fromUtf8(QT_TR_NOOP("Save Dxf File ")),
+                                                   defaultDir,
+                                                   QString::fromUtf8(QT_TR_NOOP("Dxf (*.dxf)")));
+
+    if (fileName.isEmpty()) {
+        return;
+    }
+
+    std::string PageName = page->getNameInDocument();
+    openCommand("Save page to dxf");
+    doCommand(Doc,"import TechDraw");
+    doCommand(Doc,"TechDraw.writeDXFPage(App.activeDocument().%s,u\"%s\")",PageName.c_str(),(const char*)fileName.toUtf8());
+    updateActive();
+    commitCommand();
+}
+
+
+bool CmdTechDrawExportPageDxf::isActive(void)
+{
+    return DrawGuiUtil::needPage(this);
+}
+
+
 
 void CreateTechDrawCommands(void)
 {
@@ -1094,6 +1146,7 @@ void CreateTechDrawCommands(void)
     rcCmdMgr.addCommand(new CmdTechDrawClipMinus());
     rcCmdMgr.addCommand(new CmdTechDrawSymbol());
     rcCmdMgr.addCommand(new CmdTechDrawExportPage());
+    rcCmdMgr.addCommand(new CmdTechDrawExportPageDxf());
     rcCmdMgr.addCommand(new CmdTechDrawDraftView());
     rcCmdMgr.addCommand(new CmdTechDrawArchView());
     rcCmdMgr.addCommand(new CmdTechDrawSpreadsheet());

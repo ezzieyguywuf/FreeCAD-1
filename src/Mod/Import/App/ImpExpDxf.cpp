@@ -75,10 +75,6 @@ ImpExpDxfRead::ImpExpDxfRead(std::string filepath, App::Document *pcDoc) : CDxfR
     document = pcDoc;
     setOptionSource("User parameter:BaseApp/Preferences/Mod/Draft");
     setOptions();
-//    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Draft");
-//    optionGroupLayers = hGrp->GetBool("groupLayers",false);
-//    optionImportAnnotations = hGrp->GetBool("dxftext",false);
-//    optionScaling = hGrp->GetFloat("dxfScaling",1.0);
 }
 
 void ImpExpDxfRead::setOptions(void)
@@ -340,9 +336,10 @@ ImpExpDxfWrite::ImpExpDxfWrite(std::string filepath) :
 
 void ImpExpDxfWrite::setOptions(void)
 {
-    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Draft");
+    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath(getOptionSource().c_str());
     optionMaxLength = hGrp->GetFloat("maxsegmentlength",5.0);
     optionPolyLine  = hGrp->GetBool("DiscretizeEllipses",true);
+    optionExpPoints  = hGrp->GetBool("ExportPoints",false);
 }
 
 void ImpExpDxfWrite::exportShape(const TopoDS_Shape input)
@@ -368,14 +365,22 @@ void ImpExpDxfWrite::exportShape(const TopoDS_Shape input)
             gp_Pnt s = adapt.Value(f);
             gp_Pnt e = adapt.Value(l);
             if (fabs(l-f) > 1.0 && s.SquareDistance(e) < 0.001) {
-                exportEllipse(adapt);
+                if (optionPolyLine) {
+                    exportPolyline(adapt);
+                } else {
+                    exportEllipse(adapt);
+                }
             } else {
-                exportEllipseArc(adapt);
+                if (optionPolyLine) {
+                    exportPolyline(adapt);
+                } else {
+                    exportEllipseArc(adapt);
+                }
             }
 
         } else if (adapt.GetType() == GeomAbs_BSplineCurve) {
             if (optionPolyLine) {
-                exportLWPoly(adapt);
+                exportPolyline(adapt);
             } else {
                 exportBSpline(adapt);
             }
@@ -388,13 +393,51 @@ void ImpExpDxfWrite::exportShape(const TopoDS_Shape input)
         }
     }
 
-    //export Vertices
-//    TopExp_Explorer verts(input, TopAbs_VERTEX);
-//    for (int i = 1 ; verts.More(); verts.Next(),i++) {
-//        const TopoDS_Vertex& v = TopoDS::Vertex(verts.Current());
-
-//    }
+    if (optionExpPoints) {
+        TopExp_Explorer verts(input, TopAbs_VERTEX);
+        std::vector<gp_Pnt> duplicates;
+        for (int i = 1 ; verts.More(); verts.Next(),i++) {
+            const TopoDS_Vertex& v = TopoDS::Vertex(verts.Current());
+            gp_Pnt p = BRep_Tool::Pnt(v);
+            duplicates.push_back(p);
+        }
+        
+        std::sort(duplicates.begin(),duplicates.end(),ImpExpDxfWrite::gp_PntCompare);
+        auto newEnd = std::unique(duplicates.begin(),duplicates.end(),ImpExpDxfWrite::gp_PntEqual);
+        std::vector<gp_Pnt> uniquePts(duplicates.begin(),newEnd);
+        for (auto& p: uniquePts) {
+            double point[3] = {0,0,0};
+            gPntToTuple(point, p);
+            WritePoint(point, getLayerName().c_str());
+        }
+    }
 }
+
+bool ImpExpDxfWrite::gp_PntEqual(gp_Pnt p1, gp_Pnt p2) 
+{
+    bool result = false;
+    if (p1.IsEqual(p2,Precision::Confusion())) {
+        result = true;
+    }
+    return result;
+}
+
+//is p1 "less than" p2?
+bool ImpExpDxfWrite::gp_PntCompare(gp_Pnt p1, gp_Pnt p2) 
+{
+    bool result = false;
+    if (!(p1.IsEqual(p2,Precision::Confusion()))) {                       //ie v1 != v2
+        if (!(fabs(p1.X() - p2.X()) < Precision::Confusion())) {          // x1 != x2
+            result = p1.X() < p2.X();        
+        } else if (!(fabs(p1.Y() - p2.Y()) < Precision::Confusion())) {   // y1 != y2
+            result = p1.Y() < p2.Y();
+        } else {
+            result = p1.Z() < p2.Z();
+        }
+    }
+    return result;
+}
+
 
 void ImpExpDxfWrite::exportCircle(BRepAdaptor_Curve c)
 {
@@ -476,13 +519,21 @@ void ImpExpDxfWrite::exportEllipseArc(BRepAdaptor_Curve c)
     gp_Vec v1(m,s);
     gp_Vec v2(m,e);
     gp_Vec v3(0,0,1);
-    double a = v3.DotCross(v1,v2);
+    double a = v3.DotCross(v1,v2);     // a = v3 dot (v1 cross v2)
+                                       // relates to "handedness" of 3 vectors
+                                       // a > 0 ==> v2 is CCW from v1 (righthanded)?
+                                       // a < 0 ==> v2 is CW from v1 (lefthanded)?
 
-    double startAngle = fmod(f,2.0*M_PI);
+    double startAngle = fmod(f,2.0*M_PI);  //revolutions
     double endAngle = fmod(l,2.0*M_PI);
-    bool dir = (a < 0) ? true: false;
+    bool endIsCW = (a < 0) ? true: false;      //if !endIsCW swap(start,end)
+    //not sure if this is a hack or not. seems to make valid arcs.
+    if (!endIsCW) {
+        startAngle = -startAngle;
+        endAngle   = -endAngle;
+    }
 
-    WriteEllipse(center, major, minor, rotation, startAngle, endAngle, dir, getLayerName().c_str() );
+    WriteEllipse(center, major, minor, rotation, startAngle, endAngle, endIsCW, getLayerName().c_str());
 }
 
 void ImpExpDxfWrite::exportBSpline(BRepAdaptor_Curve c)
@@ -576,6 +627,7 @@ void ImpExpDxfWrite::exportLWPoly(BRepAdaptor_Curve c)
     pd.Extr.x = 0.0;
     pd.Extr.y = 0.0;
     pd.Extr.z = 1.0;
+    pd.nVert = 0;
 
     GCPnts_UniformAbscissa discretizer;
     discretizer.Initialize (c, optionMaxLength);
@@ -586,8 +638,136 @@ void ImpExpDxfWrite::exportLWPoly(BRepAdaptor_Curve c)
             gp_Pnt p = c.Value (discretizer.Parameter (i));
             pd.Verts.push_back(gPntTopoint3D(p));
         }
+        pd.nVert = discretizer.NbPoints ();
         WriteLWPolyLine(pd,getLayerName().c_str());
     }
 }
 
+void ImpExpDxfWrite::exportPolyline(BRepAdaptor_Curve c)
+{
+    LWPolyDataOut pd;
+    pd.Flag = c.IsClosed();
+    pd.Elev = 0.0;
+    pd.Thick = 0.0;
+    pd.Extr.x = 0.0;
+    pd.Extr.y = 0.0;
+    pd.Extr.z = 1.0;
+    pd.nVert = 0;
 
+    GCPnts_UniformAbscissa discretizer;
+    discretizer.Initialize (c, optionMaxLength);
+    std::vector<point3D> points;
+    if (discretizer.IsDone () && discretizer.NbPoints () > 0) {
+        int nbPoints = discretizer.NbPoints ();
+        for (int i=1; i<=nbPoints; i++) {
+            gp_Pnt p = c.Value (discretizer.Parameter (i));
+            pd.Verts.push_back(gPntTopoint3D(p));
+        }
+        pd.nVert = discretizer.NbPoints ();
+        WritePolyline(pd,getLayerName().c_str());
+    }
+}
+
+void ImpExpDxfWrite::exportText(const char* text, Base::Vector3d position1, Base::Vector3d position2, double size, int just)
+{
+    double location1[3] = {0,0,0};
+    location1[0] = position1.x;
+    location1[1] = position1.y;
+    location1[2] = position1.z;
+    double location2[3] = {0,0,0};
+    location2[0] = position2.x;
+    location2[1] = position2.y;
+    location2[2] = position2.z;
+
+    WriteText(text, location1, location2, size, just, getLayerName().c_str());
+}
+
+void ImpExpDxfWrite::exportLinearDim(Base::Vector3d textLocn, Base::Vector3d lineLocn, 
+                                     Base::Vector3d extLine1Start, Base::Vector3d extLine2Start, 
+                                     char* dimText)
+{
+    double text[3] = {0,0,0};
+    text[0] = textLocn.x;
+    text[1] = textLocn.y;
+    text[2] = textLocn.z;
+    double line[3] = {0,0,0};
+    line[0] = lineLocn.x;
+    line[1] = lineLocn.y;
+    line[2] = lineLocn.z;
+    double ext1[3] = {0,0,0};
+    ext1[0] = extLine1Start.x;
+    ext1[1] = extLine1Start.y;
+    ext1[2] = extLine1Start.z;
+    double ext2[3] = {0,0,0};
+    ext2[0] = extLine2Start.x;
+    ext2[1] = extLine2Start.y;
+    ext2[2] = extLine2Start.z;
+    WriteLinearDim(text, line, ext1,ext2,dimText, getLayerName().c_str());
+}
+
+void ImpExpDxfWrite::exportAngularDim(Base::Vector3d textLocn, Base::Vector3d lineLocn, 
+                             Base::Vector3d extLine1End, Base::Vector3d extLine2End, 
+                             Base::Vector3d apexPoint,
+                             char* dimText)
+{
+    double text[3] = {0,0,0};
+    text[0] = textLocn.x;
+    text[1] = textLocn.y;
+    text[2] = textLocn.z;
+    double line[3] = {0,0,0};
+    line[0] = lineLocn.x;
+    line[1] = lineLocn.y;
+    line[2] = lineLocn.z;
+    double ext1[3] = {0,0,0};
+    ext1[0] = extLine1End.x;
+    ext1[1] = extLine1End.y;
+    ext1[2] = extLine1End.z;
+    double ext2[3] = {0,0,0};
+    ext2[0] = extLine2End.x;
+    ext2[1] = extLine2End.y;
+    ext2[2] = extLine2End.z;
+    double apex[3] = {0,0,0};
+    apex[0] = apexPoint.x;
+    apex[1] = apexPoint.y;
+    apex[2] = apexPoint.z;
+    WriteAngularDim(text, line, apex, ext1, apex, ext2, dimText, getLayerName().c_str());
+}
+
+void ImpExpDxfWrite::exportRadialDim(Base::Vector3d centerPoint, Base::Vector3d textLocn, 
+                             Base::Vector3d arcPoint,
+                             char* dimText)
+{
+    double center[3] = {0,0,0};
+    center[0] = centerPoint.x;
+    center[1] = centerPoint.y;
+    center[2] = centerPoint.z;
+    double text[3] = {0,0,0};
+    text[0] = textLocn.x;
+    text[1] = textLocn.y;
+    text[2] = textLocn.z;
+    double arc[3] = {0,0,0};
+    arc[0] = arcPoint.x;
+    arc[1] = arcPoint.y;
+    arc[2] = arcPoint.z;
+    WriteRadialDim(center, text, arc, dimText, getLayerName().c_str());
+
+}
+
+void ImpExpDxfWrite::exportDiametricDim(Base::Vector3d textLocn, 
+                             Base::Vector3d arcPoint1, Base::Vector3d arcPoint2,
+                             char* dimText)
+{
+    double text[3] = {0,0,0};
+    text[0] = textLocn.x;
+    text[1] = textLocn.y;
+    text[2] = textLocn.z;
+    double arc1[3] = {0,0,0};
+    arc1[0] = arcPoint1.x;
+    arc1[1] = arcPoint1.y;
+    arc1[2] = arcPoint1.z;
+    double arc2[3] = {0,0,0};
+    arc2[0] = arcPoint2.x;
+    arc2[1] = arcPoint2.y;
+    arc2[2] = arcPoint2.z;
+    WriteDiametricDim(text, arc1, arc2, dimText, getLayerName().c_str());
+}

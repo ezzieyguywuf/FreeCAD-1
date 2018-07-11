@@ -137,17 +137,21 @@ void DrawPage::onChanged(const App::Property* prop)
         }
     } else if(prop == &Scale) {
         // touch all views in the Page as they may be dependent on this scale
-        const std::vector<App::DocumentObject*> &vals = Views.getValues();
-        for(std::vector<App::DocumentObject *>::const_iterator it = vals.begin(); it < vals.end(); ++it) {
-            TechDraw::DrawView *view = dynamic_cast<TechDraw::DrawView *>(*it);
-            if (view != NULL && view->ScaleType.isValue("Page")) {
-                if(std::abs(view->Scale.getValue() - Scale.getValue()) > FLT_EPSILON) {
-                   view->Scale.setValue(Scale.getValue());
+        // WF: not sure this loop is required.  Views figure out their scale as required. but maybe
+        //     this is needed just to mark the Views to recompute??
+        if (!isRestoring()) {
+            const std::vector<App::DocumentObject*> &vals = Views.getValues();
+            for(std::vector<App::DocumentObject *>::const_iterator it = vals.begin(); it < vals.end(); ++it) {
+                TechDraw::DrawView *view = dynamic_cast<TechDraw::DrawView *>(*it);
+                if (view != NULL && view->ScaleType.isValue("Page")) {
+                    if(std::abs(view->Scale.getValue() - Scale.getValue()) > FLT_EPSILON) {
+                       view->Scale.setValue(Scale.getValue());
+                    }
                 }
             }
         }
     } else if (prop == &ProjectionType) {
-      // touch all ortho views in the Page as they may be dependent on Projection Type
+      // touch all ortho views in the Page as they may be dependent on Projection Type  //(is this true?)
       const std::vector<App::DocumentObject*> &vals = Views.getValues();
       for(std::vector<App::DocumentObject *>::const_iterator it = vals.begin(); it < vals.end(); ++it) {
           TechDraw::DrawProjGroup *view = dynamic_cast<TechDraw::DrawProjGroup *>(*it);
@@ -343,14 +347,13 @@ std::vector<App::DocumentObject*> DrawPage::getAllViews(void)
     auto views = Views.getValues();   //list of docObjects
     std::vector<App::DocumentObject*> allViews;
     for (auto& v: views) {
+        allViews.push_back(v);
         if (v->isDerivedFrom(TechDraw::DrawProjGroup::getClassTypeId())) {
             TechDraw::DrawProjGroup* dpg = static_cast<TechDraw::DrawProjGroup*>(v);
             if (dpg != nullptr) {                                              //can't really happen!
               std::vector<App::DocumentObject*> pgViews = dpg->Views.getValues();
               allViews.insert(allViews.end(),pgViews.begin(),pgViews.end());
             }
-        } else {
-            allViews.push_back(v);
         }
     }
     return allViews;
@@ -438,7 +441,7 @@ void DrawPage::Restore(Base::XMLReader &reader)
         }
 #ifndef FC_DEBUG
         catch (...) {
-            Base::Console().Error("PropertyContainer::Restore: Unknown C++ exception thrown");
+            Base::Console().Error("PropertyContainer::Restore: Unknown C++ exception thrown\n");
         }
 #endif
 

@@ -28,8 +28,10 @@
 # include <QAction>
 # include <QMenu>
 # include <QTimer>
+#include <QList>
 #include <QPointer>
-#include <boost/signal.hpp>
+#include <boost/signals2.hpp>
+#include <boost/signals2/connection.hpp>
 #include <boost/bind.hpp>
 
 #endif
@@ -70,7 +72,8 @@ PROPERTY_SOURCE(TechDrawGui::ViewProviderPage, Gui::ViewProviderDocumentObject)
 
 ViewProviderPage::ViewProviderPage()
   : m_mdiView(0),
-    m_docReady(true)
+    m_docReady(true),
+    m_pageName("")
 {
     sPixmap = "TechDraw_Tree_Page";
 
@@ -90,6 +93,7 @@ void ViewProviderPage::attach(App::DocumentObject *pcFeat)
     auto feature = getDrawPage();
     if (feature != nullptr) {
         connectGuiRepaint = feature->signalGuiPaint.connect(bnd);
+        m_pageName = feature->getNameInDocument();
     } else {
         Base::Console().Log("VPP::attach has no Feature!\n");
     }
@@ -116,12 +120,21 @@ void ViewProviderPage::show(void)
 
 //this "hide" is only used for Visibility property toggle
 //not when Page tab is closed.
+//WF: is this right? same behaviour either way.
 void ViewProviderPage::hide(void)
 {
     if (!m_mdiView.isNull()) {                                //m_mdiView is a QPointer
         // https://forum.freecadweb.org/viewtopic.php?f=3&t=22797&p=182614#p182614
         //Gui::getMainWindow()->activatePreviousWindow();
-        Gui::getMainWindow()->removeWindow(m_mdiView);
+        QList<QWidget*> wList= Gui::getMainWindow()->windows();
+        bool found = wList.contains(m_mdiView);
+        if (found) {
+            Gui::getMainWindow()->removeWindow(m_mdiView);
+            Gui::MDIView* aw = Gui::getMainWindow()->activeWindow();  //WF: this bit should be in the remove window logic, not here.
+            if (aw != nullptr) {
+                aw->showMaximized();
+            }
+        }
     }
     ViewProviderDocumentObject::hide();
 }
@@ -131,21 +144,9 @@ void ViewProviderPage::updateData(const App::Property* prop)
     if (prop == &(getDrawPage()->KeepUpdated)) {
        if (getDrawPage()->KeepUpdated.getValue()) {
            sPixmap = "TechDraw_Tree_Page";
-           if (!m_mdiView.isNull() &&
-               !getDrawPage()->isUnsetting()) {
-               m_mdiView->updateDrawing();
-           }
        } else {
            sPixmap = "TechDraw_Tree_Page_Unsync";
        }
-    }
-
-    //if a view is added/deleted, rebuild the visual
-    if (prop == &(getDrawPage()->Views)) {
-        if(!m_mdiView.isNull() &&
-           !getDrawPage()->isUnsetting()) {
-            m_mdiView->updateDrawing();
-        }
     //if the template is changed, rebuild the visual
     } else if (prop == &(getDrawPage()->Template)) {
        if(m_mdiView && 
@@ -205,7 +206,7 @@ bool ViewProviderPage::doubleClicked(void)
 
 bool ViewProviderPage::showMDIViewPage()
 {
-    if (isRestoring()) {
+   if (isRestoring()) {
         return true;
     }
 
@@ -214,13 +215,19 @@ bool ViewProviderPage::showMDIViewPage()
             (pcObject->getDocument());
         m_mdiView = new MDIViewPage(this, doc, Gui::getMainWindow());
         QString tabTitle = QString::fromUtf8(getDrawPage()->getNameInDocument());
+
+        m_mdiView->setDocumentObject(getDrawPage()->getNameInDocument());
+        m_mdiView->setDocumentName(pcObject->getDocument()->getName());
+
         m_mdiView->setWindowTitle(tabTitle + QString::fromLatin1("[*]"));
         m_mdiView->setWindowIcon(Gui::BitmapFactory().pixmap("TechDraw_Tree_Page"));
-        m_mdiView->updateDrawing(true);
+        m_mdiView->updateDrawing();
         Gui::getMainWindow()->addWindow(m_mdiView);
-        m_mdiView->viewAll();
+        m_mdiView->viewAll();  //this is empty function
+        m_mdiView->showMaximized();
     } else {
-        m_mdiView->updateDrawing(true);
+        m_mdiView->updateDrawing();
+        m_mdiView->redrawAllViews();
         m_mdiView->updateTemplate(true);
     }
     return true;

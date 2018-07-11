@@ -80,7 +80,25 @@ namespace Import
         std::string getOptionSource() { return m_optionSource; }
         void setOptionSource(std::string s) { m_optionSource = s; }
         void setOptions(void);
-      
+        void exportText(const char* text, Base::Vector3d position1, Base::Vector3d position2, double size, int just);
+        void exportLinearDim(Base::Vector3d textLocn, Base::Vector3d lineLocn, 
+                             Base::Vector3d extLine1Start, Base::Vector3d extLine2Start, 
+                             char* dimText);
+        void exportAngularDim(Base::Vector3d textLocn, Base::Vector3d lineLocn, 
+                             Base::Vector3d extLine1Start, Base::Vector3d extLine2Start, 
+                             Base::Vector3d apexPoint,
+                             char* dimText);
+        void exportRadialDim(Base::Vector3d centerPoint, Base::Vector3d textLocn, 
+                             Base::Vector3d arcPoint,
+                             char* dimText);
+        void exportDiametricDim(Base::Vector3d textLocn, 
+                             Base::Vector3d arcPoint1, Base::Vector3d arcPoint2,
+                             char* dimText);
+
+
+        static bool gp_PntEqual(gp_Pnt p1, gp_Pnt p2);
+        static bool gp_PntCompare(gp_Pnt p1, gp_Pnt p2);
+
     protected:
         void exportCircle(BRepAdaptor_Curve c);
         void exportEllipse(BRepAdaptor_Curve c);
@@ -89,11 +107,14 @@ namespace Import
         void exportBSpline(BRepAdaptor_Curve c);
         void exportBCurve(BRepAdaptor_Curve c);
         void exportLine(BRepAdaptor_Curve c);
-        void exportLWPoly(BRepAdaptor_Curve c);
+        void exportLWPoly(BRepAdaptor_Curve c);   //LWPolyline not supported in R12?
+        void exportPolyline(BRepAdaptor_Curve c);
+
         std::string m_layerName;
         std::string m_optionSource;
         double optionMaxLength;
         bool   optionPolyLine;
+        bool   optionExpPoints;
     };
 
 }

@@ -50,17 +50,17 @@ else:
             xdmffile.read(self.mesh)
             self.markers = {}
             self.dx = {}
-            for (key, value) in self.group_value_dict.iteritems():
+            for (key, value) in self.group_value_dict.items():
                 # Fenics interface here: create cell function of type int for every group
                 # TODO: examine whether int is appropriate or this class could be generalized
-                self.markers[key] = fenics.CellFunction("int", self.mesh)
+                self.markers[key] = fenics.CellFunction("size_t", self.mesh)
                 xdmffile.read(self.markers[key], key)
                 self.dx[key] = fenics.Measure("dx", domain=self.mesh, subdomain_data=self.markers[key])
             xdmffile.close()
 
         def eval_cell(self, values, x, cell):
             values_list = []
-            for (key, func) in self.group_value_dict.iteritems():
+            for (key, func) in self.group_value_dict.items():
                 if self.check_marked(self.markers[key][cell.index]):
                     values_list.append(func(x))
             if values_list:
@@ -96,7 +96,7 @@ else:
             self.marked = {}
             self.ds = {}
             self.bcs = {}
-            for (key, value) in self.group_value_dict.iteritems():
+            for (key, value) in self.group_value_dict.items():
                 # Fenics interface here: create facet function of type size_t (positive int) for every group
                 # TODO: examine whether size_t is appropriate or this class could be generalized
                 self.markers[key] = fenics.FacetFunction("size_t", self.mesh)
@@ -108,7 +108,7 @@ else:
 
         def getDirichletBCs(self, vectorspace, *args, **kwargs):
             dbcs = []
-            for (dict_key, dict_value) in self.bcs.iteritems():
+            for (dict_key, dict_value) in self.bcs.items():
                 if dict_value["type"] == 'Dirichlet':
                     bc = fenics.DirichletBC(vectorspace, dict_value["value"], self.markers[dict_key], dict_value.get("marked", 1), *args, **kwargs)
                     dbcs.append(bc)

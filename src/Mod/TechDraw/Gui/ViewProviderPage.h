@@ -28,6 +28,8 @@
 #include <QPointer>
 #include <Gui/ViewProviderDocumentObject.h>
 
+#include <boost/signals2.hpp> 
+
 namespace TechDraw{
     class DrawPage;
 }
@@ -72,7 +74,7 @@ public:
 
     TechDraw::DrawPage* getDrawPage() const;
     void onGuiRepaint(const TechDraw::DrawPage* dp); 
-    typedef boost::signals::scoped_connection Connection;
+    typedef boost::signals2::scoped_connection Connection;
     Connection connectGuiRepaint;
 
     void unsetEdit(int ModNum);
@@ -85,6 +87,7 @@ protected:
 private:
     QPointer<MDIViewPage> m_mdiView;
     bool m_docReady;
+    std::string m_pageName;
 };
 
 } // namespace TechDrawGui
