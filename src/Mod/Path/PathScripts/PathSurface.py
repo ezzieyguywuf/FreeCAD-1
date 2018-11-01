@@ -72,7 +72,7 @@ class ObjectSurface(PathOp.ObjectOp):
         obj.addProperty("App::PropertyEnumeration", "Algorithm", "Algorithm", QtCore.QT_TRANSLATE_NOOP("App::Property", "The library to use to generate the path"))
         obj.addProperty("App::PropertyEnumeration", "DropCutterDir", "Algorithm", QtCore.QT_TRANSLATE_NOOP("App::Property", "The direction along which dropcutter lines are created"))
         obj.addProperty("App::PropertyEnumeration", "BoundBox", "Algorithm", QtCore.QT_TRANSLATE_NOOP("App::Property", "Should the operation be limited by the stock object or by the bounding box of the base object"))
-        obj.addProperty("App::PropertyVector", "DropCutterExtraOffset", "Algorithm", QtCore.QT_TRANSLATE_NOOP("App::Property", "Additional offset to the selected bounding box"))
+        obj.addProperty("App::PropertyVectorDistance", "DropCutterExtraOffset", "Algorithm", QtCore.QT_TRANSLATE_NOOP("App::Property", "Additional offset to the selected bounding box"))
         obj.addProperty("App::PropertyPercent", "StepOver", "Surface", QtCore.QT_TRANSLATE_NOOP("App::Property", "Step over percentage of the drop cutter path"))
         obj.addProperty("App::PropertyDistance", "DepthOffset", "Surface", QtCore.QT_TRANSLATE_NOOP("App::Property", "Z-axis offset from the surface of the object"))
         obj.addProperty("App::PropertyFloatConstraint", "SampleInterval", "Surface", QtCore.QT_TRANSLATE_NOOP("App::Property", "The Sample Interval. Small values cause long wait times"))
@@ -81,7 +81,8 @@ class ObjectSurface(PathOp.ObjectOp):
         obj.Algorithm = ['OCL Dropcutter', 'OCL Waterline']
         obj.SampleInterval = (0.04, 0.01, 1.0, 0.01)
 
-        self.setEditorProperties(obj)
+        if not hasattr(obj, 'DoNotSetDefaultValues'):
+            self.setEditorProperties(obj)
 
     def setEditorProperties(self, obj):
         if obj.Algorithm == 'OCL Dropcutter':
@@ -95,9 +96,21 @@ class ObjectSurface(PathOp.ObjectOp):
         if prop == "Algorithm":
             self.setEditorProperties(obj)
 
+    def opOnDocumentRestored(self, obj):
+        self.setEditorProperties(obj)
+
     def opExecute(self, obj):
         '''opExecute(obj) ... process surface operation'''
         PathLog.track()
+
+        # OCL must be installed
+        try:
+            import ocl
+        except:
+            FreeCAD.Console.PrintError(
+                translate("Path_Surface", "This operation requires OpenCamLib to be installed.") + "\n")
+            return
+
         print("StepOver is  " + str(obj.StepOver))
         if obj.StepOver > 100:
             obj.StepOver = 100
@@ -114,49 +127,42 @@ class ObjectSurface(PathOp.ObjectOp):
         if parentJob is None:
             return
 
-        print("base object: " + self.baseobject.Name)
+        for base in self.model:
+            print("base object: " + base.Name)
 
-        if obj.Algorithm in ['OCL Dropcutter', 'OCL Waterline']:
-            try:
-                import ocl
-            except:
-                FreeCAD.Console.PrintError(
-                    translate("Path_Surface", "This operation requires OpenCamLib to be installed.") + "\n")
-                return
+            if base.TypeId.startswith('Mesh'):
+                mesh = base.Mesh
+            else:
+                # try/except is for Path Jobs created before GeometryTolerance
+                try:
+                    deflection = parentJob.GeometryTolerance
+                except AttributeError:
+                    import PathScripts.PathPreferences as PathPreferences
+                    deflection = PathPreferences.defaultGeometryTolerance()
+                base.Shape.tessellate(0.5)
+                mesh = MeshPart.meshFromShape(base.Shape, Deflection=deflection)
+            if obj.BoundBox == "BaseBoundBox":
+                bb = mesh.BoundBox
+            else:
+                bb = parentJob.Stock.Shape.BoundBox
 
-        if self.baseobject.TypeId.startswith('Mesh'):
-            mesh = self.baseobject.Mesh
-        else:
-            # try/except is for Path Jobs created before GeometryTolerance
-            try:
-                deflection = parentJob.GeometryTolerance
-            except AttributeError:
-                import PathScripts.PathPreferences as PathPreferences
-                deflection = PathPreferences.defaultGeometryTolerance()
-            self.baseobject.Shape.tessellate(0.5)
-            mesh = MeshPart.meshFromShape(self.baseobject.Shape, Deflection=deflection)
-        if obj.BoundBox == "BaseBoundBox":
-            bb = mesh.BoundBox
-        else:
-            bb = parentJob.Stock.Shape.BoundBox
+            s = ocl.STLSurf()
+            for f in mesh.Facets:
+                p = f.Points[0]
+                q = f.Points[1]
+                r = f.Points[2]
+                # offset the triangle in Z with DepthOffset
+                t = ocl.Triangle(ocl.Point(p[0], p[1], p[2] + obj.DepthOffset.Value),
+                                 ocl.Point(q[0], q[1], q[2] + obj.DepthOffset.Value),
+                                 ocl.Point(r[0], r[1], r[2] + obj.DepthOffset.Value))
+                s.addTriangle(t)
 
-        s = ocl.STLSurf()
-        for f in mesh.Facets:
-            p = f.Points[0]
-            q = f.Points[1]
-            r = f.Points[2]
-            # offset the triangle in Z with DepthOffset
-            t = ocl.Triangle(ocl.Point(p[0], p[1], p[2] + obj.DepthOffset.Value),
-                             ocl.Point(q[0], q[1], q[2] + obj.DepthOffset.Value),
-                             ocl.Point(r[0], r[1], r[2] + obj.DepthOffset.Value))
-            s.addTriangle(t)
+            if obj.Algorithm == 'OCL Dropcutter':
+                output = self._dropcutter(obj, s, bb)
+            elif obj.Algorithm == 'OCL Waterline':
+                output = self._waterline(obj, s, bb)
 
-        if obj.Algorithm == 'OCL Dropcutter':
-            output = self._dropcutter(obj, s, bb)
-        elif obj.Algorithm == 'OCL Waterline':
-            output = self._waterline(obj, s, bb)
-
-        self.commandlist.extend(output)
+            self.commandlist.extend(output)
 
     def _waterline(self, obj, s, bb):
         import time
@@ -304,21 +310,30 @@ class ObjectSurface(PathOp.ObjectOp):
     def pocketInvertExtraOffset(self):
         return True
 
-    def opSetDefaultValues(self, obj):
-        '''opSetDefaultValues(obj) ... initialize defauts'''
+    def opSetDefaultValues(self, obj, job):
+        '''opSetDefaultValues(obj, job) ... initialize defaults'''
 
         # obj.ZigZagAngle = 45.0
         obj.StepOver = 50
         # need to overwrite the default depth calculations for facing
         job = PathUtils.findParentJob(obj)
-        if job and job.Base:
-            d = PathUtils.guessDepths(job.Base.Shape, None)
+        if job and job.Stock:
+            d = PathUtils.guessDepths(job.Stock.Shape, None)
             obj.OpStartDepth = d.start_depth
             obj.OpFinalDepth = d.final_depth
 
+def SetupProperties():
+    setup = []
+    setup.append("Algorithm")
+    setup.append("DropCutterDir")
+    setup.append("BoundBox")
+    setup.append("StepOver")
+    setup.append("DepthOffset")
+    return setup
 
-def Create(name):
+def Create(name, obj = None):
     '''Create(name) ... Creates and returns a Surface operation.'''
-    obj = FreeCAD.ActiveDocument.addObject("Path::FeaturePython", name)
-    proxy = ObjectSurface(obj)
+    if obj is None:
+        obj = FreeCAD.ActiveDocument.addObject("Path::FeaturePython", name)
+    proxy = ObjectSurface(obj, name)
     return obj

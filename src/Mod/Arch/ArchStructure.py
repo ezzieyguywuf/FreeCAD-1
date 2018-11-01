@@ -238,7 +238,7 @@ class _CommandStructure:
             else:
                 # metal profile
                 FreeCADGui.doCommand('p = Arch.makeProfile('+str(self.Profile)+')')
-                if self.Length == self.Profile[4]:
+                if abs(self.Length - self.Profile[4]) < 0.1: # forgive rounding errors
                     # vertical
                     FreeCADGui.doCommand('s = Arch.makeStructure(p,height='+str(self.Height)+')')
                 else:
@@ -269,7 +269,12 @@ class _CommandStructure:
 
         ilist=[]
         for p in baselist:
-            ilist.append(p[2]+" ("+str(p[4])+"x"+str(p[5])+"mm)")
+            f = FreeCAD.Units.Quantity(p[4],FreeCAD.Units.Length).getUserPreferred()
+            d = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Units").GetInt("Decimals",2)
+            s1 = str(round(p[4]/f[1],d))
+            s2 = str(round(p[5]/f[1],d))
+            s3 = str(f[2])
+            ilist.append(p[2]+" ("+s1+"x"+s2+s3+")")
         return ilist
 
     def taskbox(self):
@@ -609,6 +614,12 @@ class _Structure(ArchComponent.Component):
                                 normal = baseface.normalAt(0,0)
                         if not baseface:
                             for w in obj.Base.Shape.Wires:
+                                if not w.isClosed():
+                                    p0 = w.OrderedVertexes[0].Point
+                                    p1 = w.OrderedVertexes[-1].Point
+                                    if p0 != p1:
+                                        e = Part.Line(p0,p1).toShape()
+                                        w.add(e)
                                 w.fix(0.1,0,1) # fixes self-intersecting wires
                                 f = Part.Face(w)
                                 if baseface:

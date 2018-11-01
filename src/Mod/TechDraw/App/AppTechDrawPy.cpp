@@ -110,6 +110,9 @@ public:
         add_varargs_method("writeDXFPage",&Module::writeDXFPage,
             "writeDXFPage(page,filename): Exports a DrawPage to a DXF file."
         );
+        add_varargs_method("findCentroid",&Module::findCentroid,
+            "vector = findCentroid(shape,direction): finds geometric centroid of shape looking in direction."
+        );
         initialize("This is a module for making drawings"); // register with Python
     }
     virtual ~Module() {}
@@ -544,7 +547,7 @@ private:
 
         try {
             ImpExpDxfWrite writer(filePath);
-            writer.setLayerName(layerName);
+            writer.init();
             App::DocumentObject* obj = 0;
             TechDraw::DrawViewPart* dvp = 0;
             if (PyObject_TypeCheck(viewObj, &(TechDraw::DrawViewPartPy::Type))) {
@@ -555,6 +558,7 @@ private:
                 writer.setLayerName(layerName);
                 write1ViewDxf(writer,dvp,align);
             }
+            writer.endRun();
         }
         catch (const Base::Exception& e) {
             throw Py::RuntimeError(e.what());
@@ -577,8 +581,7 @@ private:
 
         try {
             ImpExpDxfWrite writer(filePath);
-            writer.setLayerName(layerName);
-
+            writer.init();
             App::DocumentObject* obj = 0;
             TechDraw::DrawPage* dp = 0;
             if (PyObject_TypeCheck(pageObj, &(TechDraw::DrawPagePy::Type))) {
@@ -686,14 +689,45 @@ private:
                    }
                 }
             }
+            writer.endRun();
         }
         catch (const Base::Exception& e) {
             throw Py::RuntimeError(e.what());
         }
 
         return Py::None();
-    }  
+    }
 
+    Py::Object findCentroid(const Py::Tuple& args)
+    {
+        PyObject *pcObjShape;
+        PyObject *pcObjDir;
+        if (!PyArg_ParseTuple(args.ptr(), "OO", &pcObjShape,
+                                                &pcObjDir)) {
+            throw Py::TypeError("expected (shape,direction");
+        }
+
+        if (!PyObject_TypeCheck(pcObjShape, &(TopoShapePy::Type))) {
+            throw Py::TypeError("expected arg1 to be 'Shape'");
+        }
+
+        if (!PyObject_TypeCheck(pcObjDir, &(Base::VectorPy::Type))) {
+            throw Py::TypeError("expected arg2 to be 'Vector'");
+        }
+
+        TopoShapePy* pShape = static_cast<TopoShapePy*>(pcObjShape);
+        if (!pShape) {
+            Base::Console().Error("TechDraw::findCentroid - input shape is null\n");
+            return Py::None();
+        }
+
+        const TopoDS_Shape& shape = pShape->getTopoShapePtr()->getShape();
+        Base::Vector3d dir = static_cast<Base::VectorPy*>(pcObjDir)->value();
+        Base::Vector3d c = TechDrawGeometry::findCentroidVec(shape,dir);
+        PyObject* result = nullptr;
+        result = new Base::VectorPy(new Base::Vector3d(c));
+        return Py::asObject(result);
+    }
 
  };
 

@@ -46,6 +46,7 @@
 #include <App/DocumentObject.h>
 #include <App/Material.h>
 #include <Base/Console.h>
+#include <Base/Parameter.h>
 #include <Base/Vector3D.h>
 #include <Gui/ViewProvider.h>
 
@@ -458,6 +459,11 @@ void QGIViewPart::drawViewPart()
     Base::Reference<ParameterGrp> hGrp = App::GetApplication().GetUserParameter().GetGroup("BaseApp")->
                                          GetGroup("Preferences")->GetGroup("Mod/TechDraw/General");
     double vertexScaleFactor = hGrp->GetFloat("VertexScale", 3.0);
+    hGrp = App::GetApplication().GetUserParameter().GetGroup("BaseApp")->
+                                         GetGroup("Preferences")->GetGroup("Mod/TechDraw/Decorations");
+    App::Color fcColor;
+    fcColor.setPackedValue(hGrp->GetUnsigned("VertexColor", 0x00000000));
+    QColor vertexColor = fcColor.asValue<QColor>();
 
     bool usePolygonHLR = viewPart->CoarseView.getValue();
     const std::vector<TechDrawGeometry::Vertex *> &verts = viewPart->getVertexGeometry();
@@ -476,6 +482,8 @@ void QGIViewPart::drawViewPart()
             }
         } else if(!usePolygonHLR){ //Disable dots WHEN usePolygonHLR
             QGIVertex *item = new QGIVertex(i);
+            item->setNormalColor(vertexColor);
+            item->setPrettyNormal();
             addToGroup(item);
             item->setPos(Rez::guiX((*vert)->pnt.x), Rez::guiX((*vert)->pnt.y));
             item->setRadius(lineWidth * vertexScaleFactor);
@@ -976,7 +984,9 @@ void QGIViewPart::dumpPath(const char* text,QPainterPath path)
 
 QRectF QGIViewPart::boundingRect() const
 {
-    return childrenBoundingRect();
+//    return childrenBoundingRect();
+//    return customChildrenBoundingRect();
+    return QGIView::boundingRect();
 }
 
 //QGIViewPart derived classes do not need a rotate view method as rotation is handled on App side.

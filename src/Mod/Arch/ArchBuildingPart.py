@@ -35,6 +35,9 @@ else:
     def QT_TRANSLATE_NOOP(ctxt,txt):
         return txt
     # \endcond
+import sys
+if sys.version_info.major >= 3:
+    unicode = str
 
 ## @package ArchBuildingPart
 #  \ingroup ARCH
@@ -48,8 +51,149 @@ __author__ = "Yorik van Havre"
 __url__ = "http://www.freecadweb.org"
 
 
+BuildingTypes = ['Undefined',
+'Agricultural - Barn',
+'Agricultural - Chicken coop or chickenhouse',
+'Agricultural - Cow-shed',
+'Agricultural - Farmhouse',
+'Agricultural - Granary',
+'Agricultural - Greenhouse',
+'Agricultural - Hayloft',
+'Agricultural - Pigpen or sty',
+'Agricultural - Root cellar',
+'Agricultural - Shed',
+'Agricultural - Silo',
+'Agricultural - Stable',
+'Agricultural - Storm cellar',
+'Agricultural - Well house',
+'Agricultural - Underground pit',
 
-def makeBuildingPart(objectslist=None):
+'Commercial - Automobile repair shop',
+'Commercial - Bank',
+'Commercial - Car wash',
+'Commercial - Convention center',
+'Commercial - Forum',
+'Commercial - Gas station',
+'Commercial - Hotel',
+'Commercial - Market',
+'Commercial - Market house',
+'Commercial - Skyscraper',
+'Commercial - Shop',
+'Commercial - Shopping mall',
+'Commercial - Supermarket',
+'Commercial - Warehouse',
+'Commercial - Restaurant',
+
+'Residential - Apartment block',
+'Residential - Asylum',
+'Residential - Condominium',
+'Residential - Dormitory',
+'Residential - Duplex',
+'Residential - House',
+'Residential - Nursing home',
+'Residential - Townhouse',
+'Residential - Villa',
+'Residential - Bungalow',
+
+'Educational - Archive',
+'Educational - College classroom building',
+'Educational - College gymnasium',
+'Educational - College students union',
+'Educational - School',
+'Educational - Library',
+'Educational - Museum',
+'Educational - Art gallery',
+'Educational - Theater',
+'Educational - Amphitheater',
+'Educational - Concert hall',
+'Educational - Cinema',
+'Educational - Opera house',
+'Educational - Boarding school',
+
+'Government - Capitol',
+'Government - City hall',
+'Government - Consulate',
+'Government - Courthouse',
+'Government - Embassy',
+'Government - Fire station',
+'Government - Meeting house',
+'Government - Moot hall',
+'Government - Palace',
+'Government - Parliament',
+'Government - Police station',
+'Government - Post office',
+'Government - Prison',
+
+'Industrial - Brewery',
+'Industrial - Factory',
+'Industrial - Foundry',
+'Industrial - Power plant',
+'Industrial - Mill',
+
+'Military - Arsenal',
+'Military -Barracks',
+
+'Parking - Boathouse',
+'Parking - Garage',
+'Parking - Hangar',
+
+'Storage - Silo',
+'Storage - Hangar',
+
+'Religious - Church',
+'Religious - Basilica',
+'Religious - Cathedral',
+'Religious - Chapel',
+'Religious - Oratory',
+'Religious - Martyrium',
+'Religious - Mosque',
+'Religious - Mihrab',
+'Religious - Surau',
+'Religious - Imambargah',
+'Religious - Monastery',
+'Religious - Mithraeum',
+'Religious - Fire temple',
+'Religious - Shrine',
+'Religious - Synagogue',
+'Religious - Temple',
+'Religious - Pagoda',
+'Religious - Gurdwara',
+'Religious - Hindu temple',
+
+'Transport - Airport terminal',
+'Transport - Bus station',
+'Transport - Metro station',
+'Transport - Taxi station',
+'Transport - Railway station',
+'Transport - Signal box',
+'Transport - Lighthouse',
+
+'Infrastructure - Data centre',
+
+'Power station - Fossil-fuel power station',
+'Power station - Nuclear power plant',
+'Power station - Geothermal power',
+'Power station - Biomass-fuelled power plant',
+'Power station - Waste heat power plant',
+'Power station - Renewable energy power station',
+'Power station - Atomic energy plant',
+
+'Other - Apartment',
+'Other - Clinic',
+'Other - Community hall',
+'Other - Eatery',
+'Other - Folly',
+'Other - Food court',
+'Other - Hospice',
+'Other - Hospital',
+'Other - Hut',
+'Other - Bathhouse',
+'Other - Workshop',
+'Other - World trade centre'
+]
+
+
+def makeBuildingPart(objectslist=None,baseobj=None,name="BuildingPart"):
 
     '''makeBuildingPart(objectslist): creates a buildingPart including the
     objects from the given list.'''
@@ -58,24 +202,42 @@ def makeBuildingPart(objectslist=None):
     #obj = FreeCAD.ActiveDocument.addObject("App::FeaturePython","BuildingPart")
     obj.Label = translate("Arch","BuildingPart")
     BuildingPart(obj)
+    #obj.IfcRole = "Building Storey" # set default to Floor
     if FreeCAD.GuiUp:
         ViewProviderBuildingPart(obj.ViewObject)
     if objectslist:
         obj.addObjects(objectslist)
     return obj
 
+
 def makeFloor(objectslist=None,baseobj=None,name="Floor"):
-    
+
     """overwrites ArchFloor.makeFloor"""
-    
+
     obj = makeBuildingPart(objectslist)
     obj.Label = name
     obj.IfcRole = "Building Storey"
     return obj
 
+
+def makeBuilding(objectslist=None,baseobj=None,name="Building"):
+
+    """overwrites ArchBuilding.makeBuilding"""
+
+    obj = makeBuildingPart(objectslist)
+    obj.Label = name
+    obj.IfcRole = "Building"
+    obj.addProperty("App::PropertyEnumeration","BuildingType","Building",QT_TRANSLATE_NOOP("App::Property","The type of this building"))
+    obj.BuildingType = BuildingTypes
+    if FreeCAD.GuiUp:
+        obj.ViewObject.ShowLevel = False
+        obj.ViewObject.ShowLabel = False
+    return obj
+
+
 def convertFloors(floor=None):
 
-    """convert the given Floor (or all Arch Floors from the active document if none is given) into BuildingParts"""
+    """convert the given Floor or Building (or all Arch Floors from the active document if none is given) into BuildingParts"""
 
     todel = []
     if floor:
@@ -83,9 +245,14 @@ def convertFloors(floor=None):
     else:
         objset = FreeCAD.ActiveDocument.Objects
     for obj in objset:
-        if Draft.getType(obj) == "Floor":
+        if Draft.getType(obj) in ["Floor","Building"]:
             nobj = makeBuildingPart(obj.Group)
-            nobj.Role = "Storey"
+            if Draft.getType(obj) == "Floor":
+                nobj.IfcRole = "Building Storey"
+            else:
+                nobj.IfcRole = "Building"
+                nobj.addProperty("App::PropertyEnumeration","BuildingType","Building",QT_TRANSLATE_NOOP("App::Property","The type of this building"))
+                nobj.BuildingType = BuildingTypes
             label = obj.Label
             for parent in obj.InList:
                 if hasattr(parent,"Group"):
@@ -104,6 +271,7 @@ def convertFloors(floor=None):
     for n in todel:
         from DraftGui import todo
         todo.delay(FreeCAD.ActiveDocument.removeObject,n)
+
 
 
 class CommandBuildingPart:
@@ -228,17 +396,34 @@ class BuildingPart:
     def execute(self,obj):
 
         # gather all the child shapes into a compound
-        shapes = []
-        for o in obj.Group:
-            if o.isDerivedFrom("Part::Feature") and o.Shape and (not o.Shape.isNull()):
-                shapes.append(o.Shape)
+        shapes = self.getShapes(obj)
         if shapes:
             import Part
             obj.Shape = Part.makeCompound(shapes)
 
+    def getShapes(self,obj):
+
+        "recursively get the shapes of objects inside this BuildingPart"
+
+        shapes = []
+        if obj.isDerivedFrom("Part::Feature") and obj.Shape and (not obj.Shape.isNull()):
+            shapes.append(obj.Shape)
+        if hasattr(obj,"Group"):
+            for child in obj.Group:
+                shapes.extend(self.getShapes(child))
+        for i in obj.InList:
+            if hasattr(i,"Hosts"):
+                if obj in i.Hosts:
+                    shapes.extend(self.getShapes(i))
+            elif hasattr(i,"Host"):
+                if obj == i.Host:
+                    shapes.extend(self.getShapes(i))
+        return shapes
+
     def getSpaces(self,obj):
 
         "gets the list of Spaces that have this object as their Zone property"
+
         g = []
         for o in obj.OutList:
             if hasattr(o,"Zone"):
@@ -259,7 +444,7 @@ class ViewProviderBuildingPart:
         #vobj.addExtension("Gui::ViewProviderGeoFeatureGroupExtensionPython", self)
         vobj.Proxy = self
         self.setProperties(vobj)
-        vobj.ShapeColor = (0.13,0.15,0.37)
+        vobj.ShapeColor = ArchCommands.getDefaultColor("Helpers")
 
     def setProperties(self,vobj):
 
@@ -335,6 +520,7 @@ class ViewProviderBuildingPart:
         self.txt.justification = coin.SoText2.LEFT
         self.txt.string.setValue("level")
         self.sep.addChild(self.txt)
+        vobj.addDisplayMode(coin.SoSeparator(),"Default")
         self.onChanged(vobj,"ShapeColor")
         self.onChanged(vobj,"FontName")
         self.onChanged(vobj,"ShowLevel")
@@ -353,27 +539,40 @@ class ViewProviderBuildingPart:
 
         return mode
 
-    def isShow(self):
-
-        return True
-
     def updateData(self,obj,prop):
 
         if prop in ["Placement","LevelOffset"]:
             self.onChanged(obj.ViewObject,"OverrideUnit")
         elif prop == "Shape":
             # gather all the child shapes
-            cols = []
-            for o in obj.Group:
-                if o.isDerivedFrom("Part::Feature") and o.Shape and (not o.Shape.isNull()):
-                    if len(o.ViewObject.DiffuseColor) == len(o.Shape.Faces):
-                        cols.extend(o.ViewObject.DiffuseColor)
-                    else:
-                        c = o.ViewObject.ShapeColor[:3]+(obj.ViewObject.Transparency/100.0,)
-                        for i in range(len(o.Shape.Faces)):
-                            cols.append(c)
-            if hasattr(obj.ViewObject,"DiffuseColor"):
-                obj.ViewObject.DiffuseColor = cols
+            colors = self.getColors(obj)
+            if colors and hasattr(obj.ViewObject,"DiffuseColor"):
+                if len(colors) == len(obj.Shape.Faces):
+                    obj.ViewObject.DiffuseColor = colors
+
+    def getColors(self,obj):
+
+        "recursively get the colors of objects inside this BuildingPart"
+
+        colors = []
+        if obj.isDerivedFrom("Part::Feature") and obj.Shape and (not obj.Shape.isNull()):
+            if hasattr(obj.ViewObject,"DiffuseColor") and (len(obj.ViewObject.DiffuseColor) == len(obj.Shape.Faces)):
+                colors.extend(obj.ViewObject.DiffuseColor)
+            elif hasattr(obj.ViewObject,"ShapeColor"):
+                c = obj.ViewObject.ShapeColor[:3]+(obj.ViewObject.Transparency/100.0,)
+                for i in range(len(obj.Shape.Faces)):
+                    colors.append(c)
+        if hasattr(obj,"Group"):
+            for child in obj.Group:
+                colors.extend(self.getColors(child))
+        for i in obj.InList:
+            if hasattr(i,"Hosts"):
+                if obj in i.Hosts:
+                    colors.extend(self.getColors(i))
+            elif hasattr(i,"Host"):
+                if obj == i.Host:
+                    colors.extend(self.getColors(i))
+        return colors
 
     def onChanged(self,vobj,prop):
 

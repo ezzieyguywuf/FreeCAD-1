@@ -24,7 +24,6 @@
 #include "PreCompiled.h"
 
 #ifndef _PreComp_
-# include <boost/signals.hpp>
 # include <boost/bind.hpp>
 # include <QAction>
 # include <QActionGroup>
@@ -348,7 +347,7 @@ void TreeWidget::onMarkRecompute()
         App::Document* doc = docitem->document()->getDocument();
         std::vector<App::DocumentObject*> obj = doc->getObjects();
         for (std::vector<App::DocumentObject*>::iterator it = obj.begin(); it != obj.end(); ++it)
-            (*it)->touch();
+            (*it)->enforceRecompute();
     }
     // mark all selected objects
     else {
@@ -357,7 +356,7 @@ void TreeWidget::onMarkRecompute()
             if ((*it)->type() == ObjectType) {
                 DocumentObjectItem* objitem = static_cast<DocumentObjectItem*>(*it);
                 App::DocumentObject* obj = objitem->object()->getObject();
-                obj->touch();
+                obj->enforceRecompute();
             }
         }
     }
@@ -706,12 +705,19 @@ void TreeWidget::slotActiveDocument(const Gui::Document& Doc)
     std::map<const Gui::Document*, DocumentItem*>::iterator jt = DocumentMap.find(&Doc);
     if (jt == DocumentMap.end())
         return; // signal is emitted before the item gets created
+    ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/View");
+    int displayMode = hGrp->GetInt("TreeViewDocument", 0);
     for (std::map<const Gui::Document*, DocumentItem*>::iterator it = DocumentMap.begin();
          it != DocumentMap.end(); ++it)
     {
         QFont f = it->second->font(0);
         f.setBold(it == jt);
-        it->second->setFont(0,f);
+        it->second->setHidden(0 == displayMode && it != jt);
+        if (2 == displayMode) {
+            it->second->setExpanded(it == jt);
+        }
+        // this must be done as last step
+        it->second->setFont(0, f);
     }
 }
 
@@ -1249,11 +1255,12 @@ void DocumentItem::slotChangeObject(const Gui::ViewProviderDocumentObject& view)
 void DocumentItem::slotRenameObject(const Gui::ViewProviderDocumentObject& obj)
 {
     // Do nothing here because the Label is set in slotChangeObject
-    Q_UNUSED(obj); 
+    Q_UNUSED(obj);
 }
 
 void DocumentItem::slotActiveObject(const Gui::ViewProviderDocumentObject& obj)
 {
+#if 0
     std::string objectName = obj.getObject()->getNameInDocument();
     if (ObjectMap.find(objectName) == ObjectMap.end())
         return; // signal is emitted before the item gets created
@@ -1265,32 +1272,66 @@ void DocumentItem::slotActiveObject(const Gui::ViewProviderDocumentObject& obj)
             item->setFont(0,f);
         }
     }
+#else
+    Q_UNUSED(obj);
+#endif
 }
 
 void DocumentItem::slotHighlightObject (const Gui::ViewProviderDocumentObject& obj, const Gui::HighlightMode& high, bool set)
 {
     FOREACH_ITEM(item,obj)
         QFont f = item->font(0);
-        switch (high) {
-        case Gui::Bold: f.setBold(set);             break;
-        case Gui::Italic: f.setItalic(set);         break;
-        case Gui::Underlined: f.setUnderline(set);  break;
-        case Gui::Overlined: f.setOverline(set);    break;
-        case Gui::Blue:
+        auto highlight = [&item, &set](const QColor& col){
             if (set)
-                item->setBackgroundColor(0,QColor(200,200,255));
+                item->setBackgroundColor(0, col);
             else
                 item->setData(0, Qt::BackgroundColorRole,QVariant());
+        };
+
+        switch (high) {
+        case Gui::Bold:
+            f.setBold(set);
+            break;
+        case Gui::Italic:
+            f.setItalic(set);
+            break;
+        case Gui::Underlined:
+            f.setUnderline(set);
+            break;
+        case Gui::Overlined:
+            f.setOverline(set);
+            break;
+        case Gui::Blue:
+            highlight(QColor(200,200,255));
             break;
         case Gui::LightBlue:
+            highlight(QColor(230,230,255));
+            break;
+        case Gui::UserDefined:
+        {
+            QColor color(230,230,255);
             if (set) {
                 ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/TreeView");
+                bool bold = hGrp->GetBool("TreeActiveBold",true);
+                bool italic = hGrp->GetBool("TreeActiveItalic",false);
+                bool underlined = hGrp->GetBool("TreeActiveUnderlined",false);
+                bool overlined = hGrp->GetBool("TreeActiveOverlined",false);
+                f.setBold(bold);
+                f.setItalic(italic);
+                f.setUnderline(underlined);
+                f.setOverline(overlined);
+
                 unsigned long col = hGrp->GetUnsigned("TreeActiveColor",3873898495);
-                item->setBackgroundColor(0,QColor((col >> 24) & 0xff,(col >> 16) & 0xff,(col >> 8) & 0xff));
+                color = QColor((col >> 24) & 0xff,(col >> 16) & 0xff,(col >> 8) & 0xff);
             }
-            else
-                item->setData(0, Qt::BackgroundColorRole,QVariant());
-            break;
+            else {
+                f.setBold(false);
+                f.setItalic(false);
+                f.setUnderline(false);
+                f.setOverline(false);
+            }
+            highlight(color);
+        }   break;
         default:
             break;
         }
@@ -1338,21 +1379,6 @@ const Gui::Document* DocumentItem::document() const
 {
     return this->pDocument;
 }
-
-//void DocumentItem::markItem(const App::DocumentObject* Obj,bool mark)
-//{
-//    // never call without Object!
-//    assert(Obj);
-//
-//
-//    std::map<std::string,DocumentObjectItem*>::iterator pos;
-//    pos = ObjectMap.find(Obj->getNameInDocument());
-//    if (pos != ObjectMap.end()) {
-//        QFont f = pos->second->font(0);
-//        f.setUnderline(mark);
-//        pos->second->setFont(0,f);
-//    }
-//}
 
 //void DocumentItem::markItem(const App::DocumentObject* Obj,bool mark)
 //{
@@ -1532,9 +1558,9 @@ void DocumentObjectItem::testStatus()
 
     // if status has changed then continue
     int currentStatus =
-        ((pObject->isError()          ? 1 : 0) << 2) |
-        ((pObject->mustExecute() == 1 ? 1 : 0) << 1) |
-        (viewObject->isShow()         ? 1 : 0);
+        ((pObject->isError()            ? 1 : 0) << 2) |
+        ((pObject->mustRecompute() == 1 ? 1 : 0) << 1) |
+        (viewObject->isShow()           ? 1 : 0);
     if (previousStatus == currentStatus)
         return;
     previousStatus = currentStatus;

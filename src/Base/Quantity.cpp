@@ -23,9 +23,12 @@
 #include "PreCompiled.h"
 #ifndef _PreComp_
 # include <sstream>
+# ifdef FC_OS_WIN32
+# define _USE_MATH_DEFINES
+# endif // FC_OS_WIN32
+# include <cmath>
 #endif
 
-#include <cmath>
 #include "Quantity.h"
 #include "Exception.h"
 #include "UnitsApi.h"
@@ -41,10 +44,15 @@
 
 using namespace Base;
 
+// ====== Static attributes =========================
+int QuantityFormat::defaultDenominator = 8; // for 1/8"
+
+
 QuantityFormat::QuantityFormat()
   : option(static_cast<NumberOption>(OmitGroupSeparator | RejectGroupSeparator))
   , format(Fixed)
   , precision(UnitsApi::getDecimals())
+  , denominator(defaultDenominator)
 {
 }
 

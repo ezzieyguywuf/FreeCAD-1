@@ -236,6 +236,8 @@ class Component:
             obj.addProperty("App::PropertyString","Description","Component",QT_TRANSLATE_NOOP("App::Property","An optional description for this component"))
         if not "Tag" in pl:
             obj.addProperty("App::PropertyString","Tag","Component",QT_TRANSLATE_NOOP("App::Property","An optional tag for this component"))
+        if not "StandardCode" in pl:
+            obj.addProperty("App::PropertyString","StandardCode","Component",QT_TRANSLATE_NOOP("App::Property","An optional standard (OmniClass, etc...) code for this component"))
         if not "IfcAttributes" in pl:
             obj.addProperty("App::PropertyMap","IfcAttributes","Component",QT_TRANSLATE_NOOP("App::Property","Custom IFC properties and attributes"))
         if not "Material" in pl:
@@ -382,6 +384,8 @@ class Component:
                     if hasattr(obj.Base,"LengthFwd"):
                         if obj.Base.LengthFwd.Value:
                             extrusion = extrusion.multiply(obj.Base.LengthFwd.Value)
+                    if not self.isIdentity(obj.Base.Placement):
+                        placement = placement.multiply(obj.Base.Placement)
                     return (base,extrusion,placement)
             elif obj.Base.isDerivedFrom("Part::MultiFuse"):
                 rshapes = []
@@ -421,6 +425,7 @@ class Component:
         """returns a shape that is a copy of the original shape
         but centered on the (0,0) origin, and a placement that is needed to
         reposition that shape to its original location/orientation"""
+
         import DraftGeomUtils,math
         if not isinstance(shape,list):
             shape = [shape]
@@ -473,7 +478,7 @@ class Component:
         #print("Processing subshapes of ",obj.Label, " : ",obj.Additions)
 
         if placement:
-            if placement.isIdentity():
+            if self.isIdentity(placement):
                 placement = None
             else:
                 placement = FreeCAD.Placement(placement)
@@ -570,6 +575,7 @@ class Component:
     def spread(self,obj,shape,placement=None):
 
         "spreads this shape along axis positions"
+
         points = None
         if hasattr(obj,"Axis"):
             if obj.Axis:
@@ -577,7 +583,7 @@ class Component:
                     if hasattr(obj.Axis.Proxy,"getPoints"):
                         points = obj.Axis.Proxy.getPoints(obj.Axis)
                 if not points:
-                    if obj.Axis.isDerivedFrom("Part.Feature"):
+                    if obj.Axis.isDerivedFrom("Part::Feature"):
                         points = [v.Point for v in obj.Axis.Shape.Vertexes]
         if points:
             shps = []
@@ -588,6 +594,14 @@ class Component:
             import Part
             shape = Part.makeCompound(shps)
         return shape
+
+    def isIdentity(self,placement):
+
+        "checks if a placement is *almost* zero"
+
+        if (placement.Base.Length < 0.000001) and (placement.Rotation.Angle < 0.000001):
+            return True
+        return False
 
     def applyShape(self,obj,shape,placement,allowinvalid=False,allownosolid=False):
 
@@ -608,20 +622,23 @@ class Component:
                             pass
                         else:
                             shape = r
+                        p = self.spread(obj,shape,placement).Placement.copy() # for some reason this gets zeroed in next line
                         obj.Shape = self.spread(obj,shape,placement)
-                        if not placement.isIdentity():
+                        if not self.isIdentity(placement):
                             obj.Placement = placement
+                        else:
+                            obj.Placement = p
                     else:
                         if allownosolid:
                             obj.Shape = self.spread(obj,shape,placement)
-                            if not placement.isIdentity():
+                            if not self.isIdentity(placement):
                                 obj.Placement = placement
                         else:
                             FreeCAD.Console.PrintWarning(obj.Label + " " + translate("Arch","has no solid")+"\n")
                 else:
                     if allowinvalid:
                         obj.Shape = self.spread(obj,shape,placement)
-                        if not placement.isIdentity():
+                        if not self.isIdentity(placement):
                             obj.Placement = placement
                     else:
                         FreeCAD.Console.PrintWarning(obj.Label + " " + translate("Arch","has an invalid shape")+"\n")
@@ -1020,9 +1037,21 @@ class ComponentTaskPanel:
         self.grid.addWidget(self.ifcButton, 4, 0, 1, 2)
         self.ifcButton.hide()
 
+        self.classButton = QtGui.QPushButton(self.baseform)
+        self.classButton.setObjectName("classButton")
+        self.grid.addWidget(self.classButton, 5, 0, 1, 2)
+        try:
+            import BimClassification
+        except:
+            self.classButton.hide()
+        else:
+            import os
+            self.classButton.setIcon(QtGui.QIcon(os.path.join(os.path.dirname(BimClassification.__file__),"icons","BIM_Classification.svg")))
+
         QtCore.QObject.connect(self.addButton, QtCore.SIGNAL("clicked()"), self.addElement)
         QtCore.QObject.connect(self.delButton, QtCore.SIGNAL("clicked()"), self.removeElement)
         QtCore.QObject.connect(self.ifcButton, QtCore.SIGNAL("clicked()"), self.editIfcProperties)
+        QtCore.QObject.connect(self.classButton, QtCore.SIGNAL("clicked()"), self.editClass)
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self.check)
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("itemDoubleClicked(QTreeWidgetItem *,int)"), self.editObject)
         self.update()
@@ -1141,7 +1170,7 @@ class ComponentTaskPanel:
 
     def retranslateUi(self, TaskPanel):
 
-        self.baseform.setWindowTitle(QtGui.QApplication.translate("Arch", "Components", None))
+        self.baseform.setWindowTitle(QtGui.QApplication.translate("Arch", "Component", None))
         self.delButton.setText(QtGui.QApplication.translate("Arch", "Remove", None))
         self.addButton.setText(QtGui.QApplication.translate("Arch", "Add", None))
         self.title.setText(QtGui.QApplication.translate("Arch", "Components of this object", None))
@@ -1155,9 +1184,10 @@ class ComponentTaskPanel:
         self.treeGroup.setText(0,QtGui.QApplication.translate("Arch", "Group", None))
         self.treeHosts.setText(0,QtGui.QApplication.translate("Arch", "Hosts", None))
         self.ifcButton.setText(QtGui.QApplication.translate("Arch", "Edit IFC properties", None))
+        self.classButton.setText(QtGui.QApplication.translate("Arch", "Edit standard code", None))
 
     def editIfcProperties(self):
-        
+
         if hasattr(self,"ifcEditor"):
             if self.ifcEditor:
                 self.ifcEditor.hide()
@@ -1169,7 +1199,7 @@ class ComponentTaskPanel:
         if not isinstance(self.obj.IfcProperties,dict):
             return
         import Arch_rc,csv,os
-        
+
         # get presets
         self.ptypes = SimplePropertyTypes + MeasurePropertyTypes
         self.plabels = [''.join(map(lambda x: x if x.islower() else " "+x, t[3:]))[1:] for t in self.ptypes]
@@ -1180,7 +1210,7 @@ class ComponentTaskPanel:
                 reader = csv.reader(csvfile, delimiter=';')
                 for row in reader:
                     self.psetdefs[row[0]] = row[1:]
-        self.psetkeys = [''.join(map(lambda x: x if x.islower() else " "+x, t[5:]))[1:] for t in self.psetdefs.keys()] 
+        self.psetkeys = [''.join(map(lambda x: x if x.islower() else " "+x, t[5:]))[1:] for t in self.psetdefs.keys()]
         self.psetkeys.sort()
         self.ifcEditor = FreeCADGui.PySideUic.loadUi(":/ui/DialogIfcProperties.ui")
         # center the dialog over FreeCAD window
@@ -1253,7 +1283,7 @@ class ComponentTaskPanel:
         self.ifcEditor.show()
 
     def acceptIfcProperties(self):
-        
+
         if hasattr(self,"ifcEditor") and self.ifcEditor:
             self.ifcEditor.hide()
             ifcdict = {}
@@ -1285,7 +1315,7 @@ class ComponentTaskPanel:
             del self.ifcEditor
 
     def addIfcProperty(self,idx=0,pset=None,prop=None,ptype=None):
-        
+
         if hasattr(self,"ifcEditor") and self.ifcEditor:
             if not pset:
                 sel = self.ifcEditor.treeProperties.selectedIndexes()
@@ -1311,9 +1341,9 @@ class ComponentTaskPanel:
                     pset.appendRow([it1,it2,it3])
             if idx != 0:
                 self.ifcEditor.comboProperty.setCurrentIndex(0)
-    
+
     def addIfcPset(self,idx=0):
-    
+
         if hasattr(self,"ifcEditor") and self.ifcEditor:
             if idx == 1:
                 top = QtGui.QStandardItem(QtGui.QApplication.translate("Arch", "New property set", None))
@@ -1338,7 +1368,7 @@ class ComponentTaskPanel:
                         self.ifcEditor.treeProperties.setFirstColumnSpanned(i, idx, True)
                 self.ifcEditor.treeProperties.expandAll()
                 self.ifcEditor.comboPset.setCurrentIndex(0)
-    
+
     def removeIfcProperty(self):
 
         if hasattr(self,"ifcEditor") and self.ifcEditor:
@@ -1350,20 +1380,26 @@ class ComponentTaskPanel:
                     pset = self.ifcModel.itemFromIndex(sel[0].parent())
                     pset.takeRow(sel[0].row())
 
+    def editClass(self):
+
+        FreeCADGui.Selection.clearSelection()
+        FreeCADGui.Selection.addSelection(self.obj)
+        FreeCADGui.runCommand("BIM_Classification")
+
 if FreeCAD.GuiUp:
 
     class IfcEditorDelegate(QtGui.QStyledItemDelegate):
-    
-    
+
+
         def __init__(self, parent=None, dialog=None, ptypes=[], plabels=[], *args):
-    
+
             self.dialog = dialog
             QtGui.QStyledItemDelegate.__init__(self, parent, *args)
             self.ptypes = ptypes
             self.plabels = plabels
-    
+
         def createEditor(self,parent,option,index):
-    
+
             if index.column() == 0: # property name
                 editor = QtGui.QLineEdit(parent)
             elif index.column() == 1: # property type
@@ -1385,9 +1421,9 @@ if FreeCAD.GuiUp:
                     editor = QtGui.QLineEdit(parent)
                 editor.setObjectName("editor_"+ptype)
             return editor
-    
+
         def setEditorData(self, editor, index):
-    
+
             if index.column() == 0:
                 editor.setText(index.data())
             elif index.column() == 1:
@@ -1418,9 +1454,9 @@ if FreeCAD.GuiUp:
                         editor.setValue(0)
                 else:
                     editor.setText(index.data())
-    
+
         def setModelData(self, editor, model, index):
-    
+
             if index.column() == 0:
                 model.setData(index,editor.text())
             elif index.column() == 1:
@@ -1442,6 +1478,6 @@ if FreeCAD.GuiUp:
 
 
 
-            
+
 
 

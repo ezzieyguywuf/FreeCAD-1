@@ -69,45 +69,16 @@ class PathWorkbench (Workbench):
         from PySide import QtCore, QtGui
         FreeCADGui.addLanguagePath(":/translations")
         FreeCADGui.addIconPath(":/icons")
-        # load python modules
-        from PathScripts import PathArray
-        from PathScripts import PathChamferGui
-        from PathScripts import PathComment
-        from PathScripts import PathCustom
-        from PathScripts import PathDressupAxisMap
-        from PathScripts import PathDressupDogbone
-        from PathScripts import PathDressupDragknife
-        from PathScripts import PathDressupRampEntry
-        from PathScripts import PathDressupTagGui
-        from PathScripts import PathDressupLeadInOut
-        from PathScripts import PathDrillingGui
-        from PathScripts import PathEngraveGui
-        from PathScripts import PathFixture
-        from PathScripts import PathHelixGui
-        from PathScripts import PathHop
-        from PathScripts import PathInspect
+        from PathScripts import PathGuiInit
         from PathScripts import PathJobCmd
-        from PathScripts import PathMillFaceGui
-        from PathScripts import PathPocketGui
-        from PathScripts import PathPocketShapeGui
-        from PathScripts import PathPost
-        from PathScripts import PathProfileContourGui
-        from PathScripts import PathProfileEdgesGui
-        from PathScripts import PathProfileFacesGui
-        from PathScripts import PathSanity
-        from PathScripts import PathSimpleCopy
-        from PathScripts import PathStop
-        from PathScripts import PathSurfaceGui
-        from PathScripts import PathToolController
-        from PathScripts import PathToolLibraryManager
-        from PathScripts import PathSimulatorGui
         import PathCommands
+        PathGuiInit.Startup()
 
         # build commands list
         projcmdlist = ["Path_Job", "Path_Post"]
         toolcmdlist = ["Path_Inspect", "Path_Simulator", "Path_ToolLibraryEdit", "Path_SelectLoop"]
         prepcmdlist = ["Path_Fixture", "Path_Comment", "Path_Stop", "Path_Custom"]
-        twodopcmdlist = ["Path_Contour", "Path_Profile_Faces", "Path_Profile_Edges", "Path_Pocket_Shape", "Path_Drilling", "Path_MillFace", "Path_Helix"]
+        twodopcmdlist = ["Path_Contour", "Path_Profile_Faces", "Path_Profile_Edges", "Path_Pocket_Shape", "Path_Drilling", "Path_MillFace", "Path_Helix", "Path_Adaptive" ]
         threedopcmdlist = ["Path_Pocket_3D"]
         engravecmdlist = ["Path_Engrave"]
         modcmdlist = ["Path_OperationCopy", "Path_Array", "Path_SimpleCopy" ]
@@ -121,13 +92,14 @@ class PathWorkbench (Workbench):
             prepcmdlist.append("Path_Shape")
             extracmdlist.extend(["Path_Area", "Path_Area_Workplane"])
 
-            engravecmdlist = sorted(engravecmdlist + ['Path_Chamfer'])
+            engravecmdlist = sorted(engravecmdlist + ['Path_Deburr'])
             engravecmdgroup = ['Path_EngraveTools']
             FreeCADGui.addCommand('Path_EngraveTools', PathCommandGroup(engravecmdlist, QtCore.QT_TRANSLATE_NOOP("Path", 'Engraving Operations')))
 
             threedopcmdlist.append("Path_Surface")
             threedcmdgroup = ['Path_3dTools']
             FreeCADGui.addCommand('Path_3dTools', PathCommandGroup(threedopcmdlist, QtCore.QT_TRANSLATE_NOOP("Path",'3D Operations')))
+
         else:
             engravecmdgroup = engravecmdlist
             threedcmdgroup = threedopcmdlist

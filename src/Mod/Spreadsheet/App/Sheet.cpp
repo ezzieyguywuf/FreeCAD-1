@@ -35,8 +35,10 @@
 #include <App/DynamicProperty.h>
 #include <App/FeaturePythonPyImp.h>
 #include <Base/Exception.h>
+#include <Base/FileInfo.h>
 #include <Base/Placement.h>
 #include <Base/Reader.h>
+#include <Base/Stream.h>
 #include <Base/Writer.h>
 #include <Base/Tools.h>
 #include "Sheet.h"
@@ -140,14 +142,13 @@ void Sheet::clearAll()
 
 bool Sheet::importFromFile(const std::string &filename, char delimiter, char quoteChar, char escapeChar)
 {
-    std::ifstream file;
+    Base::FileInfo fi(filename);
+    Base::ifstream file(fi, std::ios::in);
     int row = 0;
 
     PropertySheet::AtomicPropertyChange signaller(cells);
 
     clearAll();
-
-    file.open(filename.c_str(), std::ios::in);
 
     if (file.is_open()) {
         std::string line;
@@ -793,7 +794,7 @@ DocumentObjectExecReturn *Sheet::execute(void)
                 ++i;
             }
         }
-        catch (std::exception) {
+        catch (std::exception&) {
             // Cycle detected; flag all with errors
 
             std::map<CellAddress, Vertex>::const_iterator i = VertexList.begin();

@@ -78,7 +78,8 @@
 
 using namespace Mesh;
 
-
+// deprecated
+#if 0
 DEF_STD_CMD_A(CmdMeshTransform);
 
 CmdMeshTransform::CmdMeshTransform()
@@ -154,6 +155,61 @@ bool CmdMeshDemolding::isActive(void)
   //return true;
   return getSelection().countObjectsOfType(Mesh::Feature::getClassTypeId()) == 1;
 }
+
+//--------------------------------------------------------------------------------------
+
+DEF_STD_CMD_A(CmdMeshToolMesh);
+
+CmdMeshToolMesh::CmdMeshToolMesh()
+  :Command("Mesh_ToolMesh")
+{
+  sAppModule    = "Mesh";
+  sGroup        = QT_TR_NOOP("Mesh");
+  sMenuText     = QT_TR_NOOP("Segment by tool mesh");
+  sToolTipText  = QT_TR_NOOP("Creates a segment from a given tool mesh");
+  sWhatsThis    = "Mesh_ToolMesh";
+  sStatusTip    = QT_TR_NOOP("Creates a segment from a given tool mesh");
+}
+
+void CmdMeshToolMesh::activated(int)
+{
+  std::vector<App::DocumentObject*> fea = Gui::Selection().getObjectsOfType(Mesh::Feature::getClassTypeId());
+  if ( fea.size() == 2 )
+  {
+    std::string fName = getUniqueObjectName("MeshSegment");
+    App::DocumentObject* mesh = fea.front();
+    App::DocumentObject* tool = fea.back();
+
+    openCommand("Segment by tool mesh");
+    doCommand(Doc, "import Mesh");
+    doCommand(Gui, "import MeshGui");
+    doCommand(Doc,
+      "App.activeDocument().addObject(\"Mesh::SegmentByMesh\",\"%s\")\n"
+      "App.activeDocument().%s.Source = App.activeDocument().%s\n"
+      "App.activeDocument().%s.Tool = App.activeDocument().%s\n",
+      fName.c_str(), fName.c_str(),  mesh->getNameInDocument(), fName.c_str(), tool->getNameInDocument() );
+
+    commitCommand();
+    updateActive();
+
+    App::Document* pDoc = getDocument();
+    App::DocumentObject * pObj = pDoc->getObject( fName.c_str() );
+
+    if ( pObj )
+    {
+      doCommand(Gui,"Gui.hide(\"%s\")", mesh->getNameInDocument());
+      doCommand(Gui,"Gui.hide(\"%s\")", tool->getNameInDocument());
+      getSelection().clearSelection();
+    }
+  }
+}
+
+bool CmdMeshToolMesh::isActive(void)
+{
+  // Check for the selected mesh feature (all Mesh types)
+  return getSelection().countObjectsOfType(Mesh::Feature::getClassTypeId()) == 2;
+}
+#endif
 
 //--------------------------------------------------------------------------------------
 
@@ -450,6 +506,7 @@ void CmdMeshExport::activated(int)
     ext << qMakePair<QString, QByteArray>(QString::fromLatin1("%1 (*.ast)").arg(QObject::tr("ASCII STL")), "AST");
     ext << qMakePair<QString, QByteArray>(QString::fromLatin1("%1 (*.bms)").arg(QObject::tr("Binary Mesh")), "BMS");
     ext << qMakePair<QString, QByteArray>(QString::fromLatin1("%1 (*.obj)").arg(QObject::tr("Alias Mesh")), "OBJ");
+    ext << qMakePair<QString, QByteArray>(QString::fromLatin1("%1 (*.smf)").arg(QObject::tr("Simple Model Format")), "SMF");
     ext << qMakePair<QString, QByteArray>(QString::fromLatin1("%1 (*.off)").arg(QObject::tr("Object File Format")), "OFF");
     ext << qMakePair<QString, QByteArray>(QString::fromLatin1("%1 (*.iv)").arg(QObject::tr("Inventor V2.1 ascii")), "IV");
     ext << qMakePair<QString, QByteArray>(QString::fromLatin1("%1 (*.x3d)").arg(QObject::tr("X3D Extensible 3D")), "X3D");
@@ -686,7 +743,8 @@ void CmdMeshPolySegm::activated(int)
                 Gui::View3DInventorViewer* viewer = ((Gui::View3DInventor*)view)->getViewer();
                 viewer->setEditing(true);
                 viewer->startSelection(Gui::View3DInventorViewer::Clip);
-                viewer->addEventCallback(SoMouseButtonEvent::getClassTypeId(), MeshGui::ViewProviderMeshFaceSet::segmMeshCallback);
+                viewer->addEventCallback(SoMouseButtonEvent::getClassTypeId(),
+                                         MeshGui::ViewProviderMeshFaceSet::segmMeshCallback);
             }
             else {
                 return;
@@ -715,7 +773,7 @@ bool CmdMeshPolySegm::isActive(void)
 }
 
 //--------------------------------------------------------------------------------------
-
+#if 0
 DEF_STD_CMD_A(CmdMeshPolySelect);
 
 CmdMeshPolySelect::CmdMeshPolySelect()
@@ -766,7 +824,7 @@ bool CmdMeshPolySelect::isActive(void)
 
     return false;
 }
-
+#endif
 //--------------------------------------------------------------------------------------
 
 DEF_STD_CMD_A(CmdMeshAddFacet);
@@ -841,10 +899,12 @@ void CmdMeshPolyCut::activated(int)
                 viewer->setEditing(true);
 
                 Gui::PolyClipSelection* clip = new Gui::PolyClipSelection();
+                clip->setRole(Gui::SelectionRole::Split, true);
                 clip->setColor(0.0f,0.0f,1.0f);
                 clip->setLineWidth(1.0f);
                 viewer->navigationStyle()->startSelection(clip);
-                viewer->addEventCallback(SoMouseButtonEvent::getClassTypeId(), MeshGui::ViewProviderMeshFaceSet::clipMeshCallback);
+                viewer->addEventCallback(SoMouseButtonEvent::getClassTypeId(),
+                                         MeshGui::ViewProviderMeshFaceSet::clipMeshCallback);
             }
             else {
                 return;
@@ -897,9 +957,14 @@ void CmdMeshPolyTrim::activated(int)
             if (view->getTypeId().isDerivedFrom(Gui::View3DInventor::getClassTypeId())) {
                 Gui::View3DInventorViewer* viewer = ((Gui::View3DInventor*)view)->getViewer();
                 viewer->setEditing(true);
-                viewer->startSelection(Gui::View3DInventorViewer::Clip);
+
+                Gui::PolyClipSelection* clip = new Gui::PolyClipSelection();
+                clip->setRole(Gui::SelectionRole::Split, true);
+                clip->setColor(0.0f,0.0f,1.0f);
+                clip->setLineWidth(1.0f);
+                viewer->navigationStyle()->startSelection(clip);
                 viewer->addEventCallback(SoMouseButtonEvent::getClassTypeId(),
-                    MeshGui::ViewProviderMeshFaceSet::trimMeshCallback);
+                                         MeshGui::ViewProviderMeshFaceSet::trimMeshCallback);
             }
             else {
                 return;
@@ -1009,7 +1074,8 @@ void CmdMeshPolySplit::activated(int)
                 Gui::View3DInventorViewer* viewer = ((Gui::View3DInventor*)view)->getViewer();
                 viewer->setEditing(true);
                 viewer->startSelection(Gui::View3DInventorViewer::Clip);
-                viewer->addEventCallback(SoMouseButtonEvent::getClassTypeId(), MeshGui::ViewProviderMeshFaceSet::partMeshCallback);
+                viewer->addEventCallback(SoMouseButtonEvent::getClassTypeId(),
+                                         MeshGui::ViewProviderMeshFaceSet::partMeshCallback);
             }
             else {
                 return;
@@ -1034,60 +1100,6 @@ bool CmdMeshPolySplit::isActive(void)
     }
 
     return false;
-}
-
-//--------------------------------------------------------------------------------------
-
-DEF_STD_CMD_A(CmdMeshToolMesh);
-
-CmdMeshToolMesh::CmdMeshToolMesh()
-  :Command("Mesh_ToolMesh")
-{
-  sAppModule    = "Mesh";
-  sGroup        = QT_TR_NOOP("Mesh");
-  sMenuText     = QT_TR_NOOP("Segment by tool mesh");
-  sToolTipText  = QT_TR_NOOP("Creates a segment from a given tool mesh");
-  sWhatsThis    = "Mesh_ToolMesh";
-  sStatusTip    = QT_TR_NOOP("Creates a segment from a given tool mesh");
-}
-
-void CmdMeshToolMesh::activated(int)
-{
-  std::vector<App::DocumentObject*> fea = Gui::Selection().getObjectsOfType(Mesh::Feature::getClassTypeId());
-  if ( fea.size() == 2 )
-  {
-    std::string fName = getUniqueObjectName("MeshSegment");
-    App::DocumentObject* mesh = fea.front();
-    App::DocumentObject* tool = fea.back();
-
-    openCommand("Segment by tool mesh");
-    doCommand(Doc, "import Mesh");
-    doCommand(Gui, "import MeshGui");
-    doCommand(Doc,
-      "App.activeDocument().addObject(\"Mesh::SegmentByMesh\",\"%s\")\n"
-      "App.activeDocument().%s.Source = App.activeDocument().%s\n"
-      "App.activeDocument().%s.Tool = App.activeDocument().%s\n",
-      fName.c_str(), fName.c_str(),  mesh->getNameInDocument(), fName.c_str(), tool->getNameInDocument() );
-
-    commitCommand();
-    updateActive();
-
-    App::Document* pDoc = getDocument();
-    App::DocumentObject * pObj = pDoc->getObject( fName.c_str() );
-
-    if ( pObj )
-    {
-      doCommand(Gui,"Gui.hide(\"%s\")", mesh->getNameInDocument());
-      doCommand(Gui,"Gui.hide(\"%s\")", tool->getNameInDocument());
-      getSelection().clearSelection();
-    }
-  }
-}
-
-bool CmdMeshToolMesh::isActive(void)
-{
-  // Check for the selected mesh feature (all Mesh types)
-  return getSelection().countObjectsOfType(Mesh::Feature::getClassTypeId()) == 2;
 }
 
 //--------------------------------------------------------------------------------------
@@ -1454,7 +1466,9 @@ void CmdMeshBoundingBox::activated(int)
         Base::Console().Message("Boundings: Min=<%f,%f,%f>, Max=<%f,%f,%f>\n",
                                 box.MinX,box.MinY,box.MinZ,box.MaxX,box.MaxY,box.MaxZ);
 
-        QString bound = QObject::tr("Min=<%1,%2,%3>\n\nMax=<%4,%5,%6>")
+        QString bound = qApp->translate("Mesh_BoundingBox", "Boundings of %1:")
+                .arg(QString::fromUtf8((*it)->Label.getValue()));
+        bound += QString::fromLatin1("\n\nMin=<%1,%2,%3>\n\nMax=<%4,%5,%6>")
             .arg(box.MinX).arg(box.MinY).arg(box.MinZ)
             .arg(box.MaxX).arg(box.MaxY).arg(box.MaxZ);
         QMessageBox::information(Gui::getMainWindow(), QObject::tr("Boundings"), bound);
@@ -1702,6 +1716,9 @@ bool CmdMeshScale::isActive(void)
 void CreateMeshCommands(void)
 {
     Gui::CommandManager &rcCmdMgr = Gui::Application::Instance->commandManager();
+  //rcCmdMgr.addCommand(new CmdMeshDemolding());
+  //rcCmdMgr.addCommand(new CmdMeshToolMesh());
+  //rcCmdMgr.addCommand(new CmdMeshTransform());
     rcCmdMgr.addCommand(new CmdMeshImport());
     rcCmdMgr.addCommand(new CmdMeshExport());
     rcCmdMgr.addCommand(new CmdMeshVertexCurvature());
@@ -1709,17 +1726,14 @@ void CreateMeshCommands(void)
     rcCmdMgr.addCommand(new CmdMeshUnion());
     rcCmdMgr.addCommand(new CmdMeshDifference());
     rcCmdMgr.addCommand(new CmdMeshIntersection());
-    rcCmdMgr.addCommand(new CmdMeshDemolding());
     rcCmdMgr.addCommand(new CmdMeshPolySegm());
-    rcCmdMgr.addCommand(new CmdMeshPolySelect());
+  //rcCmdMgr.addCommand(new CmdMeshPolySelect());
     rcCmdMgr.addCommand(new CmdMeshAddFacet());
     rcCmdMgr.addCommand(new CmdMeshPolyCut());
     rcCmdMgr.addCommand(new CmdMeshPolySplit());
     rcCmdMgr.addCommand(new CmdMeshPolyTrim());
     rcCmdMgr.addCommand(new CmdMeshTrimByPlane());
     rcCmdMgr.addCommand(new CmdMeshSectionByPlane());
-    rcCmdMgr.addCommand(new CmdMeshToolMesh());
-    rcCmdMgr.addCommand(new CmdMeshTransform());
     rcCmdMgr.addCommand(new CmdMeshEvaluation());
     rcCmdMgr.addCommand(new CmdMeshEvaluateFacet());
     rcCmdMgr.addCommand(new CmdMeshEvaluateSolid());

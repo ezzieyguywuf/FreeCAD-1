@@ -38,6 +38,8 @@
 #include <BRepPrim_Cylinder.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRepAlgoAPI_Common.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
+#include <gp_Ax1.hxx>
 #include <gp_Ax2.hxx>
 #include <gp_Ax3.hxx>
 #include <gp_Pnt.hxx>
@@ -73,6 +75,7 @@
 #include <Base/Parameter.h>
 
 #include <Mod/Part/App/PartFeature.h>
+#include <Mod/Part/App/TopoShape.h>
 
 #include "Geometry.h"
 #include "GeometryObject.h"
@@ -80,6 +83,7 @@
 #include "DrawProjectSplit.h"
 #include "DrawUtil.h"
 #include "DrawViewDetail.h"
+#include "DrawProjGroupItem.h"
 
 using namespace TechDraw;
 using namespace std;
@@ -168,29 +172,46 @@ App::DocumentObjectExecReturn *DrawViewDetail::execute(void)
         return new App::DocumentObjectExecReturn("DVD - Linked shape object is invalid");
     }
 
-    Base::Vector3d anchor = AnchorPoint.getValue();    //this is a 2D point
-    anchor = Base::Vector3d(anchor.x,anchor.y, 0.0);
-    double radius = getFudgeRadius();
+    Base::Vector3d anchor = AnchorPoint.getValue();    //this is a 2D point (in unrotated coords)
     Base::Vector3d dirDetail = dvp->Direction.getValue();
-    double scale = getScale();
-    gp_Ax2 viewAxis = getViewAxis(Base::Vector3d(0.0,0.0,0.0), dirDetail, false);
 
-    Bnd_Box bbxSource;
-    BRepBndLib::Add(shape, bbxSource);
-    bbxSource.SetGap(0.0);
-    double diag = sqrt(bbxSource.SquareExtent());
+    double shapeRotate = dvp->Rotation.getValue();                      //degrees CW?
+    if (dvp->isDerivedFrom(TechDraw::DrawProjGroupItem::getClassTypeId())) {
+        DrawProjGroupItem* dpgi= static_cast<TechDraw::DrawProjGroupItem*>(dvp);
+        shapeRotate += dpgi->getRotateAngle() * 180.0/M_PI;            // to degrees from radians
+    }
+ 
+    double radius = getFudgeRadius();
+    double scale = getScale();
 
     BRepBuilderAPI_Copy BuilderCopy(shape);
     TopoDS_Shape myShape = BuilderCopy.Shape();
 
-    gp_Pnt gpCenter = TechDrawGeometry::findCentroid(myShape,
+    //rotate the copied shape to match orientation of BaseView and center it on origin
+    gp_Pnt gpCenter = TechDrawGeometry::findCentroid(myShape,           //centre of unrotated shape
                                                      dirDetail);
     Base::Vector3d shapeCenter = Base::Vector3d(gpCenter.X(),gpCenter.Y(),gpCenter.Z());
+    gp_Ax2 viewAxis = getViewAxis(shapeCenter, dirDetail, false);
+    myShape = TechDrawGeometry::rotateShape(myShape,                    //rotate to match Base shape
+                                            viewAxis,
+                                            -shapeRotate);
+    myShape = TechDrawGeometry::moveShape(myShape,                     //centre on origin
+                                          -shapeCenter);
+    gpCenter = TechDrawGeometry::findCentroid(myShape,
+                                              dirDetail);
+    shapeCenter = Base::Vector3d(gpCenter.X(),gpCenter.Y(),gpCenter.Z());
+
+    Bnd_Box bbxSource;
+    bbxSource.SetGap(0.0);
+    BRepBndLib::Add(myShape, bbxSource);
+    double diag = sqrt(bbxSource.SquareExtent());
+
     Base::Vector3d extentFar,extentNear;
     extentFar = shapeCenter + dirDetail * diag;
     extentNear = shapeCenter + dirDetail * diag * -1.0;
 
-    //turn anchor(x,y,0) in projection plane(P) into displacement in 3D
+    anchor = Base::Vector3d(anchor.x,anchor.y, 0.0);
+    viewAxis = getViewAxis(shapeCenter, dirDetail, false);                //change view axis to (0,0,0)
     Base::Vector3d offsetCenter3D = DrawUtil::toR3(viewAxis, anchor);     //displacement in R3
     Base::Vector3d stdZ(0.0,0.0,1.0);
     if (DrawUtil::checkParallel(dirDetail,stdZ)) {
@@ -199,14 +220,18 @@ App::DocumentObjectExecReturn *DrawViewDetail::execute(void)
         extentNear = extentNear - offsetCenter3D;
     }
 
-    gp_Dir cylDir(dirDetail.x,dirDetail.y,dirDetail.z);
-    gp_Pnt cylPoint(extentNear.x,extentNear.y,extentNear.z);
-    gp_Ax2 cylAxis(cylPoint,cylDir);
-
-    BRepPrimAPI_MakeCylinder mkCyl(cylAxis, radius, (extentFar-extentNear).Length());
-    TopoDS_Shell sh = mkCyl.Cylinder().Shell();
-    BRepBuilderAPI_MakeSolid mkSol(sh);
-    TopoDS_Solid tool = mkSol.Solid();
+    gp_Pnt gpnt(extentNear.x,extentNear.y,extentNear.z);
+    gp_Dir gdir(dirDetail.x,dirDetail.y,dirDetail.z);
+    gp_Pln gpln(gpnt,gdir);
+    double hideToolRadius = radius * 1.0;
+    BRepBuilderAPI_MakeFace mkFace(gpln, -hideToolRadius,hideToolRadius,-hideToolRadius,hideToolRadius);
+    TopoDS_Face aProjFace = mkFace.Face();
+    if(aProjFace.IsNull()) {
+        return new App::DocumentObjectExecReturn("DrawViewDetail - Projected face is NULL");
+    }
+    Base::Vector3d extrudeVec = dirDetail* (extentFar-extentNear).Length();
+    gp_Vec extrudeDir(extrudeVec.x,extrudeVec.y,extrudeVec.z);
+    TopoDS_Shape tool = BRepPrimAPI_MakePrism(aProjFace, extrudeDir, false, true).Shape();
 
     BRepAlgoAPI_Common mkCommon(myShape,tool);
     if (!mkCommon.IsDone()) {
@@ -222,7 +247,7 @@ App::DocumentObjectExecReturn *DrawViewDetail::execute(void)
     TopExp_Explorer xp;
     xp.Init(mkCommon.Shape(),TopAbs_SOLID);
     if (!(xp.More() == Standard_True)) {
-        Base::Console().Log("DVD::execute - mkCommon.Shape is not a solid!\n");
+        Base::Console().Warning("DVD::execute - mkCommon.Shape is not a solid!\n");
     }
     TopoDS_Shape detail = mkCommon.Shape();
     Bnd_Box testBox;
@@ -230,9 +255,10 @@ App::DocumentObjectExecReturn *DrawViewDetail::execute(void)
     BRepBndLib::Add(detail, testBox);
     if (testBox.IsVoid()) {
         Base::Console().Message("DrawViewDetail - detail area contains no geometry\n");
+        return new App::DocumentObjectExecReturn("DVDetail - detail area contains no geometry");
     }
 
-//for debugging show compound instead of cut
+//for debugging show compound instead of common
 //    BRep_Builder builder;
 //    TopoDS_Compound Comp;
 //    builder.MakeCompound(Comp);
@@ -246,12 +272,13 @@ App::DocumentObjectExecReturn *DrawViewDetail::execute(void)
         TopoDS_Shape mirroredShape = TechDrawGeometry::mirrorShape(detail,
                                                     inputCenter,
                                                     scale);
-        gp_Ax2 viewAxis = getViewAxis(Base::Vector3d(inputCenter.X(),inputCenter.Y(),inputCenter.Z()),Direction.getValue());
+        viewAxis = getViewAxis(Base::Vector3d(inputCenter.X(),inputCenter.Y(),inputCenter.Z()),Direction.getValue());
         if (!DrawUtil::fpCompare(Rotation.getValue(),0.0)) {
             mirroredShape = TechDrawGeometry::rotateShape(mirroredShape,
                                                           viewAxis,
-                                                          Rotation.getValue());
+                                                          Rotation.getValue());         //degrees cw?
         }
+
         geometryObject = buildGeometryObject(mirroredShape,viewAxis);
         geometryObject->pruneVertexGeom(Base::Vector3d(0.0,0.0,0.0),Radius.getValue() * scale);      //remove vertices beyond clipradius
 
@@ -269,7 +296,8 @@ App::DocumentObjectExecReturn *DrawViewDetail::execute(void)
 #endif //#if MOD_TECHDRAW_HANDLE_FACES
     }
     catch (Standard_Failure& e1) {
-        Base::Console().Log("LOG - DVD::execute - base shape failed for %s - %s **\n",getNameInDocument(),e1.GetMessageString());
+        Base::Console().Message("LOG - DVD::execute - failed to create detail %s - %s **\n",getNameInDocument(),e1.GetMessageString());
+
         return new App::DocumentObjectExecReturn(e1.GetMessageString());
     }
 

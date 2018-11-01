@@ -62,6 +62,7 @@
 #include <BRepAlgo_NormalProjection.hxx>
 #include <ShapeAnalysis_ShapeTolerance.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
+#include <Standard_Version.hxx>
 
 
 #include <Base/GeometryPyCXX.h>
@@ -143,7 +144,6 @@ int TopoShapePy::PyInit(PyObject* args, PyObject*)
             }
         }
         catch (Standard_Failure& e) {
-    
             PyErr_SetString(PartExceptionOCCError, e.GetMessageString());
             return -1;
         }
@@ -156,7 +156,9 @@ int TopoShapePy::PyInit(PyObject* args, PyObject*)
 
 PyObject* TopoShapePy::copy(PyObject *args)
 {
-    if (!PyArg_ParseTuple(args, ""))
+    PyObject* copyGeom = Py_True;
+    PyObject* copyMesh = Py_False;
+    if (!PyArg_ParseTuple(args, "|O!O!", &PyBool_Type, &copyGeom, &PyBool_Type, &copyMesh))
         return NULL;
 
     const TopoDS_Shape& shape = this->getTopoShapePtr()->getShape();
@@ -171,7 +173,14 @@ PyObject* TopoShapePy::copy(PyObject *args)
     }
 
     if (!shape.IsNull()) {
-        BRepBuilderAPI_Copy c(shape);
+#if OCC_VERSION_HEX >= 0x070000
+        BRepBuilderAPI_Copy c(shape,
+                              PyObject_IsTrue(copyGeom) ? Standard_True : Standard_False,
+                              PyObject_IsTrue(copyMesh) ? Standard_True : Standard_False);
+#else
+        BRepBuilderAPI_Copy c(shape,
+                              PyObject_IsTrue(copyGeom) ? Standard_True : Standard_False);
+#endif
         static_cast<TopoShapePy*>(cpy)->getTopoShapePtr()->setShape(c.Shape());
     }
     return cpy;
@@ -513,13 +522,14 @@ PyObject*  TopoShapePy::importBinary(PyObject *args)
 PyObject*  TopoShapePy::importBrepFromString(PyObject *args)
 {
     char* input;
-    if (!PyArg_ParseTuple(args, "s", &input))
+    int indicator=1;
+    if (!PyArg_ParseTuple(args, "s|i", &input, &indicator))
         return NULL;
 
     try {
         // read brep
         std::stringstream str(input);
-        getTopoShapePtr()->importBrep(str);
+        getTopoShapePtr()->importBrep(str,indicator);
     }
     catch (const Base::Exception& e) {
         PyErr_SetString(PartExceptionOCCError,e.what());
@@ -1891,7 +1901,7 @@ PyObject* TopoShapePy::project(PyObject *args)
             algo.Build();
             return new TopoShapePy(new TopoShape(algo.Projection()));
         }
-        catch (Standard_Failure) {
+        catch (Standard_Failure&) {
             PyErr_SetString(PartExceptionOCCError, "Failed to project shape");
             return NULL;
         }
@@ -2646,6 +2656,33 @@ PyObject* TopoShapePy::optimalBoundingBox(PyObject *args)
     }
     catch (const Standard_Failure& e) {
         throw Py::RuntimeError(e.GetMessageString());
+    }
+}
+
+PyObject* TopoShapePy::defeaturing(PyObject *args)
+{
+    PyObject *l;
+    if (!PyArg_ParseTuple(args, "O",&l))
+        return NULL;
+
+    try {
+        Py::Sequence list(l);
+        std::vector<TopoDS_Shape> shapes;
+        for (Py::Sequence::iterator it = list.begin(); it != list.end(); ++it) {
+            Py::TopoShape sh(*it);
+            shapes.push_back(
+                sh.extensionObject()->getTopoShapePtr()->getShape()
+            );
+        }
+        PyTypeObject* type = this->GetType();
+        PyObject* inst = type->tp_new(type, this, 0);
+        static_cast<TopoShapePy*>(inst)->getTopoShapePtr()->setShape
+            (this->getTopoShapePtr()->defeaturing(shapes));
+        return inst;
+    }
+    catch (const Standard_Failure& e) {
+        PyErr_SetString(PartExceptionOCCError, e.GetMessageString());
+        return NULL;
     }
 }
 

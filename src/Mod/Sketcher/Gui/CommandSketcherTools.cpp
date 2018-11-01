@@ -109,7 +109,8 @@ void CmdSketcherCloseShape::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
     // get the selection
-    std::vector<Gui::SelectionObject> selection = getSelection().getSelectionEx();
+    std::vector<Gui::SelectionObject> selection;
+    selection = getSelection().getSelectionEx(0, Sketcher::SketchObject::getClassTypeId());
 
     // only one sketch with its subelements are allowed to be selected
     if (selection.size() != 1) {
@@ -183,7 +184,7 @@ void CmdSketcherCloseShape::activated(int iMsg)
     // finish the transaction and update
     commitCommand();
 
-    tryAutoRecompute();
+    tryAutoRecompute(Obj);
 
     // clear the selection (convenience)
     getSelection().clearSelection();
@@ -216,7 +217,8 @@ void CmdSketcherConnect::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
     // get the selection
-    std::vector<Gui::SelectionObject> selection = getSelection().getSelectionEx();
+    std::vector<Gui::SelectionObject> selection;
+    selection = getSelection().getSelectionEx(0, Sketcher::SketchObject::getClassTypeId());
 
     // only one sketch with its subelements are allowed to be selected
     if (selection.size() != 1) {
@@ -267,7 +269,7 @@ void CmdSketcherConnect::activated(int iMsg)
     // finish the transaction and update
     commitCommand();
 
-    tryAutoRecompute();
+    tryAutoRecompute(Obj);
 
     // clear the selection (convenience)
     getSelection().clearSelection();
@@ -299,7 +301,8 @@ void CmdSketcherSelectConstraints::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
     // get the selection
-    std::vector<Gui::SelectionObject> selection = getSelection().getSelectionEx();
+    std::vector<Gui::SelectionObject> selection;
+    selection = getSelection().getSelectionEx(0, Sketcher::SketchObject::getClassTypeId());
 
     // only one sketch with its subelements are allowed to be selected
     if (selection.size() != 1) {
@@ -830,7 +833,8 @@ void CmdSketcherRestoreInternalAlignmentGeometry::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
     // get the selection
-    std::vector<Gui::SelectionObject> selection = getSelection().getSelectionEx();
+    std::vector<Gui::SelectionObject> selection;
+    selection = getSelection().getSelectionEx(0, Sketcher::SketchObject::getClassTypeId());
 
     // only one sketch with its subelements are allowed to be selected
     if (selection.size() != 1) {
@@ -928,7 +932,8 @@ void CmdSketcherSymmetry::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
     // get the selection
-    std::vector<Gui::SelectionObject> selection = getSelection().getSelectionEx();
+    std::vector<Gui::SelectionObject> selection;
+    selection = getSelection().getSelectionEx(0, Sketcher::SketchObject::getClassTypeId());
 
     // only one sketch with its subelements are allowed to be selected
     if (selection.size() != 1) {
@@ -1823,8 +1828,9 @@ void CmdSketcherRectangularArray::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
     // get the selection
-    std::vector<Gui::SelectionObject> selection = getSelection().getSelectionEx();
-    
+    std::vector<Gui::SelectionObject> selection;
+    selection = getSelection().getSelectionEx(0, Sketcher::SketchObject::getClassTypeId());
+
     // only one sketch with its subelements are allowed to be selected
     if (selection.size() != 1) {
         QMessageBox::warning(Gui::getMainWindow(), QObject::tr("Wrong selection"),
@@ -2007,6 +2013,72 @@ bool CmdSketcherDeleteAllGeometry::isActive(void)
     return isSketcherAcceleratorActive( getActiveGuiDocument(), false );
 }
 
+DEF_STD_CMD_A(CmdSketcherDeleteAllConstraints);
+
+CmdSketcherDeleteAllConstraints::CmdSketcherDeleteAllConstraints()
+:Command("Sketcher_DeleteAllConstraints")
+{
+    sAppModule      = "Sketcher";
+    sGroup          = QT_TR_NOOP("Sketcher");
+    sMenuText       = QT_TR_NOOP("Delete All Constraints");
+    sToolTipText    = QT_TR_NOOP("Deletes all the constraints");
+    sWhatsThis      = "Sketcher_DeleteAllConstraints";
+    sStatusTip      = sToolTipText;
+    sPixmap         = "Sketcher_Element_SelectionTypeInvalid";
+    sAccel          = "";
+    eType           = ForEdit;
+}
+
+void CmdSketcherDeleteAllConstraints::activated(int iMsg)
+{
+    Q_UNUSED(iMsg);
+    
+    int ret = QMessageBox::question(Gui::getMainWindow(), QObject::tr("Delete All Constraints"),
+                                    QObject::tr("Are you really sure you want to delete all the constraints?"),
+                                    QMessageBox::Yes, QMessageBox::Cancel);
+
+    if (ret == QMessageBox::Yes) {
+        getSelection().clearSelection();
+        
+        Gui::Document * doc= getActiveGuiDocument();
+        
+        SketcherGui::ViewProviderSketch* vp = static_cast<SketcherGui::ViewProviderSketch*>(doc->getInEdit());
+        
+        Sketcher::SketchObject* Obj= vp->getSketchObject();
+        
+        try {
+            Gui::Command::openCommand("Delete All Constraints");
+            Gui::Command::doCommand(Gui::Command::Doc,
+                                    "App.ActiveDocument.%s.deleteAllConstraints()",
+                                    Obj->getNameInDocument());
+            
+            Gui::Command::commitCommand();
+        }
+        catch (const Base::Exception& e) {
+            Base::Console().Error("Failed to delete All Constraints: %s\n", e.what());
+            Gui::Command::abortCommand();
+        }
+        
+        ParameterGrp::handle hGrp = App::GetApplication().GetParameterGroupByPath("User parameter:BaseApp/Preferences/Mod/Sketcher");
+        bool autoRecompute = hGrp->GetBool("AutoRecompute",false);
+        
+        if(autoRecompute)
+            Gui::Command::updateActive();
+        else
+            Obj->solve();
+    }
+    else if (ret == QMessageBox::Cancel) {
+        // do nothing
+        return;
+    }
+    
+}
+
+bool CmdSketcherDeleteAllConstraints::isActive(void)
+{
+    return isSketcherAcceleratorActive( getActiveGuiDocument(), false );
+}
+
 void CreateSketcherCommandsConstraintAccel(void)
 {
     Gui::CommandManager &rcCmdMgr = Gui::Application::Instance->commandManager();
@@ -2029,4 +2101,5 @@ void CreateSketcherCommandsConstraintAccel(void)
     rcCmdMgr.addCommand(new CmdSketcherCompCopy());
     rcCmdMgr.addCommand(new CmdSketcherRectangularArray());
     rcCmdMgr.addCommand(new CmdSketcherDeleteAllGeometry());
+    rcCmdMgr.addCommand(new CmdSketcherDeleteAllConstraints());
 }

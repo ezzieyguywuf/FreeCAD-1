@@ -41,6 +41,8 @@ except AttributeError:
         from PySide import QtGui
         return QtGui.QApplication.translate(context, text, None)
 
+import io
+
 try:
     import FreeCAD
     BaseError = FreeCAD.Base.FreeCADError
@@ -140,6 +142,8 @@ def callopenscad(inputfilename,outputfilename=None,outputext='csg',keepname=Fals
         kwargs.update({'stdout':subprocess.PIPE,'stderr':subprocess.PIPE})
         p=subprocess.Popen(*args,**kwargs)
         stdoutd,stderrd = p.communicate()
+        stdoutd = stdoutd.decode("utf8")
+        stderrd = stderrd.decode("utf8")
         if p.returncode != 0:
             raise OpenSCADError('%s %s\n' % (stdoutd.strip(),stderrd.strip()))
             #raise Exception,'stdout %s\n stderr%s' %(stdoutd,stderrd)
@@ -160,7 +164,7 @@ def callopenscad(inputfilename,outputfilename=None,outputext='csg',keepname=Fals
                     inputfilename)[1].rsplit('.',1)[0],outputext))
             else:
                 outputfilename=os.path.join(dir1,'%s.%s' % \
-                    (tempfilenamegen.next(),outputext))
+                    (next(tempfilenamegen),outputext))
         check_output2([osfilename,'-o',outputfilename, inputfilename])
         return outputfilename
     else:
@@ -172,8 +176,8 @@ def callopenscadstring(scadstr,outputext='csg'):
     please delete the file afterwards'''
     import os,tempfile,time
     dir1=tempfile.gettempdir()
-    inputfilename=os.path.join(dir1,'%s.scad' % tempfilenamegen.next())
-    inputfile = open(inputfilename,'w')
+    inputfilename=os.path.join(dir1,'%s.scad' % next(tempfilenamegen))
+    inputfile = io.open(inputfilename,'w', encoding="utf8")
     inputfile.write(scadstr)
     inputfile.close()
     outputfilename = callopenscad(inputfilename,outputext=outputext,\
@@ -194,7 +198,7 @@ def reverseimporttypes():
 
     importtypes={}
     import FreeCAD
-    for key,value in FreeCAD.getImportType().iteritems():
+    for key,value in FreeCAD.getImportType().items():
         if type(value) is str:
             getsetfromdict(importtypes,value).add(key)
         else:
@@ -211,6 +215,7 @@ def fcsubmatrix(m):
 def multiplymat(l,r):
     """multiply matrices given as lists of row vectors"""
     rt=zip(*r) #transpose r
+    rt=list(rt)
     mat=[]
     for y in range(len(rt)):
         mline=[]
@@ -221,7 +226,7 @@ def multiplymat(l,r):
 
 def isorthogonal(submatrix,precision=4):
     """checking if 3x3 Matrix is orthogonal (M*Transp(M)==I)"""
-    prod=multiplymat(submatrix,zip(*submatrix))
+    prod=multiplymat(submatrix,list(zip(*submatrix)))
     return [[round(f,precision) for f in line] \
         for line in prod]==[[1,0,0],[0,1,0],[0,0,1]]
 
@@ -427,7 +432,7 @@ def meshoptempfile(opname,iterable1):
     dir1=tempfile.gettempdir()
     filenames = []
     for mesh in iterable1:
-        outputfilename=os.path.join(dir1,'%s.stl' % tempfilenamegen.next())
+        outputfilename=os.path.join(dir1,'%s.stl' % next(tempfilenamegen))
         mesh.write(outputfilename)
         filenames.append(outputfilename)
     #absolute path causes error. We rely that the scad file will be in the dame tmpdir
@@ -487,7 +492,7 @@ def process2D_ObjectsViaOpenSCADShape(ObjList,Operation,doc):
     dir1=tempfile.gettempdir()
     filenames = []
     for item in ObjList :
-        outputfilename=os.path.join(dir1,'%s.dxf' % tempfilenamegen.next())
+        outputfilename=os.path.join(dir1,'%s.dxf' % next(tempfilenamegen))
         importDXF.export([item],outputfilename,True,True)
         filenames.append(outputfilename)
     # Mantis 3419
@@ -561,8 +566,8 @@ def process_ObjectsViaOpenSCADShape(doc,children,name,maxmeshpoints=None):
         return process3D_ObjectsViaOpenSCADShape(children,name,maxmeshpoints)
     else:
         import FreeCAD
-        FreeCAD.Console.PrintError( unicode(translate('OpenSCAD',\
-            "Error all shapes must be either 2D or both must be 3D"))+u'\n')
+        FreeCAD.Console.PrintError( translate('OpenSCAD',\
+            "Error all shapes must be either 2D or both must be 3D")+u'\n')
 
 def process_ObjectsViaOpenSCAD(doc,children,name):
     if all((not obj.Shape.isNull() and obj.Shape.Volume == 0) \
@@ -573,8 +578,8 @@ def process_ObjectsViaOpenSCAD(doc,children,name):
         return process3D_ObjectsViaOpenSCAD(doc,children,name)
     else:
         import FreeCAD
-        FreeCAD.Console.PrintError( unicode(translate('OpenSCAD',\
-            "Error all shapes must be either 2D or both must be 3D"))+u'\n')
+        FreeCAD.Console.PrintError( translate('OpenSCAD',\
+            "Error all shapes must be either 2D or both must be 3D")+u'\n')
 
 def removesubtree(objs):
     def addsubobjs(obj,toremoveset):

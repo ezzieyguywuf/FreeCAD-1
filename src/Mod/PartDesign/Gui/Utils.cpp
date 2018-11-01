@@ -88,7 +88,7 @@ PartDesign::Body *getBody(bool messageIfNot, bool autoActivate, bool assertModer
                 QMessageBox::warning(Gui::getMainWindow(), QObject::tr("No active Body"),
                     QObject::tr("In order to use PartDesign you need an active Body object in the document. "
                                 "Please make one active (double click) or create one.\n\nIf you have a legacy document "
-                                "with PartDesign objects without Body, use the transfer function in "
+                                "with PartDesign objects without Body, use the migrate function in "
                                 "PartDesign to put them into a Body."
                                 ));
             }
@@ -115,6 +115,7 @@ PartDesign::Body * makeBody(App::Document *doc)
                              "App.activeDocument().addObject('PartDesign::Body','%s')",
                              bodyName.c_str() );
     Gui::Command::doCommand( Gui::Command::Gui,
+                             "Gui.activateView('Gui::View3DInventor', True)\n"
                              "Gui.activeView().setActiveObject('%s', App.activeDocument().%s)",
                              PDBODYKEY, bodyName.c_str() );
 

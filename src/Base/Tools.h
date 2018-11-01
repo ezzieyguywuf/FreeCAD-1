@@ -30,7 +30,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <boost/signals.hpp>
+#include <boost/signals2.hpp>
 #include <QString>
 
 namespace Base
@@ -153,30 +153,41 @@ template<typename Status, class Object>
 class ObjectStatusLocker
 {
 public:
-    ObjectStatusLocker(Status s, Object* o, bool st = true) : status(s), obj(o), state(st)
-    { obj->setStatus(status, state); }
+    ObjectStatusLocker(Status s, Object* o, bool value = true) : status(s), obj(o)
+    { old_value = obj->testStatus(status); obj->setStatus(status, value); }
     ~ObjectStatusLocker()
-    { obj->setStatus(status, !state); }
+    { obj->setStatus(status, old_value); }
 private:
     Status status;
     Object* obj;
-    bool state;
+    bool old_value;
+};
+
+// ----------------------------------------------------------------------------
+
+class StateLocker
+{
+public:
+    StateLocker(bool& flag, bool value = true) : lock(flag)
+    { old_value = lock; lock = value; }
+    ~StateLocker()
+    { lock = old_value; }
+private:
+    bool& lock;
+    bool old_value;
 };
 
 // ----------------------------------------------------------------------------
 
 class ConnectionBlocker {
-    typedef boost::BOOST_SIGNALS_NAMESPACE::connection Connection;
-    bool b;
-    Connection& c;
+    typedef boost::signals2::connection Connection;
+    typedef boost::signals2::shared_connection_block ConnectionBlock;
+    ConnectionBlock blocker;
 
 public:
-    ConnectionBlocker(Connection& c) : c(c) {
-        b = c.blocked();
-        c.block(true);
+    ConnectionBlocker(Connection& c) : blocker(c) {
     }
     ~ConnectionBlocker() {
-        c.block(b);
     }
 };
 

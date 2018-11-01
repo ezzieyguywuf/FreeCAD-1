@@ -348,6 +348,10 @@ void View3DInventor::OnChange(ParameterGrp::SubjectType &rCaller,ParameterGrp::M
         float val = rGrp.GetFloat("ZoomStep", 0.0f);
         _viewer->navigationStyle()->setZoomStep(val);
     }
+    else if (strcmp(Reason,"DragAtCursor") == 0) {
+        bool on = rGrp.GetBool("DragAtCursor", false);
+        _viewer->navigationStyle()->setDragAtCursor(on);
+    }
     else if (strcmp(Reason,"EyeDistance") == 0) {
         _viewer->getSoRenderManager()->setStereoOffset(rGrp.GetFloat("EyeDistance",5.0));
     }
@@ -355,7 +359,7 @@ void View3DInventor::OnChange(ParameterGrp::SubjectType &rCaller,ParameterGrp::M
         _viewer->setFeedbackVisibility(rGrp.GetBool("CornerCoordSystem",true));
     }
     else if (strcmp(Reason,"UseAutoRotation") == 0) {
-        _viewer->setAnimationEnabled(rGrp.GetBool("UseAutoRotation",true));
+        _viewer->setAnimationEnabled(rGrp.GetBool("UseAutoRotation",false));
     }
     else if (strcmp(Reason,"Gradient") == 0) {
         _viewer->setGradientBackground((rGrp.GetBool("Gradient",true)));

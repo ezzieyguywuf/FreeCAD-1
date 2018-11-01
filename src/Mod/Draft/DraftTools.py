@@ -75,14 +75,16 @@ MODALT = MODS[Draft.getParam("modalt",2)]
 
 def msg(text=None,mode=None):
     "prints the given message on the FreeCAD status bar"
-    if not text: FreeCAD.Console.PrintMessage("")
-    else:
-        if mode == 'warning':
-            FreeCAD.Console.PrintWarning(text)
-        elif mode == 'error':
-            FreeCAD.Console.PrintError(text)
+    if FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/Draft").GetBool("Verbose",True):
+        if not text: 
+            FreeCAD.Console.PrintMessage("")
         else:
-            FreeCAD.Console.PrintMessage(text)
+            if mode == 'warning':
+                FreeCAD.Console.PrintWarning(text)
+            elif mode == 'error':
+                FreeCAD.Console.PrintError(text)
+            else:
+                FreeCAD.Console.PrintMessage(text)
 
 def formatUnit(exp,unit="mm"):
     '''returns a formatting string to set a number to the correct unit'''
@@ -383,6 +385,11 @@ class SelectPlane(DraftTool):
                             self.display(plane.axis)
                             self.finish()
                             return
+                        elif sel.SubElementNames[0] == "Plane":
+                            plane.setFromPlacement(sel.Object.Placement,rebase=True)
+                            self.display(plane.axis)
+                            self.finish()
+                            return
                     elif len(sel.SubElementNames) == 3:
                         if ("Vertex" in sel.SubElementNames[0]) \
                         and ("Vertex" in sel.SubElementNames[1]) \
@@ -391,6 +398,13 @@ class SelectPlane(DraftTool):
                                                  sel.SubObjects[1].Point,
                                                  sel.SubObjects[2].Point,
                                                  self.offset)
+                            self.display(plane.axis)
+                            self.finish()
+                            return
+                elif sel.Object.isDerivedFrom("Part::Feature"):
+                    if sel.Object.Shape:
+                        if len(sel.Object.Shape.Faces) == 1:
+                            plane.alignToFace(sel.Object.Shape.Faces[0], self.offset)
                             self.display(plane.axis)
                             self.finish()
                             return
@@ -2313,6 +2327,10 @@ class Modifier(DraftTool):
 class Move(Modifier):
     "The Draft_Move FreeCAD command definition"
 
+    def __init__(self):
+        Modifier.__init__(self)
+        self.copymode = False
+
     def GetResources(self):
         return {'Pixmap'  : 'Draft_Move',
                 'Accel' : "M, V",
@@ -2344,6 +2362,8 @@ class Move(Modifier):
             self.sel = Draft.getGroupContents(self.sel,addgroups=True,spaces=True)
         self.ui.pointUi(self.name)
         self.ui.modUi()
+        if self.copymode:
+            self.ui.isCopy.setChecked(True)
         self.ui.xValue.setFocus()
         self.ui.xValue.selectAll()
         self.ghost = ghostTracker(self.sel)
@@ -4067,6 +4087,11 @@ class Edit(Modifier):
                 # commented out the following line to disable updating
                 # the object during edit, otherwise it confuses the snapper
                 #self.update(self.trackers[self.editing].get())
+            if hasattr(self.obj.ViewObject,"Selectable"):
+                if self.ui.addButton.isChecked():
+                    self.obj.ViewObject.Selectable = True
+                else:
+                    self.obj.ViewObject.Selectable = False
             redraw3DView()
         elif arg["Type"] == "SoMouseButtonEvent":
             if (arg["State"] == "DOWN") and (arg["Button"] == "BUTTON1"):
@@ -4078,8 +4103,11 @@ class Edit(Modifier):
                         if info["Object"] == self.obj.Name:
                             if self.ui.addButton.isChecked():
                                 if self.point:
-                                    self.pos = arg["Position"]
-                                    self.addPoint(self.point,info)
+                                    pt = self.point
+                                    if "x" in info:
+                                        # prefer "real" 3D location over working-plane-driven one if possible
+                                        pt = FreeCAD.Vector(info["x"],info["y"],info["z"])
+                                    self.addPoint(pt,info)
                             elif self.ui.delButton.isChecked():
                                 if 'EditNode' in info["Component"]:
                                     self.delPoint(int(info["Component"][8:]))
@@ -4912,6 +4940,10 @@ class ShowSnapBar():
 class Draft_Clone(Modifier):
     "The Draft Clone command definition"
 
+    def __init__(self):
+        Modifier.__init__(self)
+        self.moveAfterCloning = False
+
     def GetResources(self):
         return {'Pixmap'  : 'Draft_Clone',
                 'Accel' : "C,L",
@@ -4943,6 +4975,11 @@ class Draft_Clone(Modifier):
             for i in range(l):
                 FreeCADGui.Selection.addSelection(FreeCAD.ActiveDocument.Objects[-(1+i)])
         self.finish()
+
+    def finish(self,close=False):
+        Modifier.finish(self,close=False)
+        if self.moveAfterCloning:
+            todo.delay(FreeCADGui.runCommand,"Draft_Move")
 
 
 class ToggleGrid():

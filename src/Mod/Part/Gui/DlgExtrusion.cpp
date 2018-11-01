@@ -34,6 +34,7 @@
 # include <TopExp_Explorer.hxx>
 # include <ShapeExtend_Explorer.hxx>
 # include <TopTools_HSequenceOfShape.hxx>
+# include <QKeyEvent>
 # include <QMessageBox>
 # include <Python.h>
 # include <Inventor/system/inttypes.h>
@@ -145,6 +146,13 @@ void DlgExtrusion::changeEvent(QEvent *e)
         ui->retranslateUi(this);
     }
     QDialog::changeEvent(e);
+}
+
+void DlgExtrusion::keyPressEvent(QKeyEvent* ke)
+{
+    // The extrusion dialog is embedded into a task panel
+    // which is a parent widget and will handle the event
+    ke->ignore();
 }
 
 void DlgExtrusion::on_rbDirModeCustom_toggled(bool on)
@@ -393,7 +401,7 @@ void DlgExtrusion::accept()
     try{
         apply();
         QDialog::accept();
-    } catch (Base::AbortException){
+    } catch (Base::AbortException&){
 
     };
 }
@@ -454,7 +462,7 @@ void DlgExtrusion::apply()
         activeDoc->commitTransaction();
         Gui::Command::updateActive();
     }
-    catch (Base::AbortException){
+    catch (Base::AbortException&){
         throw;
     }
     catch (Base::Exception &err){
@@ -744,7 +752,7 @@ void TaskExtrusion::clicked(int id)
     if (id == QDialogButtonBox::Apply) {
         try{
             widget->apply();
-        } catch (Base::AbortException){
+        } catch (Base::AbortException&){
 
         };
     }

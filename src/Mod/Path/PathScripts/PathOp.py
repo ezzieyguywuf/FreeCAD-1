@@ -44,6 +44,7 @@ if False:
 else:
     PathLog.setLevel(PathLog.Level.INFO, PathLog.thisModule())
 
+
 # Qt tanslation handling
 def translate(context, text, disambig=None):
     return QtCore.QCoreApplication.translate(context, text, disambig)
@@ -62,6 +63,7 @@ FeatureBasePanels   = 0x0800     # Base
 FeatureLocations    = 0x1000     # Locations
 
 FeatureBaseGeometry = FeatureBaseVertexes | FeatureBaseFaces | FeatureBaseEdges | FeatureBasePanels
+
 
 class ObjectOp(object):
     '''
@@ -99,15 +101,20 @@ class ObjectOp(object):
     def addOpValues(self, obj, values):
         if 'start' in values:
             obj.addProperty("App::PropertyDistance", "OpStartDepth", "Op Values", QtCore.QT_TRANSLATE_NOOP("PathOp", "Holds the calculated value for the StartDepth"))
-            obj.setEditorMode('OpStartDepth', 1) # read-only
+            obj.setEditorMode('OpStartDepth', 1)  # read-only
         if 'final' in values:
             obj.addProperty("App::PropertyDistance", "OpFinalDepth", "Op Values", QtCore.QT_TRANSLATE_NOOP("PathOp", "Holds the calculated value for the FinalDepth"))
-            obj.setEditorMode('OpFinalDepth', 1) # read-only
+            obj.setEditorMode('OpFinalDepth', 1)  # read-only
         if 'tooldia' in values:
             obj.addProperty("App::PropertyDistance", "OpToolDiameter", "Op Values", QtCore.QT_TRANSLATE_NOOP("PathOp", "Holds the diameter of the tool"))
-            obj.setEditorMode('OpToolDiameter', 1) # read-only
+            obj.setEditorMode('OpToolDiameter', 1)  # read-only
+        if 'stockz' in values:
+            obj.addProperty("App::PropertyDistance", "OpStockZMax", "Op Values", QtCore.QT_TRANSLATE_NOOP("PathOp", "Holds the max Z value of Stock"))
+            obj.setEditorMode('OpStockZMax', 1)  # read-only
+            obj.addProperty("App::PropertyDistance", "OpStockZMin", "Op Values", QtCore.QT_TRANSLATE_NOOP("PathOp", "Holds the min Z value of Stock"))
+            obj.setEditorMode('OpStockZMin', 1)  # read-only
 
-    def __init__(self, obj):
+    def __init__(self, obj, name):
         PathLog.track()
 
         obj.addProperty("App::PropertyBool", "Active", "Path", QtCore.QT_TRANSLATE_NOOP("PathOp", "Make False, to prevent operation from generating code"))
@@ -130,12 +137,14 @@ class ObjectOp(object):
             obj.addProperty("App::PropertyDistance", "StartDepth", "Depth", QtCore.QT_TRANSLATE_NOOP("PathOp", "Starting Depth of Tool- first cut depth in Z"))
             obj.addProperty("App::PropertyDistance", "FinalDepth", "Depth", QtCore.QT_TRANSLATE_NOOP("PathOp", "Final Depth of Tool- lowest value in Z"))
             if FeatureNoFinalDepth & features:
-                obj.setEditorMode('FinalDepth', 2) # hide
+                obj.setEditorMode('FinalDepth', 2)  # hide
             self.addOpValues(obj, ['start', 'final'])
         else:
             # StartDepth has become necessary for expressions on other properties
             obj.addProperty("App::PropertyDistance", "StartDepth", "Depth", QtCore.QT_TRANSLATE_NOOP("PathOp", "Starting Depth internal use only for derived values"))
-            obj.setEditorMode('StartDepth', 1) # read-only
+            obj.setEditorMode('StartDepth', 1)  # read-only
+
+        self.addOpValues(obj, ['stockz'])
 
         if FeatureStepDown & features:
             obj.addProperty("App::PropertyDistance", "StepDown", "Depth", QtCore.QT_TRANSLATE_NOOP("PathOp", "Incremental Step Down of Tool"))
@@ -148,13 +157,28 @@ class ObjectOp(object):
             obj.addProperty("App::PropertyDistance", "SafeHeight", "Depth", QtCore.QT_TRANSLATE_NOOP("PathOp", "Rapid Safety Height between locations."))
 
         if FeatureStartPoint & features:
-            obj.addProperty("App::PropertyVector", "StartPoint", "Start Point", QtCore.QT_TRANSLATE_NOOP("PathOp", "The start point of this path"))
+            obj.addProperty("App::PropertyVectorDistance", "StartPoint", "Start Point", QtCore.QT_TRANSLATE_NOOP("PathOp", "The start point of this path"))
             obj.addProperty("App::PropertyBool", "UseStartPoint", "Start Point", QtCore.QT_TRANSLATE_NOOP("PathOp", "make True, if specifying a Start Point"))
 
         self.initOperation(obj)
 
-        if self.setDefaultValues(obj):
-            obj.Proxy = self
+        if not hasattr(obj, 'DoNotSetDefaultValues') or not obj.DoNotSetDefaultValues:
+            job = self.setDefaultValues(obj)
+            if job:
+                job.SetupSheet.Proxy.setOperationProperties(obj, name)
+                obj.recompute()
+                obj.Proxy = self
+
+    def setEditorModes(self, obj, features):
+        '''Editor modes are not preserved during document store/restore, set editor modes for all properties'''
+
+        for op in ['OpStartDepth', 'OpFinalDepth', 'OpToolDiameter']:
+            if hasattr(obj, op):
+                obj.setEditorMode(op, 1) # read-only
+
+        if FeatureDepths & features:
+            if FeatureNoFinalDepth & features:
+                obj.setEditorMode('OpFinalDepth', 2)
 
     def onDocumentRestored(self, obj):
         features = self.opFeatures(obj)
@@ -174,6 +198,12 @@ class ObjectOp(object):
             self.addOpValues(obj, ['start', 'final'])
             if FeatureNoFinalDepth & features:
                 obj.setEditorMode('OpFinalDepth', 2)
+
+        if not hasattr(obj, 'OpStockZMax'):
+            self.addOpValues(obj, ['stockz'])
+
+        self.setEditorModes(obj, features)
+        self.opOnDocumentRestored(obj)
 
     def __getstate__(self):
         '''__getstat__(self) ... called when receiver is saved.
@@ -196,6 +226,11 @@ class ObjectOp(object):
         Should be overwritten by subclasses.'''
         pass
 
+    def opOnDocumentRestored(self, obj):
+        '''opOnDocumentRestored(obj) ... implement if an op needs special handling like migrating the data model.
+        Should be overwritten by subclasses.'''
+        pass
+
     def opOnChanged(self, obj, prop):
         '''opOnChanged(obj, prop) ... overwrite to process property changes.
         This is a callback function that is invoked each time a property of the
@@ -205,8 +240,8 @@ class ObjectOp(object):
         Can safely be overwritten by subclasses.'''
         pass
 
-    def opSetDefaultValues(self, obj):
-        '''opSetDefaultValues(obj) ... overwrite to set initial default values.
+    def opSetDefaultValues(self, obj, job):
+        '''opSetDefaultValues(obj, job) ... overwrite to set initial default values.
         Called after the receiver has been fully created with all properties.
         Can safely be overwritten by subclasses.'''
         pass
@@ -215,7 +250,7 @@ class ObjectOp(object):
         '''opUpdateDepths(obj) ... overwrite to implement special depths calculation.
         Can safely be overwritten by subclass.'''
         pass
-     
+
     def opExecute(self, obj):
         '''opExecute(obj) ... called whenever the receiver needs to be recalculated.
         See documentation of execute() for a list of base functionality provided.
@@ -253,20 +288,23 @@ class ObjectOp(object):
         features = self.opFeatures(obj)
 
         if FeatureTool & features:
-            obj.ToolController = PathUtils.findToolController(obj)
+            if 1 < len(job.Operations.Group):
+                obj.ToolController = PathUtil.toolControllerForOp(job.Operations.Group[-2])
+            else:
+                obj.ToolController = PathUtils.findToolController(obj)
             if not obj.ToolController:
-                return False
-            obj.OpToolDiameter  =  obj.ToolController.Tool.Diameter
+                return None
+            obj.OpToolDiameter = obj.ToolController.Tool.Diameter
 
         if FeatureDepths & features:
             if self.applyExpression(obj, 'StartDepth', job.SetupSheet.StartDepthExpression):
-                obj.OpStartDepth =  1.0
+                obj.OpStartDepth = 1.0
             else:
-                obj.StartDepth   =  1.0
+                obj.StartDepth = 1.0
             if self.applyExpression(obj, 'FinalDepth', job.SetupSheet.FinalDepthExpression):
-                obj.OpFinalDepth =  0.0
+                obj.OpFinalDepth = 0.0
             else:
-                obj.FinalDepth   =  0.0
+                obj.FinalDepth = 0.0
         else:
             obj.StartDepth = 1.0
 
@@ -285,9 +323,8 @@ class ObjectOp(object):
         if FeatureStartPoint & features:
             obj.UseStartPoint = False
 
-        self.opSetDefaultValues(obj)
-        obj.recompute()
-        return True
+        self.opSetDefaultValues(obj, job)
+        return job
 
     def _setBaseAndStock(self, obj, ignoreErrors=False):
         job = PathUtils.findParentJob(obj)
@@ -295,12 +332,12 @@ class ObjectOp(object):
             if not ignoreErrors:
                 PathLog.error(translate("Path", "No parent job found for operation."))
             return False
-        if not job.Base:
+        if not job.Model.Group:
             if not ignoreErrors:
                 PathLog.error(translate("Path", "Parent job %s doesn't have a base object") % job.Label)
             return False
         self.job = job
-        self.baseobject = job.Base
+        self.model = job.Model.Group
         self.stock = job.Stock
         return True
 
@@ -318,11 +355,11 @@ class ObjectOp(object):
         def faceZmin(bb, fbb):
             if fbb.ZMax == fbb.ZMin and fbb.ZMax == bb.ZMax:  # top face
                 return fbb.ZMin
-            elif fbb.ZMax > fbb.ZMin and fbb.ZMax == bb.ZMax: # vertical face, full cut
+            elif fbb.ZMax > fbb.ZMin and fbb.ZMax == bb.ZMax:  # vertical face, full cut
                 return fbb.ZMin
             elif fbb.ZMax > fbb.ZMin and fbb.ZMin > bb.ZMin:  # internal vertical wall
                 return fbb.ZMin
-            elif fbb.ZMax == fbb.ZMin and fbb.ZMax > bb.ZMin: # face/shelf
+            elif fbb.ZMax == fbb.ZMin and fbb.ZMax > bb.ZMin:  # face/shelf
                 return fbb.ZMin
             return bb.ZMin
 
@@ -332,6 +369,9 @@ class ObjectOp(object):
         stockBB = self.stock.Shape.BoundBox
         zmin = stockBB.ZMin
         zmax = stockBB.ZMax
+
+        obj.OpStockZMin = zmin
+        obj.OpStockZMax = zmax
 
         if hasattr(obj, 'Base') and obj.Base:
             for base, sublist in obj.Base:
@@ -345,7 +385,7 @@ class ObjectOp(object):
             # clearing with stock boundaries
             job = PathUtils.findParentJob(obj)
             zmax = stockBB.ZMax
-            zmin = job.Base.Shape.BoundBox.ZMax
+            zmin = job.Proxy.modelBoundBox(job).ZMax
 
         if FeatureDepths & self.opFeatures(obj):
             # first set update final depth, it's value is not negotiable
@@ -379,7 +419,7 @@ class ObjectOp(object):
         Verifies that the operation is assigned to a job and that the job also has a valid Base.
         It also sets the following instance variables that can and should be safely be used by
         implementation of opExecute():
-            self.baseobject   ... Base object of the Job itself
+            self.model        ... List of base objects of the Job itself
             self.stock        ... Stock object fo the Job itself
             self.vertFeed     ... vertical feed rate of assigned tool
             self.vertRapid    ... vertical rapid rate of assigned tool
@@ -449,11 +489,15 @@ class ObjectOp(object):
         base = PathUtil.getPublicObject(base)
 
         if self._setBaseAndStock(obj):
-            if base == self.job.Proxy.baseObject(self.job):
-                base = self.baseobject
+            for model in self.job.Model.Group:
+                if base == self.job.Proxy.baseObject(self.job, model):
+                    base = model
+                    break
+
             baselist = obj.Base
             if baselist is None:
                 baselist = []
+
             for p, el in baselist:
                 if p == base and sub in el:
                     PathLog.notice((translate("Path", "Base object %s.%s already in the list")+"\n") % (base.Label, sub))
@@ -464,4 +508,3 @@ class ObjectOp(object):
                 obj.Base = baselist
             else:
                 PathLog.notice((translate("Path", "Base object %s.%s rejected by operation")+"\n") % (base.Label, sub))
-

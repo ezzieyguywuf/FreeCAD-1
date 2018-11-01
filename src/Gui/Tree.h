@@ -42,12 +42,13 @@ typedef std::shared_ptr<DocumentObjectItems> DocumentObjectItemsPtr;
 class DocumentItem;
 
 /// highlight modes for the tree items
-enum HighlightMode {    Underlined,
-                        Italic    ,
-                        Overlined ,
-                        Bold      ,
-                        Blue      ,
-                        LightBlue
+enum HighlightMode {  Underlined,
+                      Italic,
+                      Overlined,
+                      Bold,
+                      Blue,
+                      LightBlue,
+                      UserDefined
 };
 
 /// highlight modes for the tree items
@@ -184,7 +185,7 @@ private:
     const Gui::Document* pDocument;
     std::map<std::string,DocumentObjectItemsPtr> ObjectMap;
 
-    typedef boost::BOOST_SIGNALS_NAMESPACE::connection Connection;
+    typedef boost::signals2::connection Connection;
     Connection connectNewObject;
     Connection connectDelObject;
     Connection connectChgObject;
@@ -222,7 +223,7 @@ protected:
     void slotChangeStatusTip(const QString&);
 
 private:
-    typedef boost::BOOST_SIGNALS_NAMESPACE::connection Connection;
+    typedef boost::signals2::connection Connection;
     int previousStatus;
     Gui::ViewProviderDocumentObject* viewObject;
     Connection connectIcon;

@@ -89,6 +89,7 @@ void DlgSettings3DViewImp::saveSettings()
     checkBoxZoomAtCursor->onSave();
     checkBoxInvertZoom->onSave();
     spinBoxZoomStep->onSave();
+    checkBoxDragAtCursor->onSave();
     CheckBox_CornerCoordSystem->onSave();
     CheckBox_ShowFPS->onSave();
     CheckBox_useVBO->onSave();
@@ -107,6 +108,7 @@ void DlgSettings3DViewImp::loadSettings()
     checkBoxZoomAtCursor->onRestore();
     checkBoxInvertZoom->onRestore();
     spinBoxZoomStep->onRestore();
+    checkBoxDragAtCursor->onRestore();
     CheckBox_CornerCoordSystem->onRestore();
     CheckBox_ShowFPS->onRestore();
     CheckBox_useVBO->onRestore();
@@ -187,12 +189,14 @@ void DlgSettings3DViewImp::changeEvent(QEvent *e)
         int navigation = comboNavigationStyle->currentIndex();
         int orbit = comboOrbitStyle->currentIndex();
         int aliasing = comboAliasing->currentIndex();
+        int corner = naviCubeCorner->currentIndex();
         retranslateUi(this);
         retranslate();
         comboNavigationStyle->setCurrentIndex(navigation);
         comboOrbitStyle->setCurrentIndex(orbit);
         comboAliasing->setCurrentIndex(aliasing);
         comboAliasing->blockSignals(false);
+        naviCubeCorner->setCurrentIndex(corner);
     }
     else {
         QWidget::changeEvent(e);

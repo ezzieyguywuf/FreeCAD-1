@@ -63,6 +63,7 @@ DocumentObject::DocumentObject(void)
 DocumentObject::~DocumentObject(void)
 {
     if (!PythonObject.is(Py::_None())){
+        Base::PyGILStateLocker lock;
         // Remark: The API of Py::Object has been changed to set whether the wrapper owns the passed
         // Python object or not. In the constructor we forced the wrapper to own the object so we need
         // not to dec'ref the Python object any more.
@@ -110,19 +111,65 @@ bool DocumentObject::recomputeFeature()
     return isValid();
 }
 
+/**
+ * @brief Set this document object touched.
+ * Touching a document object does not mean to recompute it, it only means that
+ * other document objects that link it (i.e. its InList) will be recomputed.
+ * If it should be forced to recompute a document object then use
+ * \ref enforceRecompute() instead.
+ */
+void DocumentObject::touch(void)
+{
+    StatusBits.set(ObjectStatus::Touch);
+}
+
+/**
+ * @brief Check whether the document object is touched or not.
+ * @return true if document object is touched, false if not.
+ */
+bool DocumentObject::isTouched() const
+{
+    return ExpressionEngine.isTouched() || StatusBits.test(ObjectStatus::Touch);
+}
+
+/**
+ * @brief Enforces this document object to be recomputed.
+ * This can be useful to recompute the feature without
+ * having to change one of its input properties.
+ */
+void DocumentObject::enforceRecompute(void)
+{
+    StatusBits.set(ObjectStatus::Enforce);
+    StatusBits.set(ObjectStatus::Touch);
+}
+
+/**
+ * @brief Check whether the document object must be recomputed or not.
+ * This means that the 'Enforce' flag is set or that \ref mustExecute()
+ * returns a value > 0.
+ * @return true if document object must be recomputed, false if not.
+ */
+bool DocumentObject::mustRecompute(void) const
+{
+    if (StatusBits.test(ObjectStatus::Enforce))
+        return true;
+
+    return mustExecute() > 0;
+}
+
 short DocumentObject::mustExecute(void) const
 {
-    if(isTouched())
+    if (ExpressionEngine.isTouched())
         return 1;
 
     //ask all extensions
     auto vector = getExtensionsDerivedFromType<App::DocumentObjectExtension>();
     for(auto ext : vector) {
-        if(ext->extensionMustExecute())
+        if (ext->extensionMustExecute())
             return 1;
     }
+
     return 0;
-    
 }
 
 const char* DocumentObject::getStatusString(void) const
@@ -501,21 +548,6 @@ std::vector<PyObject *> DocumentObject::getPySubObjects(const std::vector<std::s
 {
     // default implementation returns nothing
     return std::vector<PyObject *>();
-}
-
-void DocumentObject::touch(void)
-{
-    StatusBits.set(ObjectStatus::Touch);
-}
-
-/**
- * @brief Check whether the document object is touched or not.
- * @return true if document object is touched, false if not.
- */
-
-bool DocumentObject::isTouched() const
-{
-    return ExpressionEngine.isTouched() || StatusBits.test(ObjectStatus::Touch);
 }
 
 void DocumentObject::Save (Base::Writer &writer) const

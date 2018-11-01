@@ -501,6 +501,14 @@ int System::addConstraintEqual(double *param1, double *param2, int tagId, bool d
     return addConstraint(constr);
 }
 
+int System::addConstraintProportional(double *param1, double *param2, double ratio, int tagId, bool driving)
+{
+    Constraint *constr = new ConstraintEqual(param1, param2, ratio);
+    constr->setTag(tagId);
+    constr->setDriving(driving);
+    return addConstraint(constr);
+}
+
 int System::addConstraintDifference(double *param1, double *param2,
                                     double *difference, int tagId, bool driving)
 {
@@ -870,6 +878,16 @@ int System::addConstraintCircleRadius(Circle &c, double *radius, int tagId, bool
 int System::addConstraintArcRadius(Arc &a, double *radius, int tagId, bool driving)
 {
     return addConstraintEqual(a.rad, radius, tagId, driving);
+}
+
+int System::addConstraintCircleDiameter(Circle &c, double *radius, int tagId, bool driving)
+{
+    return addConstraintProportional(c.rad, radius, 0.5, tagId, driving);
+}
+
+int System::addConstraintArcDiameter(Arc &a, double *radius, int tagId, bool driving)
+{
+    return addConstraintProportional(a.rad, radius, 0.5, tagId, driving);
 }
 
 int System::addConstraintEqualLength(Line &l1, Line &l2, double *length, int tagId, bool driving)
@@ -1456,7 +1474,7 @@ int System::solve_BFGS(SubSystem *subsys, bool /*isFine*/, bool isRedundantsolvi
     subsys->getParams(x);
     subsys->calcGrad(grad);
 
-    // Initial search direction oposed to gradient (steepest-descent)
+    // Initial search direction opposed to gradient (steepest-descent)
     xdir = -grad;
     lineSearch(subsys, xdir);
     double err = subsys->error();
@@ -3663,6 +3681,15 @@ int System::diagnose(Algorithm alg)
         dofs = -1;
         return dofs;
     }
+#ifdef _GCS_DEBUG
+#ifdef _DEBUG_TO_FILE
+    std::ofstream stream;
+    stream.open("GCS_debug.txt", std::ofstream::out | std::ofstream::app);
+    stream << "GCS::System::diagnose()" << std::endl;
+    stream.flush();
+    stream.close();
+#endif
+#endif
 
     // When adding an external geometry or a constraint on an external geometry the array 'plist' is empty.
     // So, we must abort here because otherwise we would create an invalid matrix and make the application
@@ -3689,14 +3716,21 @@ int System::diagnose(Algorithm alg)
     // map tag to a tag multiplicity (the number of solver constraints associated with the same tag)
     std::map< int , int> tagmultiplicity;
     
-    Eigen::MatrixXd J(clist.size(), pdiagnoselist.size());
-    int count=0;
+    Eigen::MatrixXd J = Eigen::MatrixXd::Zero(clist.size(), pdiagnoselist.size());
+    
+    // The jacobian has been reduced to only contain driving constraints. Identification
+    // of constraint indices from this reduced jacobian requires a mapping.
+    std::map<int,int> jacobianconstraintmap;
+    
+    int jacobianconstraintcount=0;
+    int allcount=0;
     for (std::vector<Constraint *>::iterator constr=clist.begin(); constr != clist.end(); ++constr) {
         (*constr)->revertParams();
+        ++allcount;        
         if ((*constr)->getTag() >= 0 && (*constr)->isDriving()) {
-            count++;
+            jacobianconstraintcount++;
             for (int j=0; j < int(pdiagnoselist.size()); j++) {
-                    J(count-1,j) = (*constr)->grad(pdiagnoselist[j]);
+                    J(jacobianconstraintcount-1,j) = (*constr)->grad(pdiagnoselist[j]);
             }
             
             // parallel processing: create tag multiplicity map
@@ -3704,6 +3738,8 @@ int System::diagnose(Algorithm alg)
                 tagmultiplicity[(*constr)->getTag()] = 0;
             else
                 tagmultiplicity[(*constr)->getTag()]++;
+            
+            jacobianconstraintmap[jacobianconstraintcount-1] = allcount-1;
         }
     }
 
@@ -3727,14 +3763,6 @@ int System::diagnose(Algorithm alg)
 #endif
 
 #ifdef _GCS_DEBUG
-#ifdef _DEBUG_TO_FILE
-    std::ofstream stream;
-    stream.open("GCS_debug.txt", std::ofstream::out | std::ofstream::app);
-    stream << "GCS::System::diagnose()" << std::endl;
-    stream.flush();
-    stream.close();
-#endif
-
     LogMatrix("J",J);
 #endif
 
@@ -3752,7 +3780,7 @@ int System::diagnose(Algorithm alg)
 
     if(qrAlgorithm==EigenDenseQR){
         if (J.rows() > 0) {
-            qrJT.compute(J.topRows(count).transpose());
+            qrJT.compute(J.topRows(jacobianconstraintcount).transpose());
             //Eigen::MatrixXd Q = qrJT.matrixQ ();
 
             paramsNum = qrJT.rows();
@@ -3775,29 +3803,36 @@ int System::diagnose(Algorithm alg)
 #ifdef EIGEN_SPARSEQR_COMPATIBLE
     else if(qrAlgorithm==EigenSparseQR){
         if (SJ.rows() > 0) {
-            SqrJT.compute(SJ.topRows(count).transpose());
-            // Do not ask for Q Matrix!!
-            // At Eigen 3.2 still has a bug that this only works for square matrices
-            // if enabled it will crash
-            #ifdef SPARSE_Q_MATRIX
-            Q = SqrJT.matrixQ();
-            //Q = QS;
-            #endif
-            
-            paramsNum = SqrJT.rows();
-            constrNum = SqrJT.cols();
-            SqrJT.setPivotThreshold(qrpivotThreshold);
-            rank = SqrJT.rank();
-            
-            if (constrNum >= paramsNum)
-                R = SqrJT.matrixR().triangularView<Eigen::Upper>();
-            else
-                R = SqrJT.matrixR().topRows(constrNum)
-                .triangularView<Eigen::Upper>();
-            
-            #ifdef _GCS_DEBUG_SOLVER_JACOBIAN_QR_DECOMPOSITION_TRIANGULAR_MATRIX
-            R2 = SqrJT.matrixR();
-            #endif
+            auto SJT = SJ.topRows(jacobianconstraintcount).transpose();
+            if (SJT.rows() > 0 && SJT.cols() > 0) {
+                SqrJT.compute(SJT);
+                // Do not ask for Q Matrix!!
+                // At Eigen 3.2 still has a bug that this only works for square matrices
+                // if enabled it will crash
+                #ifdef SPARSE_Q_MATRIX
+                Q = SqrJT.matrixQ();
+                //Q = QS;
+                #endif
+
+                paramsNum = SqrJT.rows();
+                constrNum = SqrJT.cols();
+                SqrJT.setPivotThreshold(qrpivotThreshold);
+                rank = SqrJT.rank();
+
+                if (constrNum >= paramsNum)
+                    R = SqrJT.matrixR().triangularView<Eigen::Upper>();
+                else
+                    R = SqrJT.matrixR().topRows(constrNum)
+                    .triangularView<Eigen::Upper>();
+
+                #ifdef _GCS_DEBUG_SOLVER_JACOBIAN_QR_DECOMPOSITION_TRIANGULAR_MATRIX
+                R2 = SqrJT.matrixR();
+                #endif
+            }
+            else {
+                paramsNum = SJT.rows();
+                constrNum = SJT.cols();
+            }
         }
     }
 #endif
@@ -3988,8 +4023,8 @@ int System::diagnose(Algorithm alg)
                         else if(qrAlgorithm==EigenSparseQR)
                             origCol=SqrJT.colsPermutation().indices()[row];
 #endif
-
-                        conflictGroups[j-rank].push_back(clist[origCol]);
+                        //conflictGroups[j-rank].push_back(clist[origCol]);
+                        conflictGroups[j-rank].push_back(clist[jacobianconstraintmap[origCol]]);
                     }
                 }
                 int origCol = 0;
@@ -4001,9 +4036,28 @@ int System::diagnose(Algorithm alg)
                 else if(qrAlgorithm==EigenSparseQR)
                     origCol=SqrJT.colsPermutation().indices()[j];
 #endif
-
-                conflictGroups[j-rank].push_back(clist[origCol]);
+                //conflictGroups[j-rank].push_back(clist[origCol]);
+                conflictGroups[j-rank].push_back(clist[jacobianconstraintmap[origCol]]);
             }
+            
+#ifdef _GCS_DEBUG_SOLVER_JACOBIAN_QR_DECOMPOSITION_TRIANGULAR_MATRIX
+
+        stream.flush();
+
+        stream << "ConflictGroups: [";
+        for(auto group :conflictGroups)  {
+            stream << "[";
+            
+            for(auto c :group)
+                stream << c->getTag();
+            
+            stream << "]";
+        }
+        stream << "]" << std::endl;
+
+        tmp = stream.str();
+        LogString(tmp);        
+#endif
 
             // try to remove the conflicting constraints and solve the
             // system in order to check if the removed constraints were
