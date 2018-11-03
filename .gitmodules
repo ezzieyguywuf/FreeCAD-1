@@ -1,0 +1,3 @@
+[submodule "src/3rdParty/cmake_helpers"]
+	path = src/3rdParty/cmake_helpers
+	url = git@gitlab.com:ezzieyguywuf/cmake_helpers

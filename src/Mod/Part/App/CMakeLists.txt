@@ -367,8 +367,8 @@ SET(Part_SRCS
 add_library(Part SHARED ${Part_SRCS})
 target_link_libraries(Part 
     ${Part_LIBS}
-    ${OCCWRAPPER_LIBRARIES}
-    ${TOPOMANAGERS_LIBRARIES}
+    OccWrapper
+    TopoManagers
 )
 target_include_directories(Part PUBLIC  
     ${OCCWRAPPER_INCLUDE_DIRS}

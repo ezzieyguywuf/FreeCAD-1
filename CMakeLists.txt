@@ -1062,14 +1062,6 @@ if(BUILD_VR)
     find_package(Rift)
 endif(BUILD_VR)
 
-# ------------------------------ TopoManager Stuff ------------------------------
-find_package(OccWrapper REQUIRED)
-find_package(TopoManagers REQUIRED)
-link_directories(${OCCWRAPPER_LIBRARIES_DIR}
-                 ${TOPOMANAGERS_LIBRARIES_DIR})
-# ------------------------------------------------------------------------
-
-
 # copy build convenient files for M$
 if(WIN32)
     if (EXISTS BuildAll.bat)
@@ -1092,8 +1084,8 @@ configure_file(LibraryVersions.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/LibraryVersio
 # == Global Compiler and Linker Settings =========================================
 
 include_directories(${CMAKE_BINARY_DIR}/src
-		    ${CMAKE_SOURCE_DIR}/src
-                    )
+					${CMAKE_SOURCE_DIR}/src)
+
 # check for 64-bit platform
 IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	MESSAGE(STATUS "Platform is 64-bit, set -D_OCC64")
