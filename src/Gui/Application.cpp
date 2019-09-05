@@ -1628,6 +1628,8 @@ void Application::initApplication(void)
     try {
         initTypes();
         new Base::ScriptProducer( "FreeCADGuiInit", FreeCADGuiInit );
+        Command::doCommand(Command::App, "import FreeCAD as App");
+        Command::doCommand(Command::App, "import FreeCADGui as Gui");
         init_resources();
 #if QT_VERSION >=0x050000
         old_qtmsg_handler = qInstallMessageHandler(messageHandler);
